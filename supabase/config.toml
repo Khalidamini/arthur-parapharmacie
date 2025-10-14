@@ -1,0 +1,4 @@
+project_id = "gtjmebionytcomoldgjl"
+
+[functions.chat-with-arthur]
+verify_jwt = false

@@ -1,0 +1,289 @@
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Send, ArrowLeft, MessageSquare } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import ChatMessage from '@/components/ChatMessage';
+import PromotionSlider from '@/components/PromotionSlider';
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+interface Promotion {
+  id: string;
+  title: string;
+  description: string;
+  discount_percentage: number;
+  valid_until: string;
+}
+
+const Chat = () => {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        createConversation(user.id);
+      }
+    };
+    getUser();
+    loadPromotions();
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const createConversation = async (uid: string) => {
+    const { data, error } = await supabase
+      .from('conversations')
+      .insert({ user_id: uid, title: 'Conversation avec Arthur' })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating conversation:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer la conversation",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setConversationId(data.id);
+  };
+
+  const loadPromotions = async () => {
+    const { data, error } = await supabase
+      .from('promotions')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error loading promotions:', error);
+      return;
+    }
+
+    setPromotions(data || []);
+  };
+
+  const saveMessage = async (role: 'user' | 'assistant', content: string) => {
+    if (!conversationId) return;
+
+    const { error } = await supabase
+      .from('messages')
+      .insert({
+        conversation_id: conversationId,
+        role,
+        content,
+      });
+
+    if (error) {
+      console.error('Error saving message:', error);
+    }
+  };
+
+  const handleSend = async () => {
+    if (!input.trim() || loading) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: input.trim(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setLoading(true);
+
+    await saveMessage('user', userMessage.content);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('chat-with-arthur', {
+        body: {
+          messages: [{ role: 'user', content: userMessage.content }],
+          conversationId,
+        },
+      });
+
+      if (error) throw error;
+
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: data.message,
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+      await saveMessage('assistant', assistantMessage.content);
+
+    } catch (error: any) {
+      console.error('Error sending message:', error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de contacter Arthur",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectPromotion = async (promotion: Promotion) => {
+    if (!userId) return;
+
+    const { error } = await supabase
+      .from('recommendations')
+      .insert({
+        user_id: userId,
+        conversation_id: conversationId,
+        promotion_id: promotion.id,
+        product_name: promotion.title,
+        notes: promotion.description,
+      });
+
+    if (error) {
+      console.error('Error saving recommendation:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'ajouter la promotion à vos recommandations",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Promotion ajoutée",
+      description: "La promotion a été ajoutée à vos recommandations",
+    });
+  };
+
+  return (
+    <div className="flex flex-col h-screen bg-gradient-subtle">
+      {/* Header */}
+      <div className="bg-card border-b border-border shadow-sm">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/')}
+              className="rounded-full"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex items-center gap-2">
+              <div className="h-10 w-10 rounded-full bg-gradient-primary flex items-center justify-center">
+                <MessageSquare className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="font-semibold text-foreground">Arthur</h1>
+                <p className="text-xs text-muted-foreground">Assistant parapharmacie</p>
+              </div>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => navigate('/recommendations')}
+            className="hidden sm:flex"
+          >
+            Mes recommandations
+          </Button>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-4xl mx-auto px-4 py-6">
+          {/* Promotions Slider */}
+          <PromotionSlider 
+            promotions={promotions}
+            onSelectPromotion={handleSelectPromotion}
+          />
+
+          {/* Welcome Message */}
+          {messages.length === 0 && (
+            <div className="text-center py-12 animate-in fade-in duration-500">
+              <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-primary mb-4">
+                <MessageSquare className="h-8 w-8 text-primary-foreground" />
+              </div>
+              <h2 className="text-2xl font-bold text-foreground mb-2">
+                Bonjour ! Je suis Arthur
+              </h2>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                Votre assistant virtuel en parapharmacie. Posez-moi vos questions sur les produits de santé et de bien-être !
+              </p>
+            </div>
+          )}
+
+          {/* Chat Messages */}
+          {messages.map((message) => (
+            <ChatMessage key={message.id} role={message.role} content={message.content} />
+          ))}
+
+          {loading && (
+            <div className="flex gap-3 justify-start mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="h-8 w-8 rounded-full bg-gradient-primary flex items-center justify-center">
+                <div className="h-2 w-2 bg-primary-foreground rounded-full animate-pulse"></div>
+              </div>
+              <div className="bg-card border border-border rounded-2xl px-4 py-3 shadow-sm">
+                <div className="flex gap-1">
+                  <div className="h-2 w-2 bg-muted-foreground/50 rounded-full animate-bounce"></div>
+                  <div className="h-2 w-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="h-2 w-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+      </div>
+
+      {/* Input */}
+      <div className="bg-card border-t border-border shadow-lg">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex gap-2">
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+              placeholder="Posez votre question à Arthur..."
+              disabled={loading}
+              className="flex-1 rounded-full border-2 focus-visible:ring-primary"
+            />
+            <Button
+              onClick={handleSend}
+              disabled={loading || !input.trim()}
+              className="rounded-full bg-gradient-primary hover:opacity-90 transition-opacity px-6"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Chat;
