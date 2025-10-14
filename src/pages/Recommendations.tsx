@@ -302,9 +302,9 @@ const Recommendations = () => {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {/* Messages */}
+                    {/* Messages - Show only first 3 */}
                     <div className="space-y-3">
-                      {conv.messages.map((msg) => (
+                      {conv.messages.slice(0, 3).map((msg) => (
                         <div
                           key={msg.id}
                           className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -330,6 +330,11 @@ const Recommendations = () => {
                           )}
                         </div>
                       ))}
+                      {conv.messages.length > 3 && (
+                        <p className="text-xs text-muted-foreground text-center">
+                          +{conv.messages.length - 3} message{conv.messages.length - 3 > 1 ? 's' : ''} supplémentaire{conv.messages.length - 3 > 1 ? 's' : ''}
+                        </p>
+                      )}
                     </div>
 
                     {/* Products recommended in this conversation */}
