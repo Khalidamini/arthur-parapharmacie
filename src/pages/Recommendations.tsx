@@ -39,9 +39,17 @@ interface Conversation {
   messages: Message[];
 }
 
+interface ProductRecommendation {
+  productName: string;
+  conversationId: string;
+  conversationDate: string;
+  context: string;
+}
+
 const Recommendations = () => {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [productRecommendations, setProductRecommendations] = useState<ProductRecommendation[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteConversationId, setDeleteConversationId] = useState<string | null>(null);
@@ -108,6 +116,35 @@ const Recommendations = () => {
         })
       );
       setConversations(conversationsWithMessages);
+      
+      // Extract product recommendations from assistant messages
+      const products: ProductRecommendation[] = [];
+      conversationsWithMessages.forEach(conv => {
+        conv.messages.forEach(msg => {
+          if (msg.role === 'assistant') {
+            // Extract products mentioned in bold (e.g., **Product Name**)
+            const productMatches = msg.content.match(/\*\*([^*]+)\*\*/g);
+            if (productMatches) {
+              productMatches.forEach(match => {
+                const productName = match.replace(/\*\*/g, '').trim();
+                // Filter out common text that's not a product
+                if (!productName.toLowerCase().includes('pour') && 
+                    !productName.toLowerCase().includes('conseils') &&
+                    productName.length > 5 &&
+                    productName.length < 100) {
+                  products.push({
+                    productName,
+                    conversationId: conv.id,
+                    conversationDate: conv.created_at,
+                    context: msg.content.substring(0, 200) + '...'
+                  });
+                }
+              });
+            }
+          }
+        });
+      });
+      setProductRecommendations(products);
     }
 
     setLoading(false);
@@ -204,14 +241,18 @@ const Recommendations = () => {
           </div>
         ) : (
           <Tabs defaultValue="conversations" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsList className="grid w-full grid-cols-3 mb-6">
               <TabsTrigger value="conversations" className="gap-2">
                 <MessageSquare className="h-4 w-4" />
                 Conversations
               </TabsTrigger>
+              <TabsTrigger value="products" className="gap-2">
+                <Tag className="h-4 w-4" />
+                Produits
+              </TabsTrigger>
               <TabsTrigger value="recommendations" className="gap-2">
                 <Tag className="h-4 w-4" />
-                Recommandations
+                Promotions
               </TabsTrigger>
             </TabsList>
 
@@ -287,6 +328,55 @@ const Recommendations = () => {
                               )}
                             </div>
                           ))}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="products">
+              {productRecommendations.length === 0 ? (
+                <div className="text-center py-12">
+                  <Tag className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+                  <h2 className="text-xl font-semibold text-foreground mb-2">
+                    Aucun produit recommandé
+                  </h2>
+                  <p className="text-muted-foreground mb-6">
+                    Les produits recommandés par Arthur apparaîtront ici
+                  </p>
+                  <Button onClick={() => navigate('/chat')} className="bg-gradient-primary">
+                    Démarrer un chat
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {productRecommendations.map((product, index) => {
+                    const date = new Date(product.conversationDate).toLocaleDateString('fr-FR', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    });
+                    return (
+                      <Card 
+                        key={`${product.conversationId}-${index}`}
+                        className="hover:shadow-md transition-shadow border-2 border-border/50 hover:border-primary/30"
+                      >
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start gap-2">
+                            <Tag className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                              <CardTitle className="text-base mb-1">{product.productName}</CardTitle>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Calendar className="h-3 w-3" />
+                                <span>{date}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <p className="text-sm text-muted-foreground line-clamp-2">{product.context}</p>
                         </CardContent>
                       </Card>
                     );
