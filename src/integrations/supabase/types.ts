@@ -70,6 +70,129 @@ export type Database = {
           },
         ]
       }
+      pharmacies: {
+        Row: {
+          address: string
+          city: string
+          created_at: string | null
+          id: string
+          latitude: number
+          longitude: number
+          name: string
+          opening_hours: Json | null
+          phone: string | null
+          postal_code: string
+          qr_code: string
+          updated_at: string | null
+        }
+        Insert: {
+          address: string
+          city: string
+          created_at?: string | null
+          id?: string
+          latitude: number
+          longitude: number
+          name: string
+          opening_hours?: Json | null
+          phone?: string | null
+          postal_code: string
+          qr_code: string
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string
+          city?: string
+          created_at?: string | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          name?: string
+          opening_hours?: Json | null
+          phone?: string | null
+          postal_code?: string
+          qr_code?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      pharmacy_products: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_available: boolean | null
+          pharmacy_id: string
+          product_id: string
+          stock_quantity: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_available?: boolean | null
+          pharmacy_id: string
+          product_id: string
+          stock_quantity?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_available?: boolean | null
+          pharmacy_id?: string
+          product_id?: string
+          stock_quantity?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pharmacy_products_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pharmacy_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          brand: string
+          category: string
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          price: number
+          updated_at: string | null
+        }
+        Insert: {
+          brand: string
+          category: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          price: number
+          updated_at?: string | null
+        }
+        Update: {
+          brand?: string
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          price?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       promotions: {
         Row: {
           created_at: string | null
@@ -144,6 +267,41 @@ export type Database = {
             columns: ["promotion_id"]
             isOneToOne: false
             referencedRelation: "promotions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_pharmacy_affiliation: {
+        Row: {
+          affiliation_type: string
+          created_at: string | null
+          id: string
+          pharmacy_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          affiliation_type: string
+          created_at?: string | null
+          id?: string
+          pharmacy_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          affiliation_type?: string
+          created_at?: string | null
+          id?: string
+          pharmacy_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_pharmacy_affiliation_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
             referencedColumns: ["id"]
           },
         ]
