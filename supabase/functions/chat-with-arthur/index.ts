@@ -41,6 +41,33 @@ serve(async (req) => {
       }
     }
 
+    // Fetch available products from database for context
+    const { data: products } = await supabase
+      .from('products')
+      .select(`
+        id,
+        name,
+        brand,
+        category,
+        description,
+        price,
+        pharmacy_products!inner(
+          pharmacy_id,
+          stock_quantity,
+          is_available
+        )
+      `)
+      .eq('pharmacy_products.is_available', true)
+      .gt('pharmacy_products.stock_quantity', 0)
+      .limit(50);
+
+    // Format products for AI context
+    const productsContext = products && products.length > 0 
+      ? `\n\nProduits disponibles en pharmacie :\n${products.map(p => 
+          `- ${p.name} (${p.brand}) - ${p.category} - ${p.price}€ - ${p.description || 'Aucune description'}`
+        ).join('\n')}`
+      : '';
+
     const systemPrompt = `Tu es Arthur, un assistant virtuel expert en parapharmacie pour les pharmacies françaises. Tu donnes des conseils personnalisés et recommandes des produits de parapharmacie.
 
 Ton rôle :
@@ -54,7 +81,8 @@ Important :
 - Reste dans ton domaine d'expertise (parapharmacie)
 - Si une question concerne des médicaments sur ordonnance ou des problèmes médicaux sérieux, recommande de consulter un pharmacien ou un médecin
 - Sois précis dans tes recommandations de produits
-- Mentionne toujours les précautions d'usage si pertinent`;
+- Mentionne toujours les précautions d'usage si pertinent
+- Quand tu recommandes un produit, mets son nom en gras avec **Nom du Produit**${productsContext}`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
