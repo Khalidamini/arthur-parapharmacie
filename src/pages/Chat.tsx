@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, ArrowLeft, MessageSquare } from "lucide-react";
@@ -32,13 +32,21 @@ const Chat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
-        createConversation(user.id);
+        
+        const existingConvId = searchParams.get('conversationId');
+        if (existingConvId) {
+          setConversationId(existingConvId);
+          loadConversationMessages(existingConvId);
+        } else {
+          createConversation(user.id);
+        }
       }
     };
     getUser();
@@ -51,6 +59,27 @@ const Chat = () => {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const loadConversationMessages = async (convId: string) => {
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('conversation_id', convId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error loading messages:', error);
+      return;
+    }
+
+    const loadedMessages: Message[] = (data || []).map(msg => ({
+      id: msg.id,
+      role: msg.role as 'user' | 'assistant',
+      content: msg.content,
+    }));
+
+    setMessages(loadedMessages);
   };
 
   const createConversation = async (uid: string) => {
