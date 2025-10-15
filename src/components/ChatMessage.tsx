@@ -43,7 +43,6 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
   const [selectedOptions, setSelectedOptions] = useState<Set<string>>(new Set());
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
-  const [generatedImages, setGeneratedImages] = useState<Record<string, string>>({});
   const [selectedProduct, setSelectedProduct] = useState<{
     id: string;
     name: string;
@@ -97,27 +96,6 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
       });
       
       setProducts(productsWithReasons);
-      
-      // Générer les images pour chaque produit
-      productsWithReasons.forEach(async (product) => {
-        try {
-          const { data: imageData, error: imageError } = await supabase.functions.invoke('generate-product-image', {
-            body: { 
-              productName: product.name,
-              category: 'parapharmacie'
-            }
-          });
-          
-          if (!imageError && imageData?.imageUrl) {
-            setGeneratedImages(prev => ({
-              ...prev,
-              [product.id]: imageData.imageUrl
-            }));
-          }
-        } catch (err) {
-          console.error('Error generating image for product:', product.id, err);
-        }
-      });
     } catch (error) {
       console.error('Error loading products:', error);
     } finally {
@@ -234,7 +212,7 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
                           brand: product.brand,
                           price: product.price,
                           description: product.description,
-                          imageUrl: generatedImages[product.id] || displayImage || '/placeholder.svg',
+                          imageUrl: product.image_url || '/placeholder.svg',
                           reason: recommendation?.reason,
                           source: 'arthur',
                           productId: product.id
@@ -244,17 +222,16 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
                     >
                       <CardContent className="p-3 flex gap-3">
                         <div className="relative h-20 w-20 flex-shrink-0 rounded-lg overflow-hidden bg-muted">
-                          {generatedImages[product.id] ? (
-                            <img
-                              src={generatedImages[product.id]}
-                              alt={product.name}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="h-full w-full flex items-center justify-center">
-                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                            </div>
-                          )}
+                          <img
+                            src={product.image_url || '/placeholder.svg'}
+                            alt={product.name}
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).onerror = null;
+                              e.currentTarget.src = '/placeholder.svg';
+                            }}
+                          />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h4 className="font-semibold text-sm truncate">{product.name}</h4>
