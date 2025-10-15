@@ -38,7 +38,12 @@ const ScanQR = () => {
 
   useEffect(() => {
     if (qrCode) {
-      findPharmacy(qrCode);
+      findPharmacy(qrCode).then(() => {
+        // Auto-affiliation en temporaire quand on vient d'un QR externe
+        if (pharmacy) {
+          handleAffiliation('temporary');
+        }
+      });
     }
   }, [qrCode]);
 
@@ -171,17 +176,24 @@ const ScanQR = () => {
     }
   };
 
-  const handleAffiliation = async () => {
+  const handleAffiliation = async (autoAffiliationType?: 'temporary' | 'permanent') => {
     if (!pharmacy) return;
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
+      // Si pas connecté, sauvegarder l'info et rediriger vers auth
+      localStorage.setItem('pending_pharmacy_affiliation', JSON.stringify({
+        pharmacy_id: pharmacy.id,
+        affiliation_type: autoAffiliationType || affiliationType
+      }));
       navigate('/auth');
       return;
     }
 
     setLoading(true);
     try {
+      const finalAffiliationType = autoAffiliationType || affiliationType;
+      
       // Vérifier si l'utilisateur a déjà une affiliation
       const { data: existingAffiliation } = await (supabase as any)
         .from('user_pharmacy_affiliation')
@@ -195,7 +207,7 @@ const ScanQR = () => {
           .from('user_pharmacy_affiliation')
           .update({
             pharmacy_id: pharmacy.id,
-            is_permanent: affiliationType === 'permanent',
+            affiliation_type: finalAffiliationType,
             updated_at: new Date().toISOString()
           })
           .eq('user_id', user.id);
@@ -208,7 +220,7 @@ const ScanQR = () => {
           .insert({
             user_id: user.id,
             pharmacy_id: pharmacy.id,
-            is_permanent: affiliationType === 'permanent'
+            affiliation_type: finalAffiliationType
           });
 
         if (error) throw error;
@@ -217,7 +229,7 @@ const ScanQR = () => {
       setSuccess(true);
       toast({
         title: "Affiliation réussie",
-        description: `${pharmacy.name} est maintenant votre pharmacie référente ${affiliationType === 'temporary' ? 'temporaire' : 'définitive'}`,
+        description: `${pharmacy.name} est maintenant votre pharmacie référente ${finalAffiliationType === 'temporary' ? 'temporaire' : 'définitive'}`,
       });
 
       setTimeout(() => {
@@ -419,7 +431,7 @@ const ScanQR = () => {
                   Annuler
                 </Button>
                 <Button
-                  onClick={handleAffiliation}
+                  onClick={() => handleAffiliation()}
                   disabled={loading}
                   className="flex-1 bg-gradient-primary"
                 >

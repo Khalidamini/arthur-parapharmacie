@@ -16,6 +16,24 @@ const Index = () => {
       } = await supabase.auth.getUser();
       setUser(user);
       if (user) {
+        // Vérifier s'il y a une affiliation en attente
+        const pendingAffiliation = localStorage.getItem('pending_pharmacy_affiliation');
+        if (pendingAffiliation) {
+          const { pharmacy_id, affiliation_type } = JSON.parse(pendingAffiliation);
+          try {
+            await (supabase as any)
+              .from('user_pharmacy_affiliation')
+              .insert({
+                user_id: user.id,
+                pharmacy_id,
+                affiliation_type
+              });
+            localStorage.removeItem('pending_pharmacy_affiliation');
+          } catch (error) {
+            console.error('Error creating pending affiliation:', error);
+          }
+        }
+
         // Charger la pharmacie référente
         const {
           data
@@ -32,6 +50,14 @@ const Index = () => {
       }
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        // Recharger la pharmacie après connexion
+        (supabase as any).from('user_pharmacy_affiliation').select('pharmacy_id, pharmacies(name)').eq('user_id', session.user.id).maybeSingle().then(({ data }: any) => {
+          if (data) {
+            setCurrentPharmacy(data.pharmacies?.name || null);
+          }
+        });
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
