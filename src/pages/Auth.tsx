@@ -5,13 +5,21 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { MessageSquare } from "lucide-react";
 
 const Auth = () => {
   const [accessCode, setAccessCode] = useState('');
+  const [gender, setGender] = useState('');
+  const [age, setAge] = useState('');
+  const [isPregnant, setIsPregnant] = useState(false);
+  const [allergies, setAllergies] = useState('');
+  const [medicalHistory, setMedicalHistory] = useState('');
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('signin');
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -36,11 +44,20 @@ const Auth = () => {
       return;
     }
 
+    if (!gender || !age) {
+      toast({
+        title: "Informations manquantes",
+        description: "Veuillez remplir tous les champs obligatoires",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const userEmail = `user-${accessCode.trim()}@app.local`;
 
-      const { error } = await supabase.auth.signUp({
+      const { data: authData, error } = await supabase.auth.signUp({
         email: userEmail,
         password: accessCode.trim(),
         options: {
@@ -49,6 +66,24 @@ const Auth = () => {
       });
 
       if (error) throw error;
+
+      // Mettre à jour le profil avec les informations médicales
+      if (authData.user) {
+        const { error: profileError } = await (supabase as any)
+          .from('profiles')
+          .update({
+            gender,
+            age: parseInt(age),
+            is_pregnant: gender === 'femme' ? isPregnant : false,
+            allergies: allergies.trim() || null,
+            medical_history: medicalHistory.trim() || null,
+          })
+          .eq('id', authData.user.id);
+
+        if (profileError) {
+          console.error('Error updating profile:', profileError);
+        }
+      }
 
       toast({
         title: "Compte créé",
@@ -129,7 +164,7 @@ const Auth = () => {
             <CardDescription>Connectez-vous avec votre code à 8 chiffres</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin" className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Connexion</TabsTrigger>
                 <TabsTrigger value="signup">Inscription</TabsTrigger>
@@ -167,7 +202,7 @@ const Auth = () => {
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-code">Choisissez votre code à 8 chiffres</Label>
+                    <Label htmlFor="signup-code">Choisissez votre code à 8 chiffres *</Label>
                     <Input
                       id="signup-code"
                       type="text"
@@ -178,9 +213,77 @@ const Auth = () => {
                       className="border-2 font-mono text-center text-lg"
                       maxLength={8}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Créez un code à 8 chiffres pour vous connecter
-                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Sexe *</Label>
+                    <RadioGroup value={gender} onValueChange={setGender} required>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="homme" id="homme" />
+                        <Label htmlFor="homme" className="font-normal cursor-pointer">Homme</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="femme" id="femme" />
+                        <Label htmlFor="femme" className="font-normal cursor-pointer">Femme</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="autre" id="autre" />
+                        <Label htmlFor="autre" className="font-normal cursor-pointer">Autre</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="age">Âge *</Label>
+                    <Input
+                      id="age"
+                      type="number"
+                      placeholder="25"
+                      value={age}
+                      onChange={(e) => setAge(e.target.value)}
+                      required
+                      min="0"
+                      max="150"
+                    />
+                  </div>
+
+                  {gender === 'femme' && (
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="pregnant"
+                          checked={isPregnant}
+                          onChange={(e) => setIsPregnant(e.target.checked)}
+                          className="rounded border-input"
+                        />
+                        <Label htmlFor="pregnant" className="font-normal cursor-pointer">
+                          Je suis enceinte
+                        </Label>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="allergies">Allergies</Label>
+                    <Textarea
+                      id="allergies"
+                      placeholder="Listez vos allergies connues..."
+                      value={allergies}
+                      onChange={(e) => setAllergies(e.target.value)}
+                      className="min-h-[60px]"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="medical-history">Antécédents médicaux</Label>
+                    <Textarea
+                      id="medical-history"
+                      placeholder="Indiquez vos antécédents médicaux importants..."
+                      value={medicalHistory}
+                      onChange={(e) => setMedicalHistory(e.target.value)}
+                      className="min-h-[60px]"
+                    />
                   </div>
                   
                   <Button

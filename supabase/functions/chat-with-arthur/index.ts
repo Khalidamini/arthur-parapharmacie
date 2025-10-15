@@ -12,8 +12,8 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, conversationId } = await req.json();
-    console.log('Received request:', { messagesCount: messages.length, conversationId });
+    const { messages, conversationId, userId } = await req.json();
+    console.log('Received request:', { messagesCount: messages.length, conversationId, userId });
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -23,6 +23,24 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Fetch user profile for personalization
+    let userContext = '';
+    if (userId) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('gender, age, is_pregnant, allergies, medical_history')
+        .eq('id', userId)
+        .single();
+
+      if (profile) {
+        userContext = `\n\nInformations du patient :
+- Sexe : ${profile.gender || 'non renseigné'}
+- Âge : ${profile.age ? `${profile.age} ans` : 'non renseigné'}
+${profile.gender === 'femme' && profile.is_pregnant ? '- Enceinte : Oui\n' : ''}${profile.allergies ? `- Allergies : ${profile.allergies}\n` : ''}${profile.medical_history ? `- Antécédents médicaux : ${profile.medical_history}\n` : ''}
+Adapte tes recommandations en fonction de ces informations.`;
+      }
+    }
 
     // Fetch conversation history if conversationId is provided
     let fullMessages = messages;
@@ -73,7 +91,7 @@ serve(async (req) => {
 Ton rôle :
 - Écouter attentivement les besoins et questions des clients
 - Poser des questions pertinentes pour mieux comprendre leurs besoins
-- Recommander des produits adaptés disponibles en pharmacie
+- Recommander des produits adaptés disponibles en pharmacie EN TENANT COMPTE du profil médical du patient
 - Expliquer les bénéfices et l'utilisation des produits
 - Être empathique, professionnel et rassurant
 
@@ -81,8 +99,9 @@ Important :
 - Reste dans ton domaine d'expertise (parapharmacie)
 - Si une question concerne des médicaments sur ordonnance ou des problèmes médicaux sérieux, recommande de consulter un pharmacien ou un médecin
 - Sois précis dans tes recommandations de produits
+- ADAPTE tes conseils selon le profil du patient (âge, sexe, grossesse, allergies, antécédents)
 - Mentionne toujours les précautions d'usage si pertinent
-- Quand tu recommandes un produit, mets son nom en gras avec **Nom du Produit**${productsContext}`;
+- Quand tu recommandes un produit, mets son nom en gras avec **Nom du Produit**${userContext}${productsContext}`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',

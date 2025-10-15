@@ -195,23 +195,38 @@ export type Database = {
       }
       profiles: {
         Row: {
+          age: number | null
+          allergies: string | null
           created_at: string | null
           email: string | null
+          gender: string | null
           id: string
+          is_pregnant: boolean | null
+          medical_history: string | null
           qr_code_number: string
           updated_at: string | null
         }
         Insert: {
+          age?: number | null
+          allergies?: string | null
           created_at?: string | null
           email?: string | null
+          gender?: string | null
           id: string
+          is_pregnant?: boolean | null
+          medical_history?: string | null
           qr_code_number: string
           updated_at?: string | null
         }
         Update: {
+          age?: number | null
+          allergies?: string | null
           created_at?: string | null
           email?: string | null
+          gender?: string | null
           id?: string
+          is_pregnant?: boolean | null
+          medical_history?: string | null
           qr_code_number?: string
           updated_at?: string | null
         }

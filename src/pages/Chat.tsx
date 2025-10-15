@@ -37,18 +37,26 @@ const Chat = () => {
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-        
-        const existingConvId = searchParams.get('conversationId');
-        if (existingConvId) {
-          setConversationId(existingConvId);
-          loadConversationMessages(existingConvId);
-        } else {
-          createConversation(user.id);
-        }
+      if (!user) {
+        toast({
+          title: "Connexion requise",
+          description: "Vous devez être connecté pour accéder au chat",
+        });
+        navigate('/auth');
+        return;
+      }
+
+      setUserId(user.id);
+      
+      const existingConvId = searchParams.get('conversationId');
+      if (existingConvId) {
+        setConversationId(existingConvId);
+        loadConversationMessages(existingConvId);
+      } else {
+        createConversation(user.id);
       }
     };
+    
     getUser();
     loadPromotions();
   }, []);
@@ -152,6 +160,7 @@ const Chat = () => {
         body: {
           messages: [{ role: 'user', content: userMessage.content }],
           conversationId,
+          userId,
         },
       });
 
