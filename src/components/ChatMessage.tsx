@@ -2,7 +2,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { User, Bot, Check } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ChatMessageProps {
@@ -73,14 +73,14 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
   };
 
   // Charger les produits au premier rendu si c'est une réponse products
-  useState(() => {
+  useEffect(() => {
     if (parsedContent?.type === 'products' && !isUser) {
       const productNames = parsedContent.products.map(p => p.name);
       if (productNames.length > 0) {
         loadProducts(productNames);
       }
     }
-  });
+  }, [content]);
 
   const handleOptionToggle = (option: string) => {
     const newSelected = new Set(selectedOptions);
