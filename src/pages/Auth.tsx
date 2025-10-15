@@ -88,50 +88,27 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('qr_code_number', qrCodeNumber.trim())
-        .single();
+      // Call edge function to get email for QR code
+      const { data, error } = await supabase.functions.invoke('qr-code-login', {
+        body: { qrCodeNumber: qrCodeNumber.trim() }
+      });
 
-      if (profileError || !profile) {
-        throw new Error("Numéro de QR code invalide");
-      }
+      if (error) throw error;
+      if (!data?.email) throw new Error("Numéro de QR code invalide");
 
-      const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(profile.id);
-      
-      if (userError || !user) {
-        throw new Error("Utilisateur non trouvé");
-      }
-
-      const { error } = await supabase.auth.signInWithPassword({
-        email: user.email!,
+      // Sign in with the email and QR code number as password
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: data.email,
         password: qrCodeNumber.trim(),
       });
 
-      if (error) {
-        const tempPassword = Math.random().toString(36).slice(-16);
-        const { error: updateError } = await supabase.auth.updateUser({
-          password: tempPassword
-        });
-        
-        if (!updateError) {
-          const { error: signInError } = await supabase.auth.signInWithPassword({
-            email: user.email!,
-            password: tempPassword,
-          });
-          
-          if (signInError) throw signInError;
-        } else {
-          throw error;
-        }
-      }
+      if (signInError) throw signInError;
 
       navigate('/');
     } catch (error: any) {
       toast({
         title: "Erreur de connexion",
-        description: error.message,
+        description: error.message || "Numéro de QR code invalide",
         variant: "destructive",
       });
     } finally {
