@@ -192,22 +192,15 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
                     <Card key={product.id} className="overflow-hidden hover:shadow-md transition-shadow">
                       <CardContent className="p-3 flex gap-3">
                         <div className="relative h-20 w-20 flex-shrink-0 rounded-lg overflow-hidden bg-muted">
-                          {displayImage ? (
-                            <img
-                              src={displayImage}
-                              alt={product.name}
-                              className="h-full w-full object-cover"
-                              onError={(e) => {
-                                // Fallback image si l'URL échoue (ex: HTTP non sécurisé ou 404)
-                                (e.currentTarget as HTMLImageElement).onerror = null;
-                                e.currentTarget.src = '/placeholder.svg';
-                              }}
-                            />
-                          ) : (
-                            <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">
-                              Pas d'image
-                            </div>
-                          )}
+                          <img
+                            src={displayImage || '/placeholder.svg'}
+                            alt={product.name}
+                            className="h-full w-full object-cover"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).onerror = null;
+                              e.currentTarget.src = '/placeholder.svg';
+                            }}
+                          />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h4 className="font-semibold text-sm truncate">{product.name}</h4>
