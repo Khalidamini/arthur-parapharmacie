@@ -98,6 +98,31 @@ const Auth = () => {
 
       if (signInError) throw signInError;
 
+      // Vérifier s'il y a une affiliation de pharmacie en attente
+      const pendingAffiliation = localStorage.getItem('pending_pharmacy_affiliation');
+      if (pendingAffiliation && authData.user) {
+        const { pharmacy_id, affiliation_type } = JSON.parse(pendingAffiliation);
+        
+        try {
+          await (supabase as any)
+            .from('user_pharmacy_affiliation')
+            .insert({
+              user_id: authData.user.id,
+              pharmacy_id,
+              affiliation_type
+            });
+          
+          localStorage.removeItem('pending_pharmacy_affiliation');
+          
+          toast({
+            title: "Affiliation réussie",
+            description: "Votre pharmacie référente a été enregistrée",
+          });
+        } catch (affiliationError) {
+          console.error('Error creating pending affiliation:', affiliationError);
+        }
+      }
+
       navigate('/');
     } catch (error: any) {
       toast({
@@ -131,6 +156,34 @@ const Auth = () => {
       });
 
       if (error) throw error;
+
+      // Vérifier s'il y a une affiliation de pharmacie en attente
+      const pendingAffiliation = localStorage.getItem('pending_pharmacy_affiliation');
+      if (pendingAffiliation) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { pharmacy_id, affiliation_type } = JSON.parse(pendingAffiliation);
+          
+          try {
+            await (supabase as any)
+              .from('user_pharmacy_affiliation')
+              .insert({
+                user_id: user.id,
+                pharmacy_id,
+                affiliation_type
+              });
+            
+            localStorage.removeItem('pending_pharmacy_affiliation');
+            
+            toast({
+              title: "Affiliation réussie",
+              description: "Votre pharmacie référente a été enregistrée",
+            });
+          } catch (affiliationError) {
+            console.error('Error creating pending affiliation:', affiliationError);
+          }
+        }
+      }
 
       navigate('/');
     } catch (error: any) {
