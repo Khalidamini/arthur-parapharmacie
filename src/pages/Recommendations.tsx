@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Calendar, Tag, Trash2, MessageSquare, Bot, User, MessageCircle } from "lucide-react";
+import { ArrowLeft, Calendar, Tag, Trash2, MessageSquare, Bot, User, MessageCircle, UserX, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,6 +55,9 @@ const Recommendations = () => {
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteConversationId, setDeleteConversationId] = useState<string | null>(null);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [profileData, setProfileData] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -66,6 +71,15 @@ const Recommendations = () => {
       navigate('/auth');
       return;
     }
+
+    // Charger le profil
+    const { data: profile } = await (supabase as any)
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+    
+    setProfileData(profile);
 
     // Load recommendations
     const { data: recsData, error: recsError } = await supabase
@@ -200,6 +214,48 @@ const Recommendations = () => {
     setDeleteConversationId(null);
   };
 
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'SUPPRIMER') {
+      toast({
+        title: "Confirmation invalide",
+        description: "Veuillez taper SUPPRIMER pour confirmer",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Supprimer toutes les données utilisateur
+      await (supabase as any).from('recommendations').delete().eq('user_id', user.id);
+      await (supabase as any).from('conversations').delete().eq('user_id', user.id);
+      await (supabase as any).from('user_pharmacy_affiliation').delete().eq('user_id', user.id);
+      await (supabase as any).from('profiles').delete().eq('id', user.id);
+      
+      // Supprimer le compte auth
+      const { error } = await supabase.auth.admin.deleteUser(user.id);
+      
+      if (error) throw error;
+
+      toast({
+        title: "Compte supprimé",
+        description: "Votre compte a été supprimé définitivement",
+      });
+
+      await supabase.auth.signOut();
+      navigate('/');
+    } catch (error: any) {
+      console.error('Error deleting account:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer le compte. Contactez le support.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Group recommendations by date
   const groupedByDate = recommendations.reduce((acc, rec) => {
     const date = new Date(rec.created_at).toLocaleDateString('fr-FR', {
@@ -228,7 +284,7 @@ const Recommendations = () => {
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-xl font-bold text-foreground">Mes recommandations</h1>
+            <h1 className="text-xl font-bold text-foreground">Mon compte</h1>
           </div>
         </div>
       </div>
@@ -239,21 +295,29 @@ const Recommendations = () => {
           <div className="flex justify-center items-center py-12">
             <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
           </div>
-        ) : conversations.length === 0 ? (
-          <div className="text-center py-12">
-            <MessageSquare className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <h2 className="text-xl font-semibold text-foreground mb-2">
-              Aucune conversation
-            </h2>
-            <p className="text-muted-foreground mb-6">
-              Vos conversations avec Arthur apparaîtront ici
-            </p>
-            <Button onClick={() => navigate('/chat')} className="bg-gradient-primary">
-              Démarrer un chat
-            </Button>
-          </div>
         ) : (
-          <div className="space-y-6">
+          <Tabs defaultValue="conversations" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="conversations">Conversations</TabsTrigger>
+              <TabsTrigger value="account">Paramètres</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="conversations">
+              {conversations.length === 0 ? (
+                <div className="text-center py-12">
+                  <MessageSquare className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+                  <h2 className="text-xl font-semibold text-foreground mb-2">
+                    Aucune conversation
+                  </h2>
+                  <p className="text-muted-foreground mb-6">
+                    Vos conversations avec Arthur apparaîtront ici
+                  </p>
+                  <Button onClick={() => navigate('/chat')} className="bg-gradient-primary">
+                    Démarrer un chat
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-6">
             {conversations.map((conv) => {
               const date = new Date(conv.created_at).toLocaleDateString('fr-FR', {
                 year: 'numeric',
@@ -395,6 +459,87 @@ const Recommendations = () => {
             })}
           </div>
         )}
+      </TabsContent>
+
+      <TabsContent value="account">
+        <div className="space-y-6">
+          {/* Informations du profil */}
+          {profileData && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Informations personnelles</CardTitle>
+                <CardDescription>Vos informations médicales pour des conseils personnalisés</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Sexe</p>
+                    <p className="font-medium">{profileData.gender || 'Non renseigné'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Âge</p>
+                    <p className="font-medium">{profileData.age ? `${profileData.age} ans` : 'Non renseigné'}</p>
+                  </div>
+                </div>
+                {profileData.gender === 'femme' && profileData.is_pregnant && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Grossesse</p>
+                    <p className="font-medium">Enceinte</p>
+                  </div>
+                )}
+                {profileData.allergies && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Allergies</p>
+                    <p className="font-medium">{profileData.allergies}</p>
+                  </div>
+                )}
+                {profileData.medical_history && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Antécédents médicaux</p>
+                    <p className="font-medium">{profileData.medical_history}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Zone danger - Suppression du compte */}
+          <Card className="border-destructive/50">
+            <CardHeader>
+              <CardTitle className="text-destructive flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
+                Zone de danger
+              </CardTitle>
+              <CardDescription>
+                Actions irréversibles sur votre compte
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  La suppression de votre compte est définitive. Toutes vos données seront supprimées :
+                </p>
+                <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+                  <li>Conversations avec Arthur</li>
+                  <li>Recommandations sauvegardées</li>
+                  <li>Informations personnelles</li>
+                  <li>Affiliation aux pharmacies</li>
+                </ul>
+              </div>
+              <Button
+                variant="destructive"
+                onClick={() => setShowDeleteAccount(true)}
+                className="w-full"
+              >
+                <UserX className="h-4 w-4 mr-2" />
+                Supprimer définitivement mon compte
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </TabsContent>
+      </Tabs>
+        )}
       </div>
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
@@ -426,6 +571,45 @@ const Recommendations = () => {
             <AlertDialogCancel>Annuler</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteConversation} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showDeleteAccount} onOpenChange={setShowDeleteAccount}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive">Supprimer définitivement votre compte ?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <p>Cette action est <strong>irréversible</strong>. Toutes vos données seront supprimées :</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Conversations et messages</li>
+                <li>Recommandations</li>
+                <li>Informations personnelles</li>
+                <li>Affiliation aux pharmacies</li>
+              </ul>
+              <div className="space-y-2 pt-4">
+                <Label htmlFor="confirm-delete" className="text-foreground">
+                  Tapez <strong>SUPPRIMER</strong> pour confirmer
+                </Label>
+                <Input
+                  id="confirm-delete"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="SUPPRIMER"
+                  className="font-mono"
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteConfirmText('')}>Annuler</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteAccount}
+              disabled={deleteConfirmText !== 'SUPPRIMER'}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Supprimer définitivement
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
