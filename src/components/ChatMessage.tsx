@@ -53,6 +53,7 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
     imageUrl: string;
     reason?: string;
     source: 'arthur' | 'shop';
+    productId?: string;
   } | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -235,7 +236,8 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
                           description: product.description,
                           imageUrl: generatedImages[product.id] || displayImage || '/placeholder.svg',
                           reason: recommendation?.reason,
-                          source: 'arthur'
+                          source: 'arthur',
+                          productId: product.id
                         });
                         setDialogOpen(true);
                       }}

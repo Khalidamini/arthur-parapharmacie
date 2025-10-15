@@ -14,6 +14,7 @@ interface Product {
   imageUrl: string;
   reason?: string;
   source?: 'arthur' | 'shop';
+  productId?: string;
 }
 
 interface ProductDialogProps {
@@ -29,9 +30,9 @@ export const ProductDialog = ({ product, open, onOpenChange }: ProductDialogProp
 
   if (!product) return null;
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     setIsAdding(true);
-    addToCart({
+    await addToCart({
       id: product.id,
       name: product.name,
       brand: product.brand,
@@ -39,6 +40,7 @@ export const ProductDialog = ({ product, open, onOpenChange }: ProductDialogProp
       imageUrl: product.imageUrl,
       source: product.source || 'arthur',
       reason: product.reason,
+      productId: product.productId || product.id,
     });
     
     toast({
