@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Search, ArrowLeft, ShoppingCart, ShoppingBag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/contexts/CartContext";
 
 interface Product {
   id: string;
@@ -24,6 +25,7 @@ interface Product {
 const Shop = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const cart = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -165,7 +167,7 @@ const Shop = () => {
     localStorage.setItem('selectedProducts', JSON.stringify(Array.from(newSelection)));
   };
 
-  const addToCart = () => {
+  const addSelectedToCart = async () => {
     if (selectedProducts.size === 0) {
       toast({
         title: "Panier vide",
@@ -174,13 +176,38 @@ const Shop = () => {
       });
       return;
     }
-    
-    toast({
-      title: "Produits ajoutés",
-      description: `${selectedProducts.size} produit(s) ajouté(s) au panier`,
-    });
-    
-    navigate('/cart');
+
+    const toAdd = Array.from(selectedProducts)
+      .map(id => products.find(p => p.id === id))
+      .filter((p): p is Product => Boolean(p));
+
+    try {
+      await Promise.all(
+        toAdd.map(p =>
+          cart.addToCart({
+            id: p.id,
+            name: p.name,
+            brand: p.brand,
+            price: p.price,
+            imageUrl: p.image_url || '',
+            source: 'shop',
+            productId: p.id,
+          })
+        )
+      );
+
+      toast({
+        title: "Produits ajoutés",
+        description: `${toAdd.length} produit(s) ajouté(s) au panier`,
+      });
+
+      setSelectedProducts(new Set());
+      localStorage.removeItem('selectedProducts');
+      navigate('/cart');
+    } catch (e) {
+      console.error('Error adding selected products to cart', e);
+      toast({ title: 'Erreur', description: 'Impossible d\'ajouter au panier', variant: 'destructive' });
+    }
   };
 
   const categories = Array.from(new Set(products.map((p) => p.category)));
@@ -268,7 +295,7 @@ const Shop = () => {
               >
                 Désélectionner tout
               </Button>
-              <Button size="sm" onClick={addToCart}>
+              <Button size="sm" onClick={addSelectedToCart}>
                 Ajouter au panier
               </Button>
             </div>

@@ -215,7 +215,7 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
                           imageUrl: product.image_url || '/placeholder.svg',
                           reason: recommendation?.reason,
                           source: 'arthur',
-                          productId: product.id
+                          productId: product.id && !product.id.startsWith('temp-') ? product.id : undefined
                         });
                         setDialogOpen(true);
                       }}

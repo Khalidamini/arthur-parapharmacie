@@ -99,19 +99,22 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         );
       } else {
         // Insert new item
+        const isUuid = /^([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i.test(product.productId || '');
+        const payload = {
+          user_id: user.id,
+          product_id: isUuid ? product.productId : null,
+          product_name: product.name,
+          brand: product.brand,
+          price: product.price,
+          image_url: product.imageUrl,
+          quantity: 1,
+          source: product.source,
+          reason: product.reason,
+        } as const;
+
         const { data, error } = await supabase
           .from('cart_items')
-          .insert({
-            user_id: user.id,
-            product_id: product.productId,
-            product_name: product.name,
-            brand: product.brand,
-            price: product.price,
-            image_url: product.imageUrl,
-            quantity: 1,
-            source: product.source,
-            reason: product.reason,
-          })
+          .insert(payload)
           .select()
           .single();
 
