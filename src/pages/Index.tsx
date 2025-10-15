@@ -76,7 +76,7 @@ const Index = () => {
             Bonjour, je suis{' '}
             <span className="bg-gradient-primary bg-clip-text text-transparent">Arthur</span>
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">Votre assistant virtuel en parapharmacie. Je vous conseils et vous aide à trouver les produits qui correspondent à vos besoins de santé et de bien-être.</p>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">Votre assistant virtuel en parapharmacie. Je vous conseils et vous aide à trouver les produits qui correspondent à vos besoins.</p>
 
           {/* Pharmacie référente */}
           {currentPharmacy && <div className="bg-card/50 backdrop-blur-sm border border-border rounded-xl p-4 mb-8 max-w-md mx-auto">
