@@ -198,8 +198,9 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
                               alt={product.name}
                               className="h-full w-full object-cover"
                               onError={(e) => {
-                                e.currentTarget.src = '';
-                                e.currentTarget.style.display = 'none';
+                                // Fallback image si l'URL échoue (ex: HTTP non sécurisé ou 404)
+                                (e.currentTarget as HTMLImageElement).onerror = null;
+                                e.currentTarget.src = '/placeholder.svg';
                               }}
                             />
                           ) : (
