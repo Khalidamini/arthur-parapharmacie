@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, MapPin, Phone, Mail, Navigation } from "lucide-react";
+import { ArrowLeft, Navigation, Phone, Mail, Download, QrCode as QrCodeIcon, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import QRCode from 'qrcode';
 
 interface Pharmacy {
   id: string;
@@ -12,10 +13,11 @@ interface Pharmacy {
   address: string;
   city: string;
   postal_code: string;
-  phone: string;
-  email: string;
+  phone?: string;
+  email?: string;
   latitude: number;
   longitude: number;
+  qr_code: string;
   distance?: number;
 }
 
@@ -23,6 +25,8 @@ const Pharmacies = () => {
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [qrCodes, setQrCodes] = useState<{ [key: string]: string }>({});
+  const [expandedQR, setExpandedQR] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -89,6 +93,21 @@ const Pharmacies = () => {
         }
 
         setPharmacies(pharmaciesWithDistance as Pharmacy[]);
+        
+        // Generate QR codes for all pharmacies
+        const codes: { [key: string]: string } = {};
+        for (const pharmacy of pharmaciesWithDistance) {
+          try {
+            const qrDataUrl = await QRCode.toDataURL(pharmacy.qr_code, {
+              width: 300,
+              margin: 2,
+            });
+            codes[pharmacy.id] = qrDataUrl;
+          } catch (err) {
+            console.error('Error generating QR code:', err);
+          }
+        }
+        setQrCodes(codes);
       }
     } catch (error) {
       console.error('Error loading pharmacies:', error);
@@ -105,6 +124,18 @@ const Pharmacies = () => {
   const openInMaps = (pharmacy: Pharmacy) => {
     const url = `https://www.google.com/maps/dir/?api=1&destination=${pharmacy.latitude},${pharmacy.longitude}`;
     window.open(url, '_blank');
+  };
+
+  const downloadQRCode = (pharmacy: Pharmacy) => {
+    const qrDataUrl = qrCodes[pharmacy.id];
+    if (!qrDataUrl) return;
+
+    const link = document.createElement('a');
+    link.href = qrDataUrl;
+    link.download = `qr-${pharmacy.name.replace(/\s+/g, '-').toLowerCase()}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -142,14 +173,6 @@ const Pharmacies = () => {
                         </p>
                       )}
                     </div>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      onClick={() => openInMaps(pharmacy)}
-                      className="flex-shrink-0"
-                    >
-                      <Navigation className="h-4 w-4" />
-                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -161,25 +184,59 @@ const Pharmacies = () => {
                     </div>
                   </div>
                   {pharmacy.phone && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <a 
-                        href={`tel:${pharmacy.phone}`}
-                        className="text-muted-foreground hover:text-primary"
-                      >
-                        {pharmacy.phone}
-                      </a>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Phone className="h-4 w-4" />
+                      <span>{pharmacy.phone}</span>
                     </div>
                   )}
                   {pharmacy.email && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <a 
-                        href={`mailto:${pharmacy.email}`}
-                        className="text-muted-foreground hover:text-primary"
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Mail className="h-4 w-4" />
+                      <span>{pharmacy.email}</span>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setExpandedQR(expandedQR === pharmacy.id ? null : pharmacy.id)}
+                      className="flex-1"
+                    >
+                      <QrCodeIcon className="h-4 w-4 mr-2" />
+                      {expandedQR === pharmacy.id ? 'Masquer QR' : 'Voir QR Code'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => openInMaps(pharmacy)}
+                      className="flex-1 bg-gradient-primary"
+                    >
+                      <Navigation className="h-4 w-4 mr-2" />
+                      Itinéraire
+                    </Button>
+                  </div>
+
+                  {expandedQR === pharmacy.id && qrCodes[pharmacy.id] && (
+                    <div className="mt-4 space-y-3 pt-4 border-t border-border">
+                      <div className="flex justify-center bg-white p-4 rounded-lg">
+                        <img 
+                          src={qrCodes[pharmacy.id]} 
+                          alt={`QR Code pour ${pharmacy.name}`}
+                          className="w-48 h-48"
+                        />
+                      </div>
+                      <div className="text-center text-xs text-muted-foreground font-mono">
+                        Code: {pharmacy.qr_code}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => downloadQRCode(pharmacy)}
+                        className="w-full"
                       >
-                        {pharmacy.email}
-                      </a>
+                        <Download className="h-4 w-4 mr-2" />
+                        Télécharger le QR Code
+                      </Button>
                     </div>
                   )}
                 </CardContent>

@@ -8,7 +8,6 @@ import Chat from "./pages/Chat";
 import Recommendations from "./pages/Recommendations";
 import ScanQR from "./pages/ScanQR";
 import Pharmacies from "./pages/Pharmacies";
-import PharmacyQRCodes from "./pages/PharmacyQRCodes";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -26,7 +25,6 @@ const App = () => (
           <Route path="/recommendations" element={<Recommendations />} />
           <Route path="/scan-qr" element={<ScanQR />} />
           <Route path="/pharmacies" element={<Pharmacies />} />
-          <Route path="/pharmacy-qr-codes" element={<PharmacyQRCodes />} />
           <Route path="/auth" element={<Auth />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
