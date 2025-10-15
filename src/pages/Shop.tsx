@@ -230,7 +230,13 @@ const Shop = () => {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Retour
             </Button>
-            <Button variant="outline" onClick={() => navigate('/cart')}>
+            <Button variant="outline" onClick={() => {
+              if (selectedProducts.size > 0) {
+                addSelectedToCart();
+              } else {
+                navigate('/cart');
+              }
+            }}>
               <ShoppingBag className="mr-2 h-4 w-4" />
               Panier ({selectedProducts.size})
             </Button>
