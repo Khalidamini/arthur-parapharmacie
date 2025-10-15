@@ -160,8 +160,15 @@ Important :
       console.error('OpenAI API error:', response.status, errorText);
       
       if (response.status === 429) {
+        const errorData = await response.json().catch(() => ({}));
+        const isQuotaError = errorData?.error?.code === 'insufficient_quota';
+        
         return new Response(
-          JSON.stringify({ error: 'Trop de requêtes OpenAI, veuillez réessayer dans quelques instants.' }),
+          JSON.stringify({ 
+            error: isQuotaError 
+              ? 'Quota OpenAI dépassé. Ajoutez des crédits sur platform.openai.com/account/billing'
+              : 'Trop de requêtes OpenAI, veuillez réessayer dans quelques instants.'
+          }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }

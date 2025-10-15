@@ -178,6 +178,15 @@ const Chat = () => {
           });
           return;
         }
+        if (error.message?.includes('429') || error.message?.includes('Quota')) {
+          toast({
+            title: "Quota OpenAI dépassé",
+            description: "Ajoutez des crédits sur platform.openai.com/account/billing",
+            variant: "destructive",
+            duration: 10000,
+          });
+          return;
+        }
         throw error;
       }
 
