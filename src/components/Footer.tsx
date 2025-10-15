@@ -1,8 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingBag, Package, User, MapPin } from 'lucide-react';
+import { ShoppingBag, ShoppingCart, User, MapPin } from 'lucide-react';
+import { useCart } from '@/contexts/CartContext';
 
 const Footer = () => {
   const location = useLocation();
+  const { totalItems } = useCart();
   
   const links = [
     { 
@@ -12,10 +14,11 @@ const Footer = () => {
       isActive: location.pathname === '/shop'
     },
     { 
-      to: '/recommendations?tab=products', 
-      icon: Package, 
-      label: 'Produits recommandés',
-      isActive: location.pathname === '/recommendations' && location.search.includes('tab=products')
+      to: '/cart', 
+      icon: ShoppingCart, 
+      label: 'Mon panier',
+      badge: totalItems,
+      isActive: location.pathname === '/cart'
     },
     { 
       to: '/recommendations?tab=account', 
@@ -41,13 +44,18 @@ const Footer = () => {
               <Link
                 key={link.to}
                 to={link.to}
-                className={`flex flex-col items-center justify-center py-2 sm:py-3 transition-colors ${
+                className={`flex flex-col items-center justify-center py-2 sm:py-3 transition-colors relative ${
                   link.isActive
                     ? 'text-primary bg-primary/5'
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                 }`}
               >
                 <Icon className={`h-5 w-5 sm:h-5 sm:w-5 mb-0.5 sm:mb-1 ${link.isActive ? 'stroke-[2.5]' : ''}`} />
+                {link.badge !== undefined && link.badge > 0 && (
+                  <span className="absolute top-1 right-1/4 bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                    {link.badge}
+                  </span>
+                )}
                 <span className="text-[10px] sm:text-xs font-medium leading-tight text-center px-0.5 max-w-full line-clamp-2">
                   {link.label}
                 </span>

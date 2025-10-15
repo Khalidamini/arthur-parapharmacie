@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { User, Bot, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { ProductDialog } from "./ProductDialog";
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
@@ -43,6 +44,16 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [generatedImages, setGeneratedImages] = useState<Record<string, string>>({});
+  const [selectedProduct, setSelectedProduct] = useState<{
+    id: string;
+    name: string;
+    brand: string;
+    price: number;
+    description: string;
+    imageUrl: string;
+    reason?: string;
+  } | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   // Essayer de parser le contenu comme JSON
   let parsedContent: ParsedQuestion | ParsedProducts | null = null;
@@ -211,7 +222,22 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
                   const displayPrice = recommendation?.average_price || (isInDatabase && product.price > 0 ? `${product.price.toFixed(2)}€` : null);
                   
                   return (
-                    <Card key={product.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                    <Card 
+                      key={product.id} 
+                      className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => {
+                        setSelectedProduct({
+                          id: product.id,
+                          name: product.name,
+                          brand: product.brand,
+                          price: product.price,
+                          description: product.description,
+                          imageUrl: generatedImages[product.id] || displayImage || '/placeholder.svg',
+                          reason: recommendation?.reason
+                        });
+                        setDialogOpen(true);
+                      }}
+                    >
                       <CardContent className="p-3 flex gap-3">
                         <div className="relative h-20 w-20 flex-shrink-0 rounded-lg overflow-hidden bg-muted">
                           {generatedImages[product.id] ? (
@@ -259,6 +285,12 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
           </AvatarFallback>
         </Avatar>
       )}
+      
+      <ProductDialog 
+        product={selectedProduct}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </div>
   );
 };
