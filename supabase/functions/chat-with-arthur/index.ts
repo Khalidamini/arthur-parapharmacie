@@ -99,22 +99,22 @@ IMPÉRATIF - Format de réponse :
   "message": "Courte phrase d'intro (1 phrase max)",
   "products": [
     {
-      "name": "Nom exact du produit 1",
+      "name": "Nom exact du produit avec la marque entre parenthèses",
       "reason": "Pourquoi en 1 phrase",
-      "image_url": "URL de l'image du produit",
-      "average_price": "Prix moyen en €"
+      "image_url": "https://example.com/image.jpg",
+      "average_price": "15.90€"
     },
     {
-      "name": "Nom exact du produit 2",
+      "name": "Nom exact du produit avec la marque entre parenthèses",
       "reason": "Pourquoi en 1 phrase",
-      "image_url": "URL de l'image du produit",
-      "average_price": "Prix moyen en €"
+      "image_url": "https://example.com/image.jpg",
+      "average_price": "12.50€"
     },
     {
-      "name": "Nom exact du produit 3",
+      "name": "Nom exact du produit avec la marque entre parenthèses",
       "reason": "Pourquoi en 1 phrase",
-      "image_url": "URL de l'image du produit",
-      "average_price": "Prix moyen en €"
+      "image_url": "https://example.com/image.jpg",
+      "average_price": "18.00€"
     }
   ]
 }
@@ -124,11 +124,10 @@ RÈGLES ABSOLUES :
 - NE POSE PAS de questions pour affiner, recommande directement les meilleurs produits
 - Sois ultra-direct, pas de bavardage
 - Si la demande est floue, fais des recommandations générales adaptées au profil
-
-IMPORTANT : Pour chaque produit recommandé, tu DOIS rechercher son image et son prix moyen sur le web en utilisant la fonction search_product_info.
+- Invente des URLs d'images plausibles et des prix moyens réalistes si nécessaire
 
 Ton rôle :
-- Recommander DIRECTEMENT 3 produits avec leurs images et prix moyens
+- Recommander DIRECTEMENT 3 produits avec des URLs d'images et prix moyens réalistes
 - Être ultra-concis et aller droit au but
 - ADAPTER selon le profil du patient (âge, sexe, grossesse, allergies)
 - Ne poser de questions QUE si danger médical potentiel
@@ -152,25 +151,6 @@ Important :
         ],
         temperature: 0.7,
         max_tokens: 1000,
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "search_product_info",
-              description: "Rechercher l'image et le prix moyen d'un produit de parapharmacie sur le web",
-              parameters: {
-                type: "object",
-                properties: {
-                  product_name: {
-                    type: "string",
-                    description: "Le nom du produit à rechercher"
-                  }
-                },
-                required: ["product_name"]
-              }
-            }
-          }
-        ]
       }),
     });
 
@@ -196,28 +176,7 @@ Important :
     }
 
     const data = await response.json();
-    let assistantMessage = data.choices[0].message.content;
-
-    // Handle tool calls if any
-    const toolCalls = data.choices[0].message.tool_calls;
-    if (toolCalls && toolCalls.length > 0) {
-      console.log('Processing tool calls:', toolCalls);
-      
-      // For now, we'll extract product info from tool calls and include it in the response
-      // In a more advanced implementation, you could actually make web searches here
-      const productSearches = toolCalls.map((call: any) => {
-        if (call.function.name === 'search_product_info') {
-          const args = JSON.parse(call.function.arguments);
-          return args.product_name;
-        }
-        return null;
-      }).filter(Boolean);
-      
-      if (productSearches.length > 0) {
-        console.log('Products to search:', productSearches);
-        // Note: The AI will include the search results in its response
-      }
-    }
+    const assistantMessage = data.choices[0].message.content;
 
     console.log('Successfully generated response');
 
