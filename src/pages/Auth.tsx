@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +22,7 @@ const Auth = () => {
   const [activeTab, setActiveTab] = useState('signin');
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     const checkUser = async () => {
@@ -32,6 +33,37 @@ const Auth = () => {
     };
     checkUser();
   }, [navigate]);
+
+  // Si l'utilisateur arrive via un lien QR externe (ex: /auth?code=PH-XXXX)
+  // pré-enregistre la pharmacie référente pour l'appliquer après inscription/connexion
+  useEffect(() => {
+    const code = searchParams.get('code') || searchParams.get('qr') || searchParams.get('pharmacy') || searchParams.get('ref');
+    if (!code) return;
+
+    (async () => {
+      const { data, error } = await (supabase as any)
+        .from('pharmacies')
+        .select('id,name')
+        .eq('qr_code', code)
+        .maybeSingle();
+
+      if (error) {
+        console.error('QR param pharmacy lookup error:', error);
+        toast({ title: 'QR invalide', description: "Aucune pharmacie trouvée pour ce code", variant: 'destructive' });
+        return;
+      }
+
+      if (data) {
+        localStorage.setItem('pending_pharmacy_affiliation', JSON.stringify({
+          pharmacy_id: data.id,
+          affiliation_type: 'permanent',
+        }));
+        toast({ title: 'Pharmacie détectée', description: `${data.name} sera définie comme référente après inscription` });
+      } else {
+        toast({ title: 'QR invalide', description: "Aucune pharmacie trouvée pour ce code", variant: 'destructive' });
+      }
+    })();
+  }, [searchParams, toast]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
