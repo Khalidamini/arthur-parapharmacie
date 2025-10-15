@@ -212,7 +212,7 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
                           brand: product.brand,
                           price: product.price,
                           description: product.description,
-                          imageUrl: product.image_url || '/placeholder.svg',
+                          imageUrl: displayImage || '/placeholder.svg',
                           reason: recommendation?.reason,
                           source: 'arthur',
                           productId: product.id && !product.id.startsWith('temp-') ? product.id : undefined
@@ -223,10 +223,12 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
                       <CardContent className="p-3 flex gap-3">
                         <div className="relative h-20 w-20 flex-shrink-0 rounded-lg overflow-hidden bg-muted">
                           <img
-                            src={product.image_url || '/placeholder.svg'}
+                            src={displayImage || '/placeholder.svg'}
                             alt={product.name}
                             className="h-full w-full object-cover"
                             loading="lazy"
+                            decoding="async"
+                            referrerPolicy="no-referrer"
                             onError={(e) => {
                               (e.currentTarget as HTMLImageElement).onerror = null;
                               e.currentTarget.src = '/placeholder.svg';
