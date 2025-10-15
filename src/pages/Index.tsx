@@ -3,46 +3,43 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Tag, QrCode, LogOut, MapPin, Heart, Shield, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-
 const Index = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [currentPharmacy, setCurrentPharmacy] = useState<string | null>(null);
-
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
       setUser(user);
-      
       if (user) {
         // Charger la pharmacie référente
-        const { data } = await (supabase as any)
-          .from('user_pharmacy_affiliation')
-          .select('pharmacy_id, pharmacies(name)')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        
+        const {
+          data
+        } = await (supabase as any).from('user_pharmacy_affiliation').select('pharmacy_id, pharmacies(name)').eq('user_id', user.id).maybeSingle();
         if (data) {
           setCurrentPharmacy(data.pharmacies?.name || null);
         }
       }
     };
     checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: {
+        subscription
+      }
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
-
     return () => subscription.unsubscribe();
   }, []);
-
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate('/auth');
   };
-
-  return (
-    <div className="min-h-screen bg-gradient-subtle">
+  return <div className="min-h-screen bg-gradient-subtle">
       {/* Header */}
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -53,8 +50,7 @@ const Index = () => {
             <span className="font-bold text-xl bg-gradient-primary bg-clip-text text-transparent">Arthur</span>
           </div>
           <nav className="flex items-center gap-3">
-            {user ? (
-              <>
+            {user ? <>
                 <Button variant="ghost" onClick={() => navigate('/recommendations')}>
                   Mes recommandations
                 </Button>
@@ -62,12 +58,9 @@ const Index = () => {
                   <LogOut className="mr-2 h-4 w-4" />
                   Déconnexion
                 </Button>
-              </>
-            ) : (
-              <Button onClick={() => navigate('/auth')} className="bg-gradient-primary hover:opacity-90 transition-opacity">
+              </> : <Button onClick={() => navigate('/auth')} className="bg-gradient-primary hover:opacity-90 transition-opacity">
                 Se connecter
-              </Button>
-            )}
+              </Button>}
           </nav>
         </div>
       </header>
@@ -83,61 +76,42 @@ const Index = () => {
             Bonjour, je suis{' '}
             <span className="bg-gradient-primary bg-clip-text text-transparent">Arthur</span>
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
-            Votre assistant virtuel en parapharmacie. Je vous aide à trouver les produits qui correspondent à vos besoins de santé et de bien-être.
-          </p>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">Votre assistant virtuel en parapharmacie. Je vous conseils et vous aide à trouver les produits qui correspondent à vos besoins de santé et de bien-être.</p>
 
           {/* Pharmacie référente */}
-          {currentPharmacy && (
-            <div className="bg-card/50 backdrop-blur-sm border border-border rounded-xl p-4 mb-8 max-w-md mx-auto">
+          {currentPharmacy && <div className="bg-card/50 backdrop-blur-sm border border-border rounded-xl p-4 mb-8 max-w-md mx-auto">
               <div className="flex items-center gap-2 text-sm justify-center">
                 <MapPin className="h-4 w-4 text-primary" />
                 <p className="text-muted-foreground">
                   Pharmacie référente : <span className="font-semibold text-foreground">{currentPharmacy}</span>
                 </p>
               </div>
-            </div>
-          )}
+            </div>}
 
           {/* Actions principales */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto mb-12">
-            <Button
-              onClick={() => navigate('/chat')}
-              className="w-full h-24 bg-gradient-primary border-2 border-primary hover:opacity-90 transition-all group"
-            >
+            <Button onClick={() => navigate('/chat')} className="w-full h-24 bg-gradient-primary border-2 border-primary hover:opacity-90 transition-all group">
               <div className="flex flex-col items-center gap-2">
                 <MessageSquare className="h-6 w-6 text-primary-foreground group-hover:scale-110 transition-transform" />
                 <span className="font-medium text-primary-foreground">Chat</span>
               </div>
             </Button>
             
-            <Button
-              onClick={() => navigate('/scan-qr')}
-              variant="outline"
-              className="w-full h-24 border-2 hover:border-primary/50 transition-all group"
-            >
+            <Button onClick={() => navigate('/scan-qr')} variant="outline" className="w-full h-24 border-2 hover:border-primary/50 transition-all group">
               <div className="flex flex-col items-center gap-2">
                 <QrCode className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
                 <span className="font-medium">Scanner QR</span>
               </div>
             </Button>
             
-            <Button
-              onClick={() => navigate('/recommendations')}
-              variant="outline"
-              className="w-full h-24 border-2 hover:border-primary/50 transition-all group"
-            >
+            <Button onClick={() => navigate('/recommendations')} variant="outline" className="w-full h-24 border-2 hover:border-primary/50 transition-all group">
               <div className="flex flex-col items-center gap-2">
                 <Tag className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
                 <span className="font-medium">Recommandations</span>
               </div>
             </Button>
             
-            <Button
-              onClick={() => navigate('/pharmacies')}
-              variant="outline"
-              className="w-full h-24 border-2 hover:border-primary/50 transition-all group"
-            >
+            <Button onClick={() => navigate('/pharmacies')} variant="outline" className="w-full h-24 border-2 hover:border-primary/50 transition-all group">
               <div className="flex flex-col items-center gap-2">
                 <MapPin className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
                 <span className="font-medium">Pharmacies</span>
@@ -188,8 +162,6 @@ const Index = () => {
           <p>© 2024 Arthur - Assistant parapharmacie pour les pharmacies françaises</p>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
