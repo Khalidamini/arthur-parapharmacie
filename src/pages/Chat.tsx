@@ -253,7 +253,7 @@ const Chat = () => {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto pt-24">
+      <div className="flex-1 overflow-y-auto pt-36">
         <div className="max-w-4xl mx-auto px-4 py-6">
           {/* Promotions Slider - maintenant fixe en haut */}
           <PromotionSlider 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, Tag } from "lucide-react";
@@ -30,6 +30,17 @@ const PromotionSlider = ({ promotions, onSelectPromotion }: PromotionSliderProps
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedPromotion, setSelectedPromotion] = useState<Promotion | null>(null);
 
+  // Auto-play: défiler toutes les 2 secondes
+  useEffect(() => {
+    if (promotions.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % promotions.length);
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [promotions.length]);
+
   const nextSlide = () => {
     setCurrentIndex((prev) => (prev + 1) % promotions.length);
   };
@@ -57,36 +68,37 @@ const PromotionSlider = ({ promotions, onSelectPromotion }: PromotionSliderProps
 
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border shadow-sm">
-        <div className="container max-w-2xl mx-auto px-4 py-3">
+      <div className="fixed top-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border shadow-md">
+        <div className="container max-w-4xl mx-auto px-4 py-4">
           <Card 
-            className="cursor-pointer hover:shadow-lg transition-all duration-300 overflow-hidden border-2 border-primary/10 hover:border-primary/30"
+            className="cursor-pointer hover:shadow-xl transition-all duration-300 overflow-hidden border-2 border-primary/20 hover:border-primary/40"
             onClick={() => handlePromotionClick(currentPromo)}
           >
-            <CardContent className="p-3">
-              <div className="flex items-center gap-3">
+            <CardContent className="p-0">
+              <div className="flex items-center gap-4">
                 {currentPromo.image_url && (
-                  <div className="relative h-16 w-16 flex-shrink-0 rounded-lg overflow-hidden bg-muted">
+                  <div className="relative h-32 w-32 flex-shrink-0 overflow-hidden bg-muted">
                     <img
                       src={currentPromo.image_url}
                       alt={currentPromo.title}
                       className="h-full w-full object-cover"
                     />
-                    <Badge className="absolute top-1 right-1 bg-gradient-primary text-primary-foreground border-0 shadow-sm text-xs px-1.5 py-0">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+                    <Badge className="absolute top-2 right-2 bg-gradient-primary text-primary-foreground border-0 shadow-lg text-sm px-2.5 py-1">
                       -{currentPromo.discount_percentage}%
                     </Badge>
                   </div>
                 )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Tag className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-                    <h3 className="font-semibold text-sm text-foreground truncate">{currentPromo.title}</h3>
+                <div className="flex-1 min-w-0 pr-4 py-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Tag className="h-5 w-5 text-primary flex-shrink-0" />
+                    <h3 className="font-bold text-lg text-foreground truncate">{currentPromo.title}</h3>
                   </div>
-                  <p className="text-xs text-muted-foreground line-clamp-1">{currentPromo.description}</p>
+                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{currentPromo.description}</p>
                   {currentPromo.original_price && (
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-muted-foreground line-through">{currentPromo.original_price.toFixed(2)}€</span>
-                      <span className="text-sm font-bold text-primary">
+                    <div className="flex items-center gap-3">
+                      <span className="text-base text-muted-foreground line-through">{currentPromo.original_price.toFixed(2)}€</span>
+                      <span className="text-2xl font-bold text-primary">
                         {(currentPromo.original_price * (1 - currentPromo.discount_percentage / 100)).toFixed(2)}€
                       </span>
                     </div>
@@ -101,37 +113,40 @@ const PromotionSlider = ({ promotions, onSelectPromotion }: PromotionSliderProps
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute left-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background shadow-md"
+                className="absolute left-4 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-background/90 backdrop-blur-sm hover:bg-background shadow-lg"
                 onClick={(e) => {
                   e.stopPropagation();
                   prevSlide();
                 }}
               >
-                <ChevronLeft className="h-3.5 w-3.5" />
+                <ChevronLeft className="h-5 w-5" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background shadow-md"
+                className="absolute right-4 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-background/90 backdrop-blur-sm hover:bg-background shadow-lg"
                 onClick={(e) => {
                   e.stopPropagation();
                   nextSlide();
                 }}
               >
-                <ChevronRight className="h-3.5 w-3.5" />
+                <ChevronRight className="h-5 w-5" />
               </Button>
             </>
           )}
 
           {promotions.length > 1 && (
-            <div className="flex justify-center gap-1.5 mt-2">
+            <div className="flex justify-center gap-2 mt-3">
               {promotions.map((_, index) => (
                 <button
                   key={index}
-                  className={`h-1 rounded-full transition-all duration-300 ${
-                    index === currentIndex ? 'w-4 bg-primary' : 'w-1 bg-muted'
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    index === currentIndex ? 'w-8 bg-primary' : 'w-1.5 bg-muted'
                   }`}
-                  onClick={() => setCurrentIndex(index)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentIndex(index);
+                  }}
                 />
               ))}
             </div>
