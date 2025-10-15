@@ -116,11 +116,12 @@ const Pharmacies = () => {
 
         setPharmacies(pharmaciesWithDistance as Pharmacy[]);
         
-        // Generate QR codes for all pharmacies
+        // Generate QR codes that open the auth page directly
         const codes: { [key: string]: string } = {};
         for (const pharmacy of pharmaciesWithDistance) {
           try {
-            const qrDataUrl = await QRCode.toDataURL(pharmacy.qr_code, {
+            const targetUrl = `${window.location.origin}/auth?code=${encodeURIComponent(pharmacy.qr_code)}`;
+            const qrDataUrl = await QRCode.toDataURL(targetUrl, {
               width: 300,
               margin: 2,
             });
