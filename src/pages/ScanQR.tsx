@@ -38,12 +38,7 @@ const ScanQR = () => {
 
   useEffect(() => {
     if (qrCode) {
-      findPharmacy(qrCode).then(() => {
-        // Auto-affiliation en temporaire quand on vient d'un QR externe
-        if (pharmacy) {
-          handleAffiliation('temporary');
-        }
-      });
+      findPharmacy(qrCode);
     }
   }, [qrCode]);
 
@@ -54,6 +49,14 @@ const ScanQR = () => {
       }
     };
   }, []);
+
+  // Après détection d'une pharmacie depuis un lien QR (paramètre code),
+  // déclenche l'affiliation automatique pour les nouveaux utilisateurs
+  useEffect(() => {
+    if (!qrCode || !pharmacy) return;
+
+    handleAffiliation('temporary');
+  }, [qrCode, pharmacy]);
 
   const findPharmacy = async (code: string) => {
     setLoading(true);
