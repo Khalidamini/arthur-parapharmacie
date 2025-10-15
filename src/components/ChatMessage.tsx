@@ -54,17 +54,30 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
   }
 
   // Charger les produits si on a une réponse de type products
-  const loadProducts = async (productNames: string[]) => {
+  const loadProducts = async (productRecommendations: Array<{ name: string; reason: string }>) => {
     setLoadingProducts(true);
     try {
+      const productNames = productRecommendations.map(p => p.name);
+      
       const { data } = await (supabase as any)
         .from('products')
         .select('id, name, brand, price, image_url, description')
         .in('name', productNames);
       
-      if (data) {
-        setProducts(data);
-      }
+      // Créer un produit pour chaque recommandation, même si non trouvé en DB
+      const productsWithReasons = productRecommendations.map(rec => {
+        const dbProduct = data?.find((p: Product) => p.name === rec.name);
+        return dbProduct || {
+          id: `temp-${rec.name}`,
+          name: rec.name,
+          brand: 'À vérifier en pharmacie',
+          price: 0,
+          image_url: '',
+          description: rec.reason
+        };
+      });
+      
+      setProducts(productsWithReasons);
     } catch (error) {
       console.error('Error loading products:', error);
     } finally {
@@ -75,9 +88,8 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
   // Charger les produits au premier rendu si c'est une réponse products
   useEffect(() => {
     if (parsedContent?.type === 'products' && !isUser) {
-      const productNames = parsedContent.products.map(p => p.name);
-      if (productNames.length > 0) {
-        loadProducts(productNames);
+      if (parsedContent.products.length > 0) {
+        loadProducts(parsedContent.products);
       }
     }
   }, [content]);
@@ -167,6 +179,8 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
               <div className="grid gap-2">
                 {products.map((product) => {
                   const productReason = parsedContent.products.find(p => p.name === product.name)?.reason;
+                  const isInDatabase = !product.id.startsWith('temp-');
+                  
                   return (
                     <Card key={product.id} className="overflow-hidden hover:shadow-md transition-shadow">
                       <CardContent className="p-3 flex gap-3">
@@ -186,9 +200,18 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
                         <div className="flex-1 min-w-0">
                           <h4 className="font-semibold text-sm truncate">{product.name}</h4>
                           <p className="text-xs text-muted-foreground">{product.brand}</p>
-                          <p className="text-lg font-bold text-primary mt-1">{product.price.toFixed(2)}€</p>
+                          {isInDatabase && product.price > 0 && (
+                            <p className="text-lg font-bold text-primary mt-1">{product.price.toFixed(2)}€</p>
+                          )}
                           {productReason && (
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{productReason}</p>
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                              💡 {productReason}
+                            </p>
+                          )}
+                          {!isInDatabase && (
+                            <p className="text-xs text-amber-600 mt-1 font-medium">
+                              ⚠️ Demandez conseil à votre pharmacien
+                            </p>
                           )}
                         </div>
                       </CardContent>
