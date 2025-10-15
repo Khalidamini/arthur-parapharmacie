@@ -77,8 +77,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
       // Check if item already exists
       const existingItem = items.find(item => 
-        item.productId === product.productId || 
-        (item.name === product.name && item.source === product.source)
+        (product.productId && item.productId === product.productId) ||
+        (!product.productId && item.source === product.source && item.name === product.name && item.reason === product.reason)
       );
 
       if (existingItem) {
