@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Navigation, Phone, Mail, Download, QrCode as QrCodeIcon, MapPin } from "lucide-react";
+import { ArrowLeft, Navigation, Phone, Mail, Download, QrCode as QrCodeIcon, MapPin, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import QRCode from 'qrcode';
@@ -27,13 +27,31 @@ const Pharmacies = () => {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [qrCodes, setQrCodes] = useState<{ [key: string]: string }>({});
   const [expandedQR, setExpandedQR] = useState<string | null>(null);
+  const [currentPharmacyId, setCurrentPharmacyId] = useState<string | null>(null);
+  const [settingPharmacy, setSettingPharmacy] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     loadPharmacies();
     getUserLocation();
+    loadCurrentPharmacy();
   }, []);
+
+  const loadCurrentPharmacy = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await (supabase as any)
+        .from('user_pharmacy_affiliation')
+        .select('pharmacy_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (data) {
+        setCurrentPharmacyId(data.pharmacy_id);
+      }
+    }
+  };
 
   const getUserLocation = () => {
     if (navigator.geolocation) {
@@ -138,6 +156,69 @@ const Pharmacies = () => {
     document.body.removeChild(link);
   };
 
+  const setAsReferencePharmacy = async (pharmacy: Pharmacy) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({
+        title: "Non connecté",
+        description: "Vous devez être connecté pour définir une pharmacie référente",
+        variant: "destructive",
+      });
+      navigate('/auth');
+      return;
+    }
+
+    setSettingPharmacy(pharmacy.id);
+    try {
+      // Vérifier si l'utilisateur a déjà une affiliation
+      const { data: existingAffiliation } = await (supabase as any)
+        .from('user_pharmacy_affiliation')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existingAffiliation) {
+        // Mettre à jour l'affiliation existante
+        const { error } = await (supabase as any)
+          .from('user_pharmacy_affiliation')
+          .update({
+            pharmacy_id: pharmacy.id,
+            affiliation_type: 'permanent',
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      } else {
+        // Créer une nouvelle affiliation
+        const { error } = await (supabase as any)
+          .from('user_pharmacy_affiliation')
+          .insert({
+            user_id: user.id,
+            pharmacy_id: pharmacy.id,
+            affiliation_type: 'permanent'
+          });
+
+        if (error) throw error;
+      }
+
+      setCurrentPharmacyId(pharmacy.id);
+      toast({
+        title: "Pharmacie référente définie",
+        description: `${pharmacy.name} est maintenant votre pharmacie référente`,
+      });
+    } catch (error) {
+      console.error('Error setting reference pharmacy:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de définir la pharmacie référente",
+        variant: "destructive",
+      });
+    } finally {
+      setSettingPharmacy(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <div className="bg-card border-b border-border shadow-sm">
@@ -196,24 +277,45 @@ const Pharmacies = () => {
                     </div>
                   )}
 
-                  <div className="flex gap-2 mt-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setExpandedQR(expandedQR === pharmacy.id ? null : pharmacy.id)}
-                      className="flex-1"
-                    >
-                      <QrCodeIcon className="h-4 w-4 mr-2" />
-                      {expandedQR === pharmacy.id ? 'Masquer QR' : 'Voir QR Code'}
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => openInMaps(pharmacy)}
-                      className="flex-1 bg-gradient-primary"
-                    >
-                      <Navigation className="h-4 w-4 mr-2" />
-                      Itinéraire
-                    </Button>
+                  {currentPharmacyId === pharmacy.id && (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-primary/10 rounded-lg border border-primary/20 mb-3">
+                      <Star className="h-4 w-4 text-primary fill-primary" />
+                      <span className="text-sm font-medium text-primary">Pharmacie référente</span>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    {currentPharmacyId !== pharmacy.id && (
+                      <Button
+                        size="sm"
+                        onClick={() => setAsReferencePharmacy(pharmacy)}
+                        disabled={settingPharmacy === pharmacy.id}
+                        className="w-full bg-gradient-primary"
+                      >
+                        <Star className="h-4 w-4 mr-2" />
+                        {settingPharmacy === pharmacy.id ? 'Définition...' : 'Définir comme pharmacie référente'}
+                      </Button>
+                    )}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setExpandedQR(expandedQR === pharmacy.id ? null : pharmacy.id)}
+                        className="flex-1"
+                      >
+                        <QrCodeIcon className="h-4 w-4 mr-2" />
+                        {expandedQR === pharmacy.id ? 'Masquer QR' : 'Voir QR Code'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openInMaps(pharmacy)}
+                        className="flex-1"
+                      >
+                        <Navigation className="h-4 w-4 mr-2" />
+                        Itinéraire
+                      </Button>
+                    </div>
                   </div>
 
                   {expandedQR === pharmacy.id && qrCodes[pharmacy.id] && (
