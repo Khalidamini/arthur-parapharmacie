@@ -280,6 +280,22 @@ const Auth = () => {
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
+                    <Label htmlFor="signin-username">Login</Label>
+                    <Input
+                      id="signin-username"
+                      type="text"
+                      placeholder="votrelogin"
+                      value={signinUsername}
+                      onChange={(e) => setSigninUsername(e.target.value.toLowerCase())}
+                      required
+                      className="border-2"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Votre nom d'utilisateur
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="access-code">Code d'accès</Label>
                     <Input
                       id="access-code"
@@ -308,6 +324,22 @@ const Auth = () => {
 
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-username">Login *</Label>
+                    <Input
+                      id="signup-username"
+                      type="text"
+                      placeholder="votrelogin"
+                      value={signupUsername}
+                      onChange={(e) => setSignupUsername(e.target.value.toLowerCase())}
+                      required
+                      className="border-2"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      3-20 caractères (lettres, chiffres, underscore)
+                    </p>
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="signup-code">Choisissez votre code à 8 chiffres *</Label>
                     <Input
