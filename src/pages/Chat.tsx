@@ -245,7 +245,7 @@ const Chat = () => {
           <Button
             variant="outline"
             onClick={() => navigate('/recommendations')}
-            className="hidden sm:flex"
+            className="flex items-center gap-2"
           >
             Mes recommandations
           </Button>
