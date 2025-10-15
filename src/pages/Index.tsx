@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Tag, QrCode, LogOut, MapPin, Heart, Shield, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import Footer from '@/components/Footer';
 const Index = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -65,7 +66,7 @@ const Index = () => {
     await supabase.auth.signOut();
     navigate('/auth');
   };
-  return <div className="min-h-screen bg-gradient-subtle">
+  return <div className="min-h-screen bg-gradient-subtle pb-20">{/* Ajout de padding-bottom pour le footer */}
       {/* Header */}
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -181,13 +182,8 @@ const Index = () => {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="border-t border-border bg-card/50 mt-20">
-        <div className="max-w-6xl mx-auto px-4 py-8 text-center text-muted-foreground">
-          <p>© 2024 Arthur - Assistant parapharmacie pour les pharmacies françaises</p>
-        </div>
-      </footer>
+      
+      <Footer />
     </div>;
 };
 export default Index;

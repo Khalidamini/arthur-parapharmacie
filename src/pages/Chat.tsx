@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import ChatMessage from '@/components/ChatMessage';
 import PromotionSlider from '@/components/PromotionSlider';
+import Footer from '@/components/Footer';
 
 interface Message {
   id: string;
@@ -355,7 +356,7 @@ const Chat = () => {
       </div>
 
       {/* Input */}
-      <div className="bg-card border-t border-border shadow-lg">
+      <div className="bg-card border-t border-border shadow-lg pb-16">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex gap-2">
             <Input
@@ -376,6 +377,8 @@ const Chat = () => {
           </div>
         </div>
       </div>
+      
+      <Footer />
     </div>
   );
 };

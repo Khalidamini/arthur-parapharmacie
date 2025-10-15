@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Calendar, Tag, Trash2, MessageSquare, Bot, User, MessageCircle, UserX, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import Footer from '@/components/Footer';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -49,9 +50,14 @@ interface ProductRecommendation {
 }
 
 const Recommendations = () => {
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'conversations';
+  
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [expandedConversationId, setExpandedConversationId] = useState<string | null>(null);
   const [productRecommendations, setProductRecommendations] = useState<ProductRecommendation[]>([]);
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteConversationId, setDeleteConversationId] = useState<string | null>(null);
@@ -271,7 +277,7 @@ const Recommendations = () => {
   }, {} as Record<string, Recommendation[]>);
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="min-h-screen bg-gradient-subtle pb-20">{/* Ajout de padding-bottom pour le footer */}
       {/* Header */}
       <div className="bg-card border-b border-border shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -296,10 +302,20 @@ const Recommendations = () => {
             <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : (
-          <Tabs defaultValue="conversations" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="conversations">Conversations</TabsTrigger>
-              <TabsTrigger value="account">Paramètres</TabsTrigger>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-6">
+              <TabsTrigger value="conversations" className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                Conversations
+              </TabsTrigger>
+              <TabsTrigger value="products" className="flex items-center gap-2">
+                <Tag className="h-4 w-4" />
+                Produits
+              </TabsTrigger>
+              <TabsTrigger value="account" className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Paramètres
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="conversations">
@@ -459,9 +475,58 @@ const Recommendations = () => {
             })}
           </div>
         )}
-      </TabsContent>
+        </TabsContent>
 
-      <TabsContent value="account">
+        <TabsContent value="products">
+          {productRecommendations.length === 0 ? (
+            <div className="text-center py-12">
+              <Tag className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+              <h2 className="text-xl font-semibold text-foreground mb-2">
+                Aucun produit recommandé
+              </h2>
+              <p className="text-muted-foreground mb-6">
+                Les produits recommandés par Arthur apparaîtront ici
+              </p>
+              <Button onClick={() => navigate('/chat')} className="bg-gradient-primary">
+                Commencer une conversation
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {productRecommendations.map((rec, index) => (
+                <Card key={index}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Tag className="h-5 w-5 text-primary" />
+                      {rec.productName}
+                    </CardTitle>
+                    <CardDescription className="flex items-center gap-2 text-xs">
+                      <Calendar className="h-3 w-3" />
+                      {new Date(rec.conversationDate).toLocaleDateString('fr-FR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-3">{rec.context}</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => navigate(`/chat?conversationId=${rec.conversationId}`)}
+                      className="w-full"
+                    >
+                      Voir la conversation
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="account">
         <div className="space-y-6">
           {/* Informations du profil */}
           {profileData && (
@@ -614,6 +679,8 @@ const Recommendations = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      <Footer />
     </div>
   );
 };

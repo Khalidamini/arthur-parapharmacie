@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import QRCode from 'qrcode';
+import Footer from '@/components/Footer';
 
 interface Pharmacy {
   id: string;
@@ -405,6 +406,8 @@ const Pharmacies = () => {
           </div>
         )}
       </div>
+      
+      <Footer />
     </div>
   );
 };
