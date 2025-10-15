@@ -20,7 +20,12 @@ interface ParsedQuestion {
 interface ParsedProducts {
   type: 'products';
   message: string;
-  products: Array<{ name: string; reason: string }>;
+  products: Array<{ 
+    name: string; 
+    reason: string;
+    image_url?: string;
+    average_price?: string;
+  }>;
 }
 
 interface Product {
@@ -177,19 +182,25 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
               </div>
             ) : (
               <div className="grid gap-2">
-                {products.map((product) => {
-                  const productReason = parsedContent.products.find(p => p.name === product.name)?.reason;
+                {products.map((product, idx) => {
+                  const recommendation = parsedContent.products[idx];
                   const isInDatabase = !product.id.startsWith('temp-');
+                  const displayImage = recommendation?.image_url || product.image_url;
+                  const displayPrice = recommendation?.average_price || (isInDatabase && product.price > 0 ? `${product.price.toFixed(2)}€` : null);
                   
                   return (
                     <Card key={product.id} className="overflow-hidden hover:shadow-md transition-shadow">
                       <CardContent className="p-3 flex gap-3">
                         <div className="relative h-20 w-20 flex-shrink-0 rounded-lg overflow-hidden bg-muted">
-                          {product.image_url ? (
+                          {displayImage ? (
                             <img
-                              src={product.image_url}
+                              src={displayImage}
                               alt={product.name}
                               className="h-full w-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = '';
+                                e.currentTarget.style.display = 'none';
+                              }}
                             />
                           ) : (
                             <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">
@@ -200,12 +211,12 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
                         <div className="flex-1 min-w-0">
                           <h4 className="font-semibold text-sm truncate">{product.name}</h4>
                           <p className="text-xs text-muted-foreground">{product.brand}</p>
-                          {isInDatabase && product.price > 0 && (
-                            <p className="text-lg font-bold text-primary mt-1">{product.price.toFixed(2)}€</p>
+                          {displayPrice && (
+                            <p className="text-lg font-bold text-primary mt-1">{displayPrice}</p>
                           )}
-                          {productReason && (
+                          {recommendation?.reason && (
                             <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                              💡 {productReason}
+                              💡 {recommendation.reason}
                             </p>
                           )}
                           {!isInDatabase && (

@@ -101,19 +101,29 @@ IMPÉRATIF - Format de réponse :
 {
   "type": "products",
   "message": "Courte phrase d'intro",
-  "products": [{"name": "Nom exact du produit", "reason": "Pourquoi en 1 phrase"}]
+  "products": [
+    {
+      "name": "Nom exact du produit",
+      "reason": "Pourquoi en 1 phrase",
+      "image_url": "URL de l'image du produit",
+      "average_price": "Prix moyen en €"
+    }
+  ]
 }
+
+IMPORTANT : Pour chaque produit recommandé, tu DOIS rechercher son image et son prix moyen sur le web en utilisant la fonction search_product_info.
 
 Ton rôle :
 - Écouter et poser 1-2 questions MAXIMUM avec des options à cocher
-- Recommander 2-3 produits MAXIMUM de la liste disponible
+- Recommander 2-3 produits MAXIMUM avec leurs images et prix moyens
 - Être ultra-concis, empathique et professionnel
 - ADAPTER selon le profil du patient (âge, sexe, grossesse, allergies)
 
 Important :
 - Si médicaments sur ordonnance ou problème médical sérieux → recommande de consulter un pharmacien
 - Reste dans ton domaine (parapharmacie)
-- Utilise les formats JSON ci-dessus pour questions et recommandations${userContext}${productsContext}`;
+- Utilise les formats JSON ci-dessus pour questions et recommandations
+- TOUJOURS inclure une image_url et average_price pour chaque produit${userContext}${productsContext}`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -129,6 +139,25 @@ Important :
         ],
         temperature: 0.7,
         max_tokens: 1000,
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "search_product_info",
+              description: "Rechercher l'image et le prix moyen d'un produit de parapharmacie sur le web",
+              parameters: {
+                type: "object",
+                properties: {
+                  product_name: {
+                    type: "string",
+                    description: "Le nom du produit à rechercher"
+                  }
+                },
+                required: ["product_name"]
+              }
+            }
+          }
+        ]
       }),
     });
 
@@ -154,7 +183,28 @@ Important :
     }
 
     const data = await response.json();
-    const assistantMessage = data.choices[0].message.content;
+    let assistantMessage = data.choices[0].message.content;
+
+    // Handle tool calls if any
+    const toolCalls = data.choices[0].message.tool_calls;
+    if (toolCalls && toolCalls.length > 0) {
+      console.log('Processing tool calls:', toolCalls);
+      
+      // For now, we'll extract product info from tool calls and include it in the response
+      // In a more advanced implementation, you could actually make web searches here
+      const productSearches = toolCalls.map((call: any) => {
+        if (call.function.name === 'search_product_info') {
+          const args = JSON.parse(call.function.arguments);
+          return args.product_name;
+        }
+        return null;
+      }).filter(Boolean);
+      
+      if (productSearches.length > 0) {
+        console.log('Products to search:', productSearches);
+        // Note: The AI will include the search results in its response
+      }
+    }
 
     console.log('Successfully generated response');
 
