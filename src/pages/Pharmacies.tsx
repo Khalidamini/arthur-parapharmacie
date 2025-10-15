@@ -120,7 +120,7 @@ const Pharmacies = () => {
         const codes: { [key: string]: string } = {};
         for (const pharmacy of pharmaciesWithDistance) {
           try {
-            const targetUrl = `${window.location.origin}/auth?code=${encodeURIComponent(pharmacy.qr_code)}`;
+            const targetUrl = `https://arthur-parapharmacie.lovable.app/auth?code=${encodeURIComponent(pharmacy.qr_code)}`;
             const qrDataUrl = await QRCode.toDataURL(targetUrl, {
               width: 300,
               margin: 2,
