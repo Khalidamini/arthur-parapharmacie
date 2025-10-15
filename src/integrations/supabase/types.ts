@@ -208,6 +208,7 @@ export type Database = {
           medical_history: string | null
           qr_code_number: string
           updated_at: string | null
+          username: string | null
         }
         Insert: {
           age?: number | null
@@ -220,6 +221,7 @@ export type Database = {
           medical_history?: string | null
           qr_code_number: string
           updated_at?: string | null
+          username?: string | null
         }
         Update: {
           age?: number | null
@@ -232,6 +234,7 @@ export type Database = {
           medical_history?: string | null
           qr_code_number?: string
           updated_at?: string | null
+          username?: string | null
         }
         Relationships: []
       }

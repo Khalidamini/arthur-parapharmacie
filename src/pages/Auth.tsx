@@ -20,6 +20,8 @@ const Auth = () => {
   const [medicalHistory, setMedicalHistory] = useState('');
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('signin');
+  const [signupUsername, setSignupUsername] = useState('');
+  const [signinUsername, setSigninUsername] = useState('');
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
@@ -67,12 +69,19 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanUsername = signupUsername.trim().toLowerCase();
+
+    // Validations
+    if (!cleanUsername) {
+      toast({ title: "Login manquant", description: "Veuillez choisir un login", variant: "destructive" });
+      return;
+    }
+    if (!/^[a-z0-9_]{3,20}$/.test(cleanUsername)) {
+      toast({ title: "Login invalide", description: "3-20 caractères, lettres/chiffres/underscore uniquement", variant: "destructive" });
+      return;
+    }
     if (accessCode.trim().length !== 8) {
-      toast({
-        title: "Code invalide",
-        description: "Le code doit contenir 8 chiffres",
-        variant: "destructive",
-      });
+      toast({ title: "Code invalide", description: "Le code doit contenir 8 chiffres", variant: "destructive" });
       return;
     }
 
@@ -87,7 +96,7 @@ const Auth = () => {
 
     setLoading(true);
     try {
-      const userEmail = `user-${accessCode.trim()}@app.local`;
+      const userEmail = `${cleanUsername}@app.local`;
 
       const { data: authData, error } = await supabase.auth.signUp({
         email: userEmail,
@@ -109,11 +118,14 @@ const Auth = () => {
             is_pregnant: gender === 'femme' ? isPregnant : false,
             allergies: allergies.trim() || null,
             medical_history: medicalHistory.trim() || null,
+            username: signupUsername.trim().toLowerCase(),
           })
           .eq('id', authData.user.id);
 
         if (profileError) {
           console.error('Error updating profile:', profileError);
+          toast({ title: 'Login déjà pris', description: 'Veuillez choisir un autre login', variant: 'destructive' });
+          throw profileError;
         }
       }
 
@@ -169,6 +181,16 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanUsername = signinUsername.trim().toLowerCase();
+
+    if (!cleanUsername) {
+      toast({ title: 'Login manquant', description: 'Veuillez entrer votre login', variant: 'destructive' });
+      return;
+    }
+    if (!/^[a-z0-9_]{3,20}$/.test(cleanUsername)) {
+      toast({ title: 'Login invalide', description: '3-20 caractères, lettres/chiffres/underscore uniquement', variant: 'destructive' });
+      return;
+    }
     if (accessCode.trim().length !== 8) {
       toast({
         title: "Code invalide",
@@ -180,7 +202,7 @@ const Auth = () => {
 
     setLoading(true);
     try {
-      const userEmail = `user-${accessCode.trim()}@app.local`;
+      const userEmail = `${cleanUsername}@app.local`;
 
       const { error } = await supabase.auth.signInWithPassword({
         email: userEmail,

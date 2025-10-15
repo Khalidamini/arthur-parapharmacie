@@ -37,10 +37,10 @@ const ScanQR = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (qrCode) {
-      findPharmacy(qrCode);
-    }
-  }, [qrCode]);
+    if (!qrCode) return;
+    // Si un code est fourni via l'URL (QR externe), on redirige vers l'inscription
+    navigate(`/auth?code=${encodeURIComponent(qrCode)}`);
+  }, [qrCode, navigate]);
 
   useEffect(() => {
     return () => {
