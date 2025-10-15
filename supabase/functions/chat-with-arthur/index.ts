@@ -167,7 +167,9 @@ Important :
       
       if (response.status === 402) {
         return new Response(
-          JSON.stringify({ error: 'Service temporairement indisponible. Veuillez contacter le support.' }),
+          JSON.stringify({ 
+            error: 'Crédits Lovable AI épuisés. Ajoutez des crédits dans Settings → Workspace → Usage pour continuer à utiliser le chat.' 
+          }),
           { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }

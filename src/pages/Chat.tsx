@@ -167,7 +167,19 @@ const Chat = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Gérer les erreurs spécifiques
+        if (error.message?.includes('402') || error.message?.includes('Crédits')) {
+          toast({
+            title: "Crédits épuisés",
+            description: "Ajoutez des crédits dans Settings → Workspace → Usage pour continuer.",
+            variant: "destructive",
+            duration: 10000,
+          });
+          return;
+        }
+        throw error;
+      }
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
