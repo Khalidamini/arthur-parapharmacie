@@ -242,6 +242,7 @@ export type Database = {
           discount_percentage: number | null
           id: string
           image_url: string | null
+          original_price: number | null
           pharmacy_id: string
           title: string
           valid_until: string | null
@@ -252,6 +253,7 @@ export type Database = {
           discount_percentage?: number | null
           id?: string
           image_url?: string | null
+          original_price?: number | null
           pharmacy_id: string
           title: string
           valid_until?: string | null
@@ -262,6 +264,7 @@ export type Database = {
           discount_percentage?: number | null
           id?: string
           image_url?: string | null
+          original_price?: number | null
           pharmacy_id?: string
           title?: string
           valid_until?: string | null
