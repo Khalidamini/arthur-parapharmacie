@@ -324,6 +324,13 @@ const Shop = () => {
                     src={product.image_url}
                     alt={product.name}
                     className="w-full h-48 object-cover rounded-md mb-4"
+                    loading="lazy"
+                    decoding="async"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = '/placeholder.svg';
+                    }}
                   />
                 )}
                 <CardTitle className="line-clamp-2">{product.name}</CardTitle>

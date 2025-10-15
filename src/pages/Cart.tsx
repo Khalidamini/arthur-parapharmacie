@@ -68,6 +68,13 @@ const Cart = () => {
                               src={item.imageUrl}
                               alt={item.name}
                               className="w-24 h-24 object-cover rounded-md"
+                              loading="lazy"
+                              decoding="async"
+                              referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = '/placeholder.svg';
+                              }}
                             />
                           )}
                           <div className="flex-1">
@@ -138,6 +145,13 @@ const Cart = () => {
                               src={item.imageUrl}
                               alt={item.name}
                               className="w-24 h-24 object-cover rounded-md"
+                              loading="lazy"
+                              decoding="async"
+                              referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = '/placeholder.svg';
+                              }}
                             />
                           )}
                           <div className="flex-1">
