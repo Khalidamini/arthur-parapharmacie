@@ -20,6 +20,8 @@ interface Promotion {
   description: string;
   discount_percentage: number;
   valid_until: string;
+  image_url?: string;
+  original_price?: number;
 }
 
 const Chat = () => {
