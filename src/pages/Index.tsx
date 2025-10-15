@@ -20,15 +20,16 @@ const Index = () => {
         // Vérifier s'il y a une affiliation en attente
         const pendingAffiliation = localStorage.getItem('pending_pharmacy_affiliation');
         if (pendingAffiliation) {
-          const { pharmacy_id, affiliation_type } = JSON.parse(pendingAffiliation);
+          const {
+            pharmacy_id,
+            affiliation_type
+          } = JSON.parse(pendingAffiliation);
           try {
-            await (supabase as any)
-              .from('user_pharmacy_affiliation')
-              .insert({
-                user_id: user.id,
-                pharmacy_id,
-                affiliation_type
-              });
+            await (supabase as any).from('user_pharmacy_affiliation').insert({
+              user_id: user.id,
+              pharmacy_id,
+              affiliation_type
+            });
             localStorage.removeItem('pending_pharmacy_affiliation');
           } catch (error) {
             console.error('Error creating pending affiliation:', error);
@@ -53,7 +54,9 @@ const Index = () => {
       setUser(session?.user ?? null);
       if (session?.user) {
         // Recharger la pharmacie après connexion
-        (supabase as any).from('user_pharmacy_affiliation').select('pharmacy_id, pharmacies(name)').eq('user_id', session.user.id).maybeSingle().then(({ data }: any) => {
+        (supabase as any).from('user_pharmacy_affiliation').select('pharmacy_id, pharmacies(name)').eq('user_id', session.user.id).maybeSingle().then(({
+          data
+        }: any) => {
           if (data) {
             setCurrentPharmacy(data.pharmacies?.name || null);
           }
@@ -127,7 +130,7 @@ const Index = () => {
             <Button onClick={() => navigate('/scan-qr')} variant="outline" className="w-full h-24 border-2 hover:border-primary/50 transition-all group">
               <div className="flex flex-col items-center gap-2">
                 <QrCode className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
-                <span className="font-medium">Scanner QR</span>
+                <span className="font-medium">Scanner QR pharmacie</span>
               </div>
             </Button>
             
@@ -141,7 +144,7 @@ const Index = () => {
             <Button onClick={() => navigate('/pharmacies')} variant="outline" className="w-full h-24 border-2 hover:border-primary/50 transition-all group">
               <div className="flex flex-col items-center gap-2">
                 <MapPin className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
-                <span className="font-medium">Pharmacies</span>
+                <span className="font-medium">Liste des pharmacies</span>
               </div>
             </Button>
           </div>
