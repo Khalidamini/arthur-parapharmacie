@@ -28,7 +28,8 @@ interface PromotionSliderProps {
 
 const PromotionSlider = ({ promotions, onSelectPromotion }: PromotionSliderProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedPromotion, setSelectedPromotion] = useState<Promotion | null>(null);
+  const [dialogIndex, setDialogIndex] = useState(0);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Auto-play: défiler toutes les 2 secondes
   useEffect(() => {
@@ -49,14 +50,24 @@ const PromotionSlider = ({ promotions, onSelectPromotion }: PromotionSliderProps
     setCurrentIndex((prev) => (prev - 1 + promotions.length) % promotions.length);
   };
 
-  const handlePromotionClick = (promo: Promotion) => {
-    setSelectedPromotion(promo);
+  const nextDialogSlide = () => {
+    setDialogIndex((prev) => (prev + 1) % promotions.length);
+  };
+
+  const prevDialogSlide = () => {
+    setDialogIndex((prev) => (prev - 1 + promotions.length) % promotions.length);
+  };
+
+  const handlePromotionClick = (index: number) => {
+    setDialogIndex(index);
+    setIsDialogOpen(true);
   };
 
   const handleSelectPromotion = () => {
+    const selectedPromotion = promotions[dialogIndex];
     if (selectedPromotion) {
       onSelectPromotion(selectedPromotion);
-      setSelectedPromotion(null);
+      setIsDialogOpen(false);
     }
   };
 
@@ -72,7 +83,7 @@ const PromotionSlider = ({ promotions, onSelectPromotion }: PromotionSliderProps
         <div className="container max-w-4xl mx-auto px-4 py-4">
           <Card 
             className="cursor-pointer hover:shadow-xl transition-all duration-300 overflow-hidden border-2 border-primary/20 hover:border-primary/40"
-            onClick={() => handlePromotionClick(currentPromo)}
+            onClick={() => handlePromotionClick(currentIndex)}
           >
             <CardContent className="p-0">
               <div className="flex items-center gap-4">
@@ -154,59 +165,102 @@ const PromotionSlider = ({ promotions, onSelectPromotion }: PromotionSliderProps
         </div>
       </div>
 
-      <Dialog open={!!selectedPromotion} onOpenChange={() => setSelectedPromotion(null)}>
-        <DialogContent className="sm:max-w-md">
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Tag className="h-5 w-5 text-primary" />
-              {selectedPromotion?.title}
+              {promotions[dialogIndex]?.title}
             </DialogTitle>
             <DialogDescription className="pt-2">
-              {selectedPromotion?.description}
+              {promotions[dialogIndex]?.description}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            {selectedPromotion?.image_url && (
-              <div className="relative h-48 w-full rounded-lg overflow-hidden bg-muted">
+          <div className="space-y-4 relative">
+            {promotions[dialogIndex]?.image_url && (
+              <div className="relative h-64 w-full rounded-lg overflow-hidden bg-muted">
                 <img
-                  src={selectedPromotion.image_url}
-                  alt={selectedPromotion.title}
+                  src={promotions[dialogIndex].image_url}
+                  alt={promotions[dialogIndex].title}
                   className="h-full w-full object-cover"
                 />
+                <Badge className="absolute top-3 right-3 bg-gradient-primary text-primary-foreground border-0 shadow-lg text-lg px-3 py-1">
+                  -{promotions[dialogIndex].discount_percentage}%
+                </Badge>
               </div>
             )}
-            <div className="flex items-center justify-between p-4 bg-accent rounded-lg">
-              <span className="text-sm font-medium text-accent-foreground">Réduction</span>
-              <Badge className="bg-gradient-primary text-primary-foreground border-0">
-                -{selectedPromotion?.discount_percentage}%
-              </Badge>
-            </div>
-            {selectedPromotion?.original_price && (
+            
+            {promotions[dialogIndex]?.original_price && (
               <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">Prix original</p>
-                  <p className="text-lg font-semibold line-through">{selectedPromotion.original_price.toFixed(2)}€</p>
+                  <p className="text-xl font-semibold line-through">{promotions[dialogIndex].original_price.toFixed(2)}€</p>
                 </div>
                 <div className="space-y-1 text-right">
                   <p className="text-xs text-muted-foreground">Prix promotionnel</p>
-                  <p className="text-2xl font-bold text-primary">
-                    {(selectedPromotion.original_price * (1 - selectedPromotion.discount_percentage / 100)).toFixed(2)}€
+                  <p className="text-3xl font-bold text-primary">
+                    {(promotions[dialogIndex].original_price * (1 - promotions[dialogIndex].discount_percentage / 100)).toFixed(2)}€
                   </p>
                 </div>
               </div>
             )}
-            {selectedPromotion?.valid_until && (
+            
+            {promotions[dialogIndex]?.valid_until && (
               <p className="text-xs text-muted-foreground text-center">
-                Valable jusqu'au {new Date(selectedPromotion.valid_until).toLocaleDateString('fr-FR')}
+                Valable jusqu'au {new Date(promotions[dialogIndex].valid_until).toLocaleDateString('fr-FR')}
               </p>
             )}
+            
             <Button 
               onClick={handleSelectPromotion}
               className="w-full bg-gradient-primary hover:opacity-90 transition-opacity"
             >
               Ajouter à mes recommandations
             </Button>
+
+            {/* Navigation du slider dans le dialog */}
+            {promotions.length > 1 && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute left-2 top-32 h-10 w-10 rounded-full bg-background/90 backdrop-blur-sm hover:bg-background shadow-lg"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    prevDialogSlide();
+                  }}
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-32 h-10 w-10 rounded-full bg-background/90 backdrop-blur-sm hover:bg-background shadow-lg"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    nextDialogSlide();
+                  }}
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
+              </>
+            )}
           </div>
+          
+          {/* Indicateurs de position */}
+          {promotions.length > 1 && (
+            <div className="flex justify-center gap-2 pb-2">
+              {promotions.map((_, index) => (
+                <button
+                  key={index}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    index === dialogIndex ? 'w-8 bg-primary' : 'w-2 bg-muted'
+                  }`}
+                  onClick={() => setDialogIndex(index)}
+                />
+              ))}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </>
