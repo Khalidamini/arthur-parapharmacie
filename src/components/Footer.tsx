@@ -34,21 +34,23 @@ const Footer = () => {
   return (
     <footer className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-lg">
       <div className="container max-w-4xl mx-auto">
-        <div className="grid grid-cols-4 gap-1">
+        <div className="grid grid-cols-4 gap-0.5">
           {links.map((link) => {
             const Icon = link.icon;
             return (
               <Link
                 key={link.to}
                 to={link.to}
-                className={`flex flex-col items-center justify-center py-3 transition-colors ${
+                className={`flex flex-col items-center justify-center py-2 sm:py-3 transition-colors ${
                   link.isActive
                     ? 'text-primary bg-primary/5'
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                 }`}
               >
-                <Icon className={`h-5 w-5 mb-1 ${link.isActive ? 'stroke-[2.5]' : ''}`} />
-                <span className="text-xs font-medium truncate px-1">{link.label}</span>
+                <Icon className={`h-5 w-5 sm:h-5 sm:w-5 mb-0.5 sm:mb-1 ${link.isActive ? 'stroke-[2.5]' : ''}`} />
+                <span className="text-[10px] sm:text-xs font-medium leading-tight text-center px-0.5 max-w-full line-clamp-2">
+                  {link.label}
+                </span>
               </Link>
             );
           })}
