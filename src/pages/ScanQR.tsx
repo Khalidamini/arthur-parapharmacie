@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Check, MapPin, Phone, Mail, Camera, X } from "lucide-react";
+import { ArrowLeft, Check, MapPin, Phone, Mail, Camera, X, Image as ImageIcon, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -34,6 +34,7 @@ const ScanQR = () => {
   const { toast } = useToast();
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerContainerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (qrCode) {
@@ -91,6 +92,17 @@ const ScanQR = () => {
   const startScanning = async () => {
     setScanning(true);
     try {
+      // In iframe, some browsers block camera prompts
+      if (window.top !== window.self) {
+        console.warn('Running inside an iframe; camera permissions may be limited.');
+      }
+      // Preflight permission to trigger prompt early
+      try {
+        await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: 'environment' } } });
+      } catch {
+        await navigator.mediaDevices.getUserMedia({ video: true });
+      }
+
       const scanner = new Html5Qrcode("qr-reader");
       scannerRef.current = scanner;
 
@@ -110,11 +122,41 @@ const ScanQR = () => {
     } catch (err) {
       console.error('Error starting scanner:', err);
       toast({
-        title: "Erreur",
-        description: "Impossible d'accéder à la caméra",
+        title: "Accès caméra refusé",
+        description: "Ouvrez dans un nouvel onglet, installez l'app (/install) ou importez une photo du QR code.",
         variant: "destructive",
       });
       setScanning(false);
+    }
+  };
+
+  const selectPhoto = () => fileInputRef.current?.click();
+
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const tempId = 'qr-temp-reader';
+      let tempEl = document.getElementById(tempId);
+      if (!tempEl) {
+        tempEl = document.createElement('div');
+        tempEl.id = tempId;
+        tempEl.style.display = 'none';
+        document.body.appendChild(tempEl);
+      }
+      const html5QrCode = new Html5Qrcode(tempId);
+      const result = await html5QrCode.scanFile(file, true);
+      setManualCode(result);
+      await findPharmacy(result);
+    } catch (err) {
+      console.error('Image scan failed:', err);
+      toast({
+        title: "Échec du scan de l'image",
+        description: "Assurez-vous que le QR code est net et bien cadré.",
+        variant: "destructive",
+      });
+    } finally {
+      if (e.target) e.target.value = '';
     }
   };
 
@@ -124,6 +166,8 @@ const ScanQR = () => {
         scannerRef.current = null;
         setScanning(false);
       }).catch(console.error);
+    } else {
+      setScanning(false);
     }
   };
 
@@ -219,14 +263,27 @@ const ScanQR = () => {
             <CardContent className="space-y-4">
               {!scanning ? (
                 <>
-                  <Button
-                    type="button"
-                    onClick={startScanning}
-                    className="w-full bg-gradient-primary"
-                  >
-                    <Camera className="h-5 w-5 mr-2" />
-                    Scanner avec la caméra
-                  </Button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      onClick={startScanning}
+                      className="w-full bg-gradient-primary"
+                    >
+                      <Camera className="h-5 w-5 mr-2" />
+                      Scanner avec la caméra
+                    </Button>
+
+                    <Button
+                      type="button"
+                      onClick={selectPhoto}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <ImageIcon className="h-5 w-5 mr-2" />
+                      Importer une photo
+                    </Button>
+                  </div>
+                  <input ref={fileInputRef} type="file" accept="image/*" onChange={onFileChange} className="hidden" />
                   
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
