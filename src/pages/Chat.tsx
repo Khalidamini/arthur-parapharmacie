@@ -276,7 +276,61 @@ const Chat = () => {
 
           {/* Chat Messages */}
           {messages.map((message) => (
-            <ChatMessage key={message.id} role={message.role} content={message.content} />
+            <ChatMessage 
+              key={message.id} 
+              role={message.role} 
+              content={message.content}
+              onOptionSelect={(selected) => {
+                setInput(selected);
+                // Envoyer automatiquement le message après avoir sélectionné une option
+                setTimeout(async () => {
+                  if (!selected.trim() || loading) return;
+
+                  const userMessage: Message = {
+                    id: Date.now().toString(),
+                    role: 'user',
+                    content: selected.trim(),
+                  };
+
+                  setMessages(prev => [...prev, userMessage]);
+                  setInput('');
+                  setLoading(true);
+
+                  await saveMessage('user', userMessage.content);
+
+                  try {
+                    const { data, error } = await supabase.functions.invoke('chat-with-arthur', {
+                      body: {
+                        messages: [{ role: 'user', content: userMessage.content }],
+                        conversationId,
+                        userId,
+                      },
+                    });
+
+                    if (error) throw error;
+
+                    const assistantMessage: Message = {
+                      id: (Date.now() + 1).toString(),
+                      role: 'assistant',
+                      content: data.message,
+                    };
+
+                    setMessages(prev => [...prev, assistantMessage]);
+                    await saveMessage('assistant', assistantMessage.content);
+
+                  } catch (error: any) {
+                    console.error('Error sending message:', error);
+                    toast({
+                      title: "Erreur",
+                      description: error.message || "Impossible de contacter Arthur",
+                      variant: "destructive",
+                    });
+                  } finally {
+                    setLoading(false);
+                  }
+                }, 100);
+              }}
+            />
           ))}
 
           {loading && (
