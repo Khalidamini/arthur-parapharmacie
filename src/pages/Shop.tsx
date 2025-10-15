@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, ArrowLeft, ShoppingCart } from "lucide-react";
+import { Search, ArrowLeft, ShoppingCart, ShoppingBag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Product {
@@ -32,6 +32,14 @@ const Shop = () => {
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [pharmacyName, setPharmacyName] = useState("");
+
+  // Load selected products from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('selectedProducts');
+    if (saved) {
+      setSelectedProducts(new Set(JSON.parse(saved)));
+    }
+  }, []);
 
   useEffect(() => {
     fetchPharmacyProducts();
@@ -153,6 +161,26 @@ const Shop = () => {
       newSelection.add(productId);
     }
     setSelectedProducts(newSelection);
+    // Save to localStorage
+    localStorage.setItem('selectedProducts', JSON.stringify(Array.from(newSelection)));
+  };
+
+  const addToCart = () => {
+    if (selectedProducts.size === 0) {
+      toast({
+        title: "Panier vide",
+        description: "Veuillez sélectionner au moins un produit",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    toast({
+      title: "Produits ajoutés",
+      description: `${selectedProducts.size} produit(s) ajouté(s) au panier`,
+    });
+    
+    navigate('/cart');
   };
 
   const categories = Array.from(new Set(products.map((p) => p.category)));
@@ -170,10 +198,16 @@ const Shop = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <Button variant="ghost" onClick={() => navigate("/")} className="mb-4">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Retour
-          </Button>
+          <div className="flex items-center justify-between mb-4">
+            <Button variant="ghost" onClick={() => navigate("/")}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Retour
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/cart')}>
+              <ShoppingBag className="mr-2 h-4 w-4" />
+              Panier ({selectedProducts.size})
+            </Button>
+          </div>
           <h1 className="text-3xl font-bold">Boutique</h1>
           <p className="text-muted-foreground">{pharmacyName}</p>
         </div>
@@ -223,13 +257,21 @@ const Shop = () => {
             <p className="font-medium">
               {selectedProducts.size} produit(s) sélectionné(s)
             </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSelectedProducts(new Set())}
-            >
-              Désélectionner tout
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedProducts(new Set());
+                  localStorage.removeItem('selectedProducts');
+                }}
+              >
+                Désélectionner tout
+              </Button>
+              <Button size="sm" onClick={addToCart}>
+                Ajouter au panier
+              </Button>
+            </div>
           </div>
         )}
 
