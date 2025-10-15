@@ -13,6 +13,7 @@ interface Product {
   description: string;
   imageUrl: string;
   reason?: string;
+  source?: 'arthur' | 'shop';
 }
 
 interface ProductDialogProps {
@@ -36,6 +37,8 @@ export const ProductDialog = ({ product, open, onOpenChange }: ProductDialogProp
       brand: product.brand,
       price: product.price,
       imageUrl: product.imageUrl,
+      source: product.source || 'arthur',
+      reason: product.reason,
     });
     
     toast({
