@@ -198,7 +198,12 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
                 {products.map((product, idx) => {
                   const recommendation = parsedContent.products[idx];
                   const isInDatabase = !product.id.startsWith('temp-');
-                  const displayImage = recommendation?.image_url || product.image_url;
+                  const rawImage = recommendation?.image_url || product.image_url;
+                  const isExternal = rawImage?.startsWith('http');
+                  const proxyBase = import.meta.env.VITE_SUPABASE_URL;
+                  const displayImage = isExternal && proxyBase
+                    ? `${proxyBase}/functions/v1/image-proxy?url=${encodeURIComponent(rawImage)}`
+                    : (rawImage || '/placeholder.svg');
                   const displayPrice = recommendation?.average_price || (isInDatabase && product.price > 0 ? `${product.price.toFixed(2)}€` : null);
                   
                   return (
@@ -212,7 +217,7 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
                           brand: product.brand,
                           price: product.price,
                           description: product.description,
-                          imageUrl: displayImage || '/placeholder.svg',
+                          imageUrl: displayImage,
                           reason: recommendation?.reason,
                           source: 'arthur',
                           productId: product.id && !product.id.startsWith('temp-') ? product.id : undefined
@@ -223,7 +228,7 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
                       <CardContent className="p-3 flex gap-3">
                         <div className="relative h-20 w-20 flex-shrink-0 rounded-lg overflow-hidden bg-muted">
                           <img
-                            src={displayImage || '/placeholder.svg'}
+                            src={displayImage}
                             alt={product.name}
                             className="h-full w-full object-cover"
                             loading="lazy"
