@@ -9,6 +9,7 @@ import Recommendations from "./pages/Recommendations";
 import ScanQR from "./pages/ScanQR";
 import Pharmacies from "./pages/Pharmacies";
 import Auth from "./pages/Auth";
+import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/scan-qr" element={<ScanQR />} />
           <Route path="/pharmacies" element={<Pharmacies />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/install" element={<Install />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
