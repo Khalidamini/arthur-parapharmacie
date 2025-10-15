@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Check, MapPin, Phone, Mail } from "lucide-react";
+import { ArrowLeft, Check, MapPin, Phone, Mail, Camera, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Html5Qrcode } from "html5-qrcode";
 
 interface Pharmacy {
   id: string;
@@ -28,14 +29,25 @@ const ScanQR = () => {
   const [affiliationType, setAffiliationType] = useState<'temporary' | 'permanent'>('temporary');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const scannerContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (qrCode) {
       findPharmacy(qrCode);
     }
   }, [qrCode]);
+
+  useEffect(() => {
+    return () => {
+      if (scannerRef.current) {
+        scannerRef.current.stop().catch(console.error);
+      }
+    };
+  }, []);
 
   const findPharmacy = async (code: string) => {
     setLoading(true);
@@ -73,6 +85,45 @@ const ScanQR = () => {
     e.preventDefault();
     if (manualCode) {
       await findPharmacy(manualCode);
+    }
+  };
+
+  const startScanning = async () => {
+    setScanning(true);
+    try {
+      const scanner = new Html5Qrcode("qr-reader");
+      scannerRef.current = scanner;
+
+      await scanner.start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 }
+        },
+        (decodedText) => {
+          stopScanning();
+          setManualCode(decodedText);
+          findPharmacy(decodedText);
+        },
+        undefined
+      );
+    } catch (err) {
+      console.error('Error starting scanner:', err);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'accéder à la caméra",
+        variant: "destructive",
+      });
+      setScanning(false);
+    }
+  };
+
+  const stopScanning = () => {
+    if (scannerRef.current) {
+      scannerRef.current.stop().then(() => {
+        scannerRef.current = null;
+        setScanning(false);
+      }).catch(console.error);
     }
   };
 
@@ -160,31 +211,67 @@ const ScanQR = () => {
         {!pharmacy ? (
           <Card>
             <CardHeader>
-              <CardTitle>Entrez le code QR de votre pharmacie</CardTitle>
+              <CardTitle>Scannez ou entrez le code QR de votre pharmacie</CardTitle>
               <CardDescription>
-                Scannez le QR code fourni par votre pharmacie ou entrez-le manuellement
+                Utilisez la caméra pour scanner le QR code ou entrez-le manuellement
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="qr-code">Code QR</Label>
-                  <Input
-                    id="qr-code"
-                    value={manualCode}
-                    onChange={(e) => setManualCode(e.target.value)}
-                    placeholder="Entrez le code QR"
-                    disabled={loading}
-                  />
+            <CardContent className="space-y-4">
+              {!scanning ? (
+                <>
+                  <Button
+                    type="button"
+                    onClick={startScanning}
+                    className="w-full bg-gradient-primary"
+                  >
+                    <Camera className="h-5 w-5 mr-2" />
+                    Scanner avec la caméra
+                  </Button>
+                  
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t border-border" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-card px-2 text-muted-foreground">Ou</span>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="qr-code">Entrer le code manuellement</Label>
+                      <Input
+                        id="qr-code"
+                        value={manualCode}
+                        onChange={(e) => setManualCode(e.target.value)}
+                        placeholder="Entrez le code QR"
+                        disabled={loading}
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      disabled={!manualCode || loading}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      {loading ? 'Recherche...' : 'Valider'}
+                    </Button>
+                  </form>
+                </>
+              ) : (
+                <div className="space-y-4">
+                  <div id="qr-reader" ref={scannerContainerRef} className="w-full rounded-lg overflow-hidden" />
+                  <Button
+                    type="button"
+                    onClick={stopScanning}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <X className="h-5 w-5 mr-2" />
+                    Annuler le scan
+                  </Button>
                 </div>
-                <Button
-                  type="submit"
-                  disabled={!manualCode || loading}
-                  className="w-full bg-gradient-primary"
-                >
-                  {loading ? 'Recherche...' : 'Valider'}
-                </Button>
-              </form>
+              )}
             </CardContent>
           </Card>
         ) : success ? (
