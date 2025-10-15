@@ -1,15 +1,15 @@
 import { Link, useLocation } from 'react-router-dom';
-import { MessageSquare, Package, User, MapPin } from 'lucide-react';
+import { ShoppingBag, Package, User, MapPin } from 'lucide-react';
 
 const Footer = () => {
   const location = useLocation();
   
   const links = [
     { 
-      to: '/recommendations', 
-      icon: MessageSquare, 
-      label: 'Historique chats',
-      isActive: location.pathname === '/recommendations'
+      to: '/shop', 
+      icon: ShoppingBag, 
+      label: 'Boutique',
+      isActive: location.pathname === '/shop'
     },
     { 
       to: '/recommendations?tab=products', 
