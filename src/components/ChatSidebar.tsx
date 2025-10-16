@@ -33,25 +33,17 @@ export function ChatSidebar() {
 
   useEffect(() => {
     loadConversations();
-    
-    // Rafraîchir la liste toutes les 2 secondes pour détecter les nouvelles conversations
-    const interval = setInterval(loadConversations, 2000);
-    return () => clearInterval(interval);
   }, []);
 
   const loadConversations = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Charger uniquement les conversations qui ont au moins un message
+    // Charger toutes les conversations de l'utilisateur, triées par dernière activité
     const { data, error } = await supabase
       .from('conversations')
-      .select(`
-        *,
-        messages (count)
-      `)
+      .select('*')
       .eq('user_id', user.id)
-      .gt('messages.count', 0)
       .order('updated_at', { ascending: false });
 
     if (error) {

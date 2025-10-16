@@ -156,27 +156,36 @@ const Chat = () => {
     }
   };
 
-  const saveMessage = async (role: 'user' | 'assistant', content: string) => {
-    if (!conversationId) return;
+  const saveMessage = async (role: 'user' | 'assistant', content: string, convIdOverride?: string) => {
+    const convId = convIdOverride ?? conversationId;
+    if (!convId) return;
 
     const { error } = await supabase
       .from('messages')
       .insert({
-        conversation_id: conversationId,
+        conversation_id: convId,
         role,
         content,
       });
 
     if (error) {
       console.error('Error saving message:', error);
+      return;
     }
+
+    // Mettre à jour l'horodatage de la conversation
+    await supabase
+      .from('conversations')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', convId);
   };
 
   const handleSend = async () => {
     if (!input.trim() || loading || !userId) return;
 
     // Créer une conversation si elle n'existe pas encore
-    if (!conversationId) {
+    let convIdToUse = conversationId as string | null;
+    if (!convIdToUse) {
       const { data, error } = await supabase
         .from('conversations')
         .insert({ user_id: userId, title: 'Conversation avec Arthur' })
@@ -193,6 +202,7 @@ const Chat = () => {
         return;
       }
 
+      convIdToUse = data.id;
       setConversationId(data.id);
       // Mettre à jour l'URL avec le conversationId
       navigate(`/chat?conversationId=${data.id}`, { replace: true });
@@ -208,13 +218,13 @@ const Chat = () => {
     setInput('');
     setLoading(true);
 
-    await saveMessage('user', userMessage.content);
+    await saveMessage('user', userMessage.content, convIdToUse || undefined);
 
     try {
       const { data, error } = await supabase.functions.invoke('chat-with-arthur', {
         body: {
           messages: [{ role: 'user', content: userMessage.content }],
-          conversationId,
+          conversationId: convIdToUse,
           userId,
         },
       });
@@ -249,20 +259,20 @@ const Chat = () => {
       };
 
       setMessages(prev => [...prev, assistantMessage]);
-      await saveMessage('assistant', assistantMessage.content);
+      await saveMessage('assistant', assistantMessage.content, convIdToUse || undefined);
 
       // Generate conversation title after first exchange
-      if (messages.length === 0) {
+      if (messages.length === 0 && convIdToUse) {
         try {
           const { data: titleData } = await supabase.functions.invoke('generate-conversation-title', {
             body: { firstUserMessage: userMessage.content }
           });
           
-          if (titleData?.title && conversationId) {
+          if (titleData?.title) {
             await supabase
               .from('conversations')
               .update({ title: titleData.title })
-              .eq('id', conversationId);
+              .eq('id', convIdToUse);
           }
         } catch (error) {
           console.error('Error generating title:', error);
