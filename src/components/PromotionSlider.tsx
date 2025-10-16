@@ -32,30 +32,44 @@ const PromotionSlider = ({ promotions, onSelectPromotion }: PromotionSliderProps
   const [currentIndex, setCurrentIndex] = useState(0);
   const [dialogIndex, setDialogIndex] = useState(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const { addToCart } = useCart();
 
-  // Auto-play: défilement toutes les 2 secondes (pause dans le popup)
+  // Auto-play: défilement toutes les 2 secondes (pause au survol et dans le popup)
   const intervalRef = useRef<number | null>(null);
   useEffect(() => {
-    if (promotions.length <= 1 || isDialogOpen) return;
+    if (
+      promotions.length <= 1 ||
+      isDialogOpen ||
+      isHovered ||
+      (typeof document !== 'undefined' && document.visibilityState !== 'visible')
+    ) {
+      return;
+    }
 
-    console.debug('[PromotionSlider] autoplay start');
     intervalRef.current = window.setInterval(() => {
-      setCurrentIndex((prev) => {
-        const next = (prev + 1) % promotions.length;
-        console.debug('[PromotionSlider] autoplay tick', { prev, next });
-        return next;
-      });
+      setCurrentIndex((prev) => (prev + 1) % promotions.length);
     }, 2000);
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
-        console.debug('[PromotionSlider] autoplay cleared');
       }
     };
-  }, [promotions.length, isDialogOpen]);
+  }, [promotions.length, isDialogOpen, isHovered]);
+
+  // Reprendre/arrêter au changement de visibilité onglet
+  useEffect(() => {
+    const onVisibility = () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
 
   const nextSlide = () => {
     setCurrentIndex((prev) => (prev + 1) % promotions.length);
@@ -107,7 +121,7 @@ const PromotionSlider = ({ promotions, onSelectPromotion }: PromotionSliderProps
 
   return (
     <>
-      <div className="w-full">
+      <div className="w-full" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
         <div className="container max-w-4xl mx-auto relative">
           <Card 
             className="cursor-pointer hover:shadow-xl transition-all duration-300 overflow-hidden border-2 border-primary/20 hover:border-primary/40"

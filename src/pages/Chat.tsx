@@ -321,7 +321,7 @@ const Chat = () => {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto pb-4">
+          <div className="flex-1 overflow-y-auto pb-40">
             <div className="max-w-4xl mx-auto px-4 py-6">
 
               {/* Welcome Message */}
