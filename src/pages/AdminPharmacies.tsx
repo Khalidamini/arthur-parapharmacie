@@ -27,6 +27,7 @@ export default function AdminPharmacies() {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
     checkAdminStatus();
@@ -35,17 +36,20 @@ export default function AdminPharmacies() {
   const checkAdminStatus = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      console.log("[Admin] Current user:", user?.id, user?.email);
+      setCurrentUserEmail(user?.email ?? null);
       
       if (!user) {
-        navigate("/auth");
+        setLoading(false);
         return;
       }
 
-      const { data: adminRole } = await supabase
+      const { data: adminRole, error: adminErr } = await supabase
         .from("admin_roles")
         .select("*")
         .eq("user_id", user.id)
         .maybeSingle();
+      console.log("[Admin] admin_roles query:", { adminRole, adminErr });
 
       if (!adminRole) {
         toast({
@@ -53,15 +57,16 @@ export default function AdminPharmacies() {
           description: "Vous n'avez pas les permissions d'administrateur",
           variant: "destructive",
         });
-        navigate("/");
+        setIsAdmin(false);
+        setLoading(false);
         return;
       }
 
       setIsAdmin(true);
       fetchRegistrations();
     } catch (error) {
-      console.error("Error checking admin status:", error);
-      navigate("/");
+      console.error("[Admin] Error checking admin status:", error);
+      setLoading(false);
     }
   };
 
@@ -165,7 +170,27 @@ export default function AdminPharmacies() {
   }
 
   if (!isAdmin) {
-    return null;
+    return (
+      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
+        <Card className="max-w-lg w-full">
+          <CardHeader>
+            <CardTitle>Accès refusé</CardTitle>
+            <CardDescription>Vous n'avez pas les permissions d'administrateur.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {currentUserEmail ? (
+              <p className="text-sm text-muted-foreground">Connecté en tant que {currentUserEmail}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground">Vous n'êtes pas connecté.</p>
+            )}
+            <div className="flex gap-2">
+              <Button onClick={() => navigate('/auth')}>Se connecter</Button>
+              <Button variant="outline" onClick={() => navigate('/')}>Retour à l'accueil</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
