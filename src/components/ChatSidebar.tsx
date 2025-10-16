@@ -100,21 +100,23 @@ export function ChatSidebar() {
   const isActive = (convId: string) => currentConvId === convId;
 
   return (
-    <Sidebar className="w-64">
-      <SidebarHeader className="p-4 border-b">
+    <Sidebar className="w-64 bg-background border-r border-border">
+      <SidebarHeader className="p-4 border-b border-border bg-background">
         <Button
           onClick={createNewConversation}
           className="w-full justify-start gap-2"
           variant="outline"
         >
           <Plus className="h-4 w-4" />
-          <span>Nouvelle conversation</span>
+          <span className="text-foreground">Nouvelle conversation</span>
         </Button>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="bg-background">
         <SidebarGroup>
-          <SidebarGroupLabel>Historique</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-muted-foreground px-4 py-2">
+            Historique
+          </SidebarGroupLabel>
 
           <SidebarGroupContent>
             <SidebarMenu>
@@ -122,10 +124,10 @@ export function ChatSidebar() {
                 <SidebarMenuItem key={conv.id}>
                   <SidebarMenuButton
                     onClick={() => navigate(`/chat?conversationId=${conv.id}`)}
-                    className={`group relative ${
+                    className={`group relative text-foreground ${
                       isActive(conv.id)
-                        ? 'bg-muted text-primary font-medium'
-                        : 'hover:bg-muted/50'
+                        ? 'bg-accent text-accent-foreground font-medium'
+                        : 'hover:bg-accent/50 hover:text-accent-foreground'
                     }`}
                   >
                     <MessageSquare className="h-4 w-4 flex-shrink-0" />
@@ -135,10 +137,10 @@ export function ChatSidebar() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10"
                       onClick={(e) => deleteConversation(conv.id, e)}
                     >
-                      <Trash2 className="h-3 w-3" />
+                      <Trash2 className="h-3 w-3 text-destructive" />
                     </Button>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
