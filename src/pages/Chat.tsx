@@ -57,9 +57,8 @@ const Chat = () => {
       if (existingConvId) {
         setConversationId(existingConvId);
         loadConversationMessages(existingConvId);
-      } else {
-        createConversation(user.id);
       }
+      // Ne plus créer automatiquement de conversation
     };
     
     getUser();
@@ -167,7 +166,30 @@ const Chat = () => {
   };
 
   const handleSend = async () => {
-    if (!input.trim() || loading) return;
+    if (!input.trim() || loading || !userId) return;
+
+    // Créer une conversation si elle n'existe pas encore
+    if (!conversationId) {
+      const { data, error } = await supabase
+        .from('conversations')
+        .insert({ user_id: userId, title: 'Conversation avec Arthur' })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating conversation:', error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de créer la conversation",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setConversationId(data.id);
+      // Mettre à jour l'URL avec le conversationId
+      navigate(`/chat?conversationId=${data.id}`, { replace: true });
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
