@@ -116,17 +116,38 @@ const Chat = () => {
   };
 
   const loadPromotions = async () => {
-    const { data, error } = await supabase
-      .from('promotions')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    if (error) {
-      console.error('Error loading promotions:', error);
-      return;
+      // Récupérer la pharmacie référente de l'utilisateur
+      const { data: affiliation } = await supabase
+        .from('user_pharmacy_affiliation')
+        .select('pharmacy_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!affiliation) {
+        setPromotions([]);
+        return;
+      }
+
+      // Charger uniquement les promotions de la pharmacie référente
+      const { data, error } = await supabase
+        .from('promotions')
+        .select('*')
+        .eq('pharmacy_id', affiliation.pharmacy_id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading promotions:', error);
+        return;
+      }
+
+      setPromotions(data || []);
+    } catch (error) {
+      console.error('Error in loadPromotions:', error);
     }
-
-    setPromotions(data || []);
   };
 
   const saveMessage = async (role: 'user' | 'assistant', content: string) => {

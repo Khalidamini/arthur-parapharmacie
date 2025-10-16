@@ -4,10 +4,23 @@ import { Button } from "@/components/ui/button";
 import { MessageSquare, Tag, QrCode, LogOut, MapPin, Heart, Shield, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import Footer from '@/components/Footer';
+import PromotionSlider from '@/components/PromotionSlider';
+
+interface Promotion {
+  id: string;
+  title: string;
+  description: string;
+  discount_percentage: number;
+  valid_until: string;
+  image_url?: string;
+  original_price?: number;
+}
 const Index = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [currentPharmacy, setCurrentPharmacy] = useState<string | null>(null);
+  const [currentPharmacyId, setCurrentPharmacyId] = useState<string | null>(null);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
   useEffect(() => {
     const checkAuth = async () => {
       const {
@@ -42,6 +55,8 @@ const Index = () => {
         } = await (supabase as any).from('user_pharmacy_affiliation').select('pharmacy_id, pharmacies(name)').eq('user_id', user.id).maybeSingle();
         if (data) {
           setCurrentPharmacy(data.pharmacies?.name || null);
+          setCurrentPharmacyId(data.pharmacy_id);
+          loadPromotions(data.pharmacy_id);
         }
       }
     };
@@ -59,12 +74,38 @@ const Index = () => {
         }: any) => {
           if (data) {
             setCurrentPharmacy(data.pharmacies?.name || null);
+            setCurrentPharmacyId(data.pharmacy_id);
+            loadPromotions(data.pharmacy_id);
           }
         });
       }
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  const loadPromotions = async (pharmacyId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('promotions')
+        .select('*')
+        .eq('pharmacy_id', pharmacyId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading promotions:', error);
+        return;
+      }
+
+      setPromotions(data || []);
+    } catch (error) {
+      console.error('Error in loadPromotions:', error);
+    }
+  };
+
+  const handleSelectPromotion = (promotion: Promotion) => {
+    console.log('Promotion sélectionnée:', promotion);
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate('/auth');
@@ -81,8 +122,8 @@ const Index = () => {
           </div>
           <nav className="flex items-center gap-3">
             {user ? <>
-                <Button variant="ghost" onClick={() => navigate('/recommendations')}>
-                  Mes recommandations
+            <Button variant="ghost" onClick={() => navigate('/recommendations')}>
+                  Mon compte
                 </Button>
                 <Button variant="outline" onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
@@ -137,7 +178,7 @@ const Index = () => {
             <Button onClick={() => navigate('/recommendations')} variant="outline" className="w-full h-24 border-2 hover:border-primary/50 transition-all group">
               <div className="flex flex-col items-center gap-2">
                 <Tag className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
-                <span className="font-medium">Recommandations</span>
+                <span className="font-medium">Mon compte</span>
               </div>
             </Button>
             
@@ -185,6 +226,16 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* Slider de promotions juste au-dessus du footer */}
+      {currentPharmacyId && promotions.length > 0 && (
+        <div className="max-w-6xl mx-auto px-4 pb-6">
+          <PromotionSlider 
+            promotions={promotions}
+            onSelectPromotion={handleSelectPromotion}
+          />
+        </div>
+      )}
       
       <Footer />
     </div>;

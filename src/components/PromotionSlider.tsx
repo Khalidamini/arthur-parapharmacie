@@ -95,7 +95,7 @@ const PromotionSlider = ({ promotions, onSelectPromotion }: PromotionSliderProps
 
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border shadow-md">
+      <div className="w-full bg-background/95 backdrop-blur-sm border border-border shadow-md rounded-lg mb-6">
         <div className="container max-w-4xl mx-auto px-4 py-4">
           <Card 
             className="cursor-pointer hover:shadow-xl transition-all duration-300 overflow-hidden border-2 border-primary/20 hover:border-primary/40"
