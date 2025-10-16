@@ -1,8 +1,5 @@
-import React from 'npm:react@18.3.1'
 import { Webhook } from 'https://esm.sh/standardwebhooks@1.0.0'
-import { Resend } from 'npm:resend@4.0.0'
-import { renderAsync } from 'npm:@react-email/components@0.0.22'
-import { MagicLinkEmail } from './_templates/magic-link.tsx'
+import { Resend } from 'https://esm.sh/resend@4.0.0'
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string)
 const hookSecret = Deno.env.get('SEND_EMAIL_HOOK_SECRET') as string
@@ -37,15 +34,36 @@ Deno.serve(async (req) => {
       }
     }
 
-    const html = await renderAsync(
-      React.createElement(MagicLinkEmail, {
-        supabase_url: Deno.env.get('SUPABASE_URL') ?? '',
-        token,
-        token_hash,
-        redirect_to,
-        email_action_type,
-      })
-    )
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+    const confirmationLink = `${supabaseUrl}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${redirect_to}`
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
+            .container { max-width: 600px; margin: 0 auto; background-color: white; padding: 40px; border-radius: 8px; }
+            h1 { color: #333; font-size: 24px; margin-bottom: 20px; }
+            p { color: #666; line-height: 1.6; margin-bottom: 15px; }
+            .button { display: inline-block; background-color: #2754C5; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .code { background-color: #f4f4f4; padding: 15px; border-radius: 5px; font-family: monospace; color: #333; margin: 15px 0; }
+            .footer { color: #999; font-size: 12px; margin-top: 30px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>Confirmez votre email</h1>
+            <p>Merci de vous être inscrit ! Cliquez sur le bouton ci-dessous pour confirmer votre adresse email :</p>
+            <a href="${confirmationLink}" class="button">Confirmer mon email</a>
+            <p>Ou copiez et collez ce code de confirmation temporaire :</p>
+            <div class="code">${token}</div>
+            <p class="footer">Si vous n'avez pas demandé cette confirmation, vous pouvez ignorer cet email en toute sécurité.</p>
+          </div>
+        </body>
+      </html>
+    `
 
     const { error } = await resend.emails.send({
       from: 'Arthur <onboarding@resend.dev>',
