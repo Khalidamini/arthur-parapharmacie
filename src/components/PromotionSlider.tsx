@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, Tag } from "lucide-react";
+import { ChevronLeft, ChevronRight, Tag, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,6 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useCart } from "@/contexts/CartContext";
+import { toast } from "sonner";
 
 interface Promotion {
   id: string;
@@ -30,6 +32,7 @@ const PromotionSlider = ({ promotions, onSelectPromotion }: PromotionSliderProps
   const [currentIndex, setCurrentIndex] = useState(0);
   const [dialogIndex, setDialogIndex] = useState(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { addToCart } = useCart();
 
   // Auto-play: défiler toutes les 2 secondes
   useEffect(() => {
@@ -63,10 +66,23 @@ const PromotionSlider = ({ promotions, onSelectPromotion }: PromotionSliderProps
     setIsDialogOpen(true);
   };
 
-  const handleSelectPromotion = () => {
+  const handleAddToCart = () => {
     const selectedPromotion = promotions[dialogIndex];
     if (selectedPromotion) {
-      onSelectPromotion(selectedPromotion);
+      const discountedPrice = selectedPromotion.original_price 
+        ? selectedPromotion.original_price * (1 - selectedPromotion.discount_percentage / 100)
+        : 0;
+      
+      addToCart({
+        id: selectedPromotion.id,
+        name: selectedPromotion.title,
+        price: discountedPrice,
+        source: 'shop',
+        imageUrl: selectedPromotion.image_url || '',
+        brand: 'Promotion'
+      });
+      
+      toast.success("Promotion ajoutée au panier !");
       setIsDialogOpen(false);
     }
   };
@@ -212,10 +228,11 @@ const PromotionSlider = ({ promotions, onSelectPromotion }: PromotionSliderProps
             )}
             
             <Button 
-              onClick={handleSelectPromotion}
+              onClick={handleAddToCart}
               className="w-full bg-gradient-primary hover:opacity-90 transition-opacity"
             >
-              Ajouter à mes recommandations
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              Ajouter au panier
             </Button>
 
             {/* Navigation du slider dans le dialog */}
