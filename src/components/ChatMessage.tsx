@@ -64,11 +64,20 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
     // Chercher des blocs JSON dans le contenu
     const jsonMatch = content.match(/\{[\s\S]*"type"[\s\S]*\}/);
     if (jsonMatch) {
-      parsedContent = JSON.parse(jsonMatch[0]);
-      textContent = content.replace(jsonMatch[0], '').trim();
+      const parsed = JSON.parse(jsonMatch[0]);
+      // Vérifier que c'est bien un format valide
+      if (parsed && typeof parsed === 'object' && parsed.type) {
+        parsedContent = parsed;
+        textContent = content.replace(jsonMatch[0], '').trim();
+      } else {
+        // Si le format n'est pas valide, on garde tout en texte
+        textContent = content;
+      }
     }
   } catch (e) {
-    // Ce n'est pas du JSON, on affiche le texte normalement
+    // En cas d'erreur de parsing, on affiche le texte normalement
+    console.error('Error parsing message content:', e);
+    textContent = content;
   }
 
   // Charger les produits si on a une réponse de type products
@@ -152,7 +161,7 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
         )}
 
         {/* Questions avec options à cocher */}
-        {parsedContent?.type === 'question' && !isUser && (
+        {parsedContent?.type === 'question' && !isUser && parsedContent.question && Array.isArray(parsedContent.options) && (
           <Card className="bg-card/80 backdrop-blur-sm">
             <CardContent className="pt-4 space-y-3">
               <p className="text-sm font-medium">{parsedContent.question}</p>
@@ -166,7 +175,7 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
                     className="w-full justify-start gap-2"
                   >
                     {selectedOptions.has(option) && <Check className="h-4 w-4" />}
-                    {option}
+                    {typeof option === 'string' ? option : JSON.stringify(option)}
                   </Button>
                 ))}
               </div>
