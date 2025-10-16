@@ -254,6 +254,48 @@ export type Database = {
           },
         ]
       }
+      pharmacy_registrations: {
+        Row: {
+          address: string
+          city: string
+          created_at: string | null
+          id: string
+          owner_email: string
+          owner_name: string
+          pharmacy_name: string
+          phone: string | null
+          postal_code: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address: string
+          city: string
+          created_at?: string | null
+          id?: string
+          owner_email: string
+          owner_name: string
+          pharmacy_name: string
+          phone?: string | null
+          postal_code: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string
+          city?: string
+          created_at?: string | null
+          id?: string
+          owner_email?: string
+          owner_name?: string
+          pharmacy_name?: string
+          phone?: string | null
+          postal_code?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           brand: string
@@ -448,15 +490,66 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          pharmacy_id: string
+          role: Database["public"]["Enums"]["pharmacy_role"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          pharmacy_id: string
+          role: Database["public"]["Enums"]["pharmacy_role"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          pharmacy_id?: string
+          role?: Database["public"]["Enums"]["pharmacy_role"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_any_pharmacy_role: {
+        Args: { _pharmacy_id: string; _user_id: string }
+        Returns: boolean
+      }
+      has_pharmacy_role: {
+        Args: {
+          _pharmacy_id: string
+          _role: Database["public"]["Enums"]["pharmacy_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      pharmacy_role:
+        | "owner"
+        | "admin"
+        | "product_manager"
+        | "promotion_manager"
+        | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -583,6 +676,14 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      pharmacy_role: [
+        "owner",
+        "admin",
+        "product_manager",
+        "promotion_manager",
+        "viewer",
+      ],
+    },
   },
 } as const
