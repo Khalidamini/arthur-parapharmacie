@@ -52,7 +52,7 @@ const PharmacyRegister = () => {
         email: ownerEmail,
         password: password,
         options: {
-          emailRedirectTo: `${window.location.origin}/pharmacy-dashboard`,
+          emailRedirectTo: `${window.location.origin}/pharmacy-registration-pending`,
         },
       });
 
