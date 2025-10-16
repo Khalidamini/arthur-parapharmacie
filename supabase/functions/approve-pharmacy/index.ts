@@ -218,8 +218,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Send email in background
-    sendApprovalEmail()
+    // Send email in background (ensure it completes even after response)
+    try {
+      // @ts-ignore EdgeRuntime is available in Edge Functions
+      EdgeRuntime.waitUntil(sendApprovalEmail());
+    } catch (_e) {
+      // Fallback: fire-and-forget if waitUntil not available
+      sendApprovalEmail();
+    }
 
     return new Response(
       JSON.stringify({ 
