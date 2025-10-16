@@ -39,10 +39,13 @@ export function ChatSidebar() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Charger toutes les conversations de l'utilisateur
+    // Charger toutes les conversations avec le nombre de messages
     const { data, error } = await supabase
       .from('conversations')
-      .select('*')
+      .select(`
+        *,
+        messages(count)
+      `)
       .eq('user_id', user.id)
       .order('updated_at', { ascending: false });
 
@@ -51,25 +54,33 @@ export function ChatSidebar() {
       return;
     }
 
-    // Filtrer les conversations qui ont au moins un message
+    // Filtrer et identifier les conversations vides
     const conversationsWithMessages: Conversation[] = [];
     const emptyConversationIds: string[] = [];
 
     for (const conv of data || []) {
-      const { data: messages } = await supabase
-        .from('messages')
-        .select('id')
-        .eq('conversation_id', conv.id)
-        .limit(1);
-
-      if (messages && messages.length > 0) {
-        conversationsWithMessages.push(conv);
+      const messageCount = (conv.messages as any)?.[0]?.count || 0;
+      
+      if (messageCount > 0) {
+        conversationsWithMessages.push({
+          id: conv.id,
+          title: conv.title,
+          created_at: conv.created_at,
+          updated_at: conv.updated_at
+        });
       } else {
-        emptyConversationIds.push(conv.id);
+        // Vérifier l'âge de la conversation - ne supprimer que si elle a plus de 5 minutes
+        const createdAt = new Date(conv.created_at);
+        const now = new Date();
+        const ageInMinutes = (now.getTime() - createdAt.getTime()) / (1000 * 60);
+        
+        if (ageInMinutes > 5) {
+          emptyConversationIds.push(conv.id);
+        }
       }
     }
 
-    // Supprimer les conversations vides
+    // Supprimer uniquement les conversations vides qui ont plus de 5 minutes
     if (emptyConversationIds.length > 0) {
       await supabase
         .from('conversations')
