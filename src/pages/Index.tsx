@@ -17,6 +17,7 @@ interface Promotion {
 const Index = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [username, setUsername] = useState<string | null>(null);
   const [currentPharmacy, setCurrentPharmacy] = useState<string | null>(null);
   const [currentPharmacyId, setCurrentPharmacyId] = useState<string | null>(null);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
@@ -29,6 +30,12 @@ const Index = () => {
       } = await supabase.auth.getUser();
       setUser(user);
       if (user) {
+        // Récupérer le nom d'utilisateur
+        const { data: profileData } = await (supabase as any).from('profiles').select('username').eq('id', user.id).single();
+        if (profileData?.username) {
+          setUsername(profileData.username);
+        }
+        
         // Vérifier s'il y a une affiliation en attente
         const pendingAffiliation = localStorage.getItem('pending_pharmacy_affiliation');
         if (pendingAffiliation) {
@@ -69,6 +76,13 @@ const Index = () => {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
+        // Récupérer le nom d'utilisateur
+        (supabase as any).from('profiles').select('username').eq('id', session.user.id).single().then(({ data: profileData }: any) => {
+          if (profileData?.username) {
+            setUsername(profileData.username);
+          }
+        });
+        
         // Recharger la pharmacie après connexion
         (supabase as any).from('user_pharmacy_affiliation').select('pharmacy_id, pharmacies(name)').eq('user_id', session.user.id).order('updated_at', {
           ascending: false
@@ -119,7 +133,7 @@ const Index = () => {
             />
           </div>
           <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            Bonjour, je suis{' '}
+            Bonjour{username ? ` ${username}` : ''}, je suis{' '}
             <span className="bg-gradient-primary bg-clip-text text-transparent">Arthur</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">Votre assistant virtuel en parapharmacie. Je vous conseils et vous aide à trouver les produits qui correspondent à vos besoins.</p>
