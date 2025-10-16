@@ -448,7 +448,7 @@ const Chat = () => {
           )}
 
           {/* Input */}
-          <div className="bg-card border-t border-border shadow-lg">
+          <div className="bg-card border-t border-border shadow-lg mb-24">
             <div className="max-w-4xl mx-auto px-4 py-4">
               <div className="flex gap-2">
                 <Input
