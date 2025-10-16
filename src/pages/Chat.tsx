@@ -458,7 +458,7 @@ const Chat = () => {
             </div>}
 
           {/* Input */}
-          <div className="bg-card border-t border-border shadow-lg mb-24">
+          <div className="bg-card border-t border-border shadow-lg mb-16">
             <div className="max-w-3xl w-full mx-auto px-2 sm:px-4 py-3 sm:py-4">
               <div className="flex gap-1 sm:gap-2">
                 <Input value={input} onChange={e => setInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSend()} placeholder="Posez votre question à Arthur..." disabled={loading} className="flex-1 rounded-full border-2 focus-visible:ring-primary" />
