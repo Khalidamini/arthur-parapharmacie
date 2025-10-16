@@ -11,7 +11,7 @@ import Footer from '@/components/Footer';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-const Cart = () => {
+export default function Cart() {
   const navigate = useNavigate();
   const { activeCarts, cartHistory, updateQuantity, removeFromCart, clearCart, completeCart, totalPrice, loadCarts } = useCart();
 
@@ -179,7 +179,6 @@ const Cart = () => {
   return (
     <div className="min-h-screen bg-background p-4 pb-24">
       <div className="max-w-3xl mx-auto">
-        {/* Header */}
         <div className="mb-6">
           <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -265,6 +264,4 @@ const Cart = () => {
       <Footer />
     </div>
   );
-};
-
-export default Cart;
+}
