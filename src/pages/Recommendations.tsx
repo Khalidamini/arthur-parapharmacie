@@ -302,8 +302,7 @@ const Recommendations = () => {
             <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : (
-          <TabsContent value="account">
-        <div className="space-y-6">
+          <div className="space-y-6">
           {/* Informations du profil */}
           {profileData && (
             <Card>
@@ -378,7 +377,6 @@ const Recommendations = () => {
             </CardContent>
           </Card>
         </div>
-      </TabsContent>
         )}
       </div>
 
