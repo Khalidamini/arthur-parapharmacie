@@ -5,8 +5,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building2, LogOut, Users, Package, Tag, Upload } from "lucide-react";
-import Footer from '@/components/Footer';
+import { Building2, Users, Package, Tag, Upload } from "lucide-react";
+import PharmacyLayout from '@/layouts/PharmacyLayout';
 
 const PharmacyDashboard = () => {
   const navigate = useNavigate();
@@ -76,11 +76,6 @@ const PharmacyDashboard = () => {
     }
   };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate('/auth');
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-subtle">
@@ -93,29 +88,7 @@ const PharmacyDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle pb-20">
-      {/* Header */}
-      <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-gradient-primary flex items-center justify-center">
-              <Building2 className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="font-bold text-xl">Back-Office Pharmacie</h1>
-              {pharmacyData && (
-                <p className="text-sm text-muted-foreground">{pharmacyData.name}</p>
-              )}
-            </div>
-          </div>
-          <Button variant="outline" onClick={handleSignOut}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Déconnexion
-          </Button>
-        </div>
-      </header>
-
-      {/* Main Content */}
+    <PharmacyLayout pharmacyName={pharmacyData?.name}>
       <div className="max-w-7xl mx-auto px-4 py-8">
         <Tabs defaultValue="info" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
@@ -267,9 +240,7 @@ const PharmacyDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
-
-      <Footer />
-    </div>
+    </PharmacyLayout>
   );
 };
 

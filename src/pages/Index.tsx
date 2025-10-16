@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Tag, QrCode, LogOut, MapPin, Heart, Shield, Sparkles } from "lucide-react";
+import { MessageSquare, Tag, QrCode, MapPin, Heart, Shield, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import Footer from '@/components/Footer';
+import UserLayout from '@/layouts/UserLayout';
 import PromotionSlider from '@/components/PromotionSlider';
 interface Promotion {
   id: string;
@@ -105,35 +105,8 @@ const Index = () => {
   const handleSelectPromotion = (promotion: Promotion) => {
     console.log('Promotion sélectionnée:', promotion);
   };
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate('/auth');
-  };
-  return <div className="min-h-screen bg-gradient-subtle pb-20">{/* Ajout de padding-bottom pour le footer */}
-      {/* Header */}
-      <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
-        <div className="max-w-3xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gradient-primary flex items-center justify-center">
-              <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
-            </div>
-            <span className="font-bold text-base sm:text-xl bg-gradient-primary bg-clip-text text-transparent">Arthur</span>
-          </div>
-          <nav className="flex items-center gap-2 sm:gap-3">
-            {user ? <>
-            
-                <Button variant="outline" onClick={handleSignOut} className="text-xs sm:text-sm px-2 sm:px-4">
-                  <LogOut className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Déconnexion</span>
-                  <span className="sm:hidden">Sortir</span>
-                </Button>
-              </> : <Button onClick={() => navigate('/auth')} className="bg-gradient-primary hover:opacity-90 transition-opacity text-xs sm:text-sm px-3 sm:px-4">
-                Se connecter
-              </Button>}
-          </nav>
-        </div>
-      </header>
-
+  return (
+    <UserLayout user={user}>
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-primary opacity-5"></div>
@@ -226,11 +199,13 @@ const Index = () => {
       </section>
 
       {/* Slider de promotions juste au-dessus du footer */}
-      {currentPharmacyId && promotions.length > 0 && <div className="max-w-3xl mx-auto px-3 sm:px-4 pb-6">
+      {currentPharmacyId && promotions.length > 0 && (
+        <div className="max-w-3xl mx-auto px-3 sm:px-4 pb-6">
           <PromotionSlider promotions={promotions} onSelectPromotion={handleSelectPromotion} />
-        </div>}
-      
-      <Footer />
-    </div>;
+        </div>
+      )}
+    </UserLayout>
+  );
 };
+
 export default Index;
