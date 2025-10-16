@@ -17,6 +17,7 @@ export type Database = {
       cart_items: {
         Row: {
           brand: string
+          cart_id: string | null
           created_at: string
           id: string
           image_url: string | null
@@ -31,6 +32,7 @@ export type Database = {
         }
         Insert: {
           brand: string
+          cart_id?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -45,6 +47,7 @@ export type Database = {
         }
         Update: {
           brand?: string
+          cart_id?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -57,7 +60,53 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cart_items_cart_id_fkey"
+            columns: ["cart_id"]
+            isOneToOne: false
+            referencedRelation: "carts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      carts: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          pharmacy_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          pharmacy_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          pharmacy_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carts_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       conversations: {
         Row: {

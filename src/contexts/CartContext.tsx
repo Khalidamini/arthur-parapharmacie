@@ -13,70 +13,137 @@ interface CartItem {
   productId?: string;
 }
 
-interface CartContextType {
+interface Cart {
+  id: string;
+  pharmacyId: string | null;
+  pharmacyName?: string;
   items: CartItem[];
-  addToCart: (product: Omit<CartItem, 'quantity'>) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
-  clearCart: () => void;
+  status: 'active' | 'completed' | 'cancelled';
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+}
+
+interface CartContextType {
+  activeCarts: Cart[];
+  cartHistory: Cart[];
+  addToCart: (product: Omit<CartItem, 'quantity'>, pharmacyId?: string) => Promise<void>;
+  removeFromCart: (itemId: string) => Promise<void>;
+  updateQuantity: (itemId: string, quantity: number) => Promise<void>;
+  clearCart: (cartId: string) => Promise<void>;
+  completeCart: (cartId: string) => Promise<void>;
   totalItems: number;
   totalPrice: number;
-  arthurItems: CartItem[];
-  shopItems: CartItem[];
+  loadCarts: () => Promise<void>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [activeCarts, setActiveCarts] = useState<Cart[]>([]);
+  const [cartHistory, setCartHistory] = useState<Cart[]>([]);
 
   useEffect(() => {
-    loadCart();
+    loadCarts();
   }, []);
 
-  const loadCart = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('cart_items')
-        .select('*')
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
-      const cartItems: CartItem[] = (data || []).map(item => ({
-        id: item.id,
-        name: item.product_name,
-        brand: item.brand,
-        price: Number(item.price),
-        imageUrl: item.image_url || '',
-        quantity: item.quantity,
-        source: item.source as 'arthur' | 'shop',
-        reason: item.reason || undefined,
-        productId: item.product_id || undefined,
-      }));
-
-      setItems(cartItems);
-    } catch (error) {
-      console.error('Error loading cart:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const addToCart = async (product: Omit<CartItem, 'quantity'>) => {
+  const loadCarts = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Check if item already exists
-      const existingItem = items.find(item => 
+      // Load all carts with their items
+      const { data: cartsData, error: cartsError } = await supabase
+        .from('carts')
+        .select(`
+          id,
+          pharmacy_id,
+          status,
+          created_at,
+          updated_at,
+          completed_at,
+          pharmacies (
+            name
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (cartsError) throw cartsError;
+
+      // Load all cart items
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('cart_items')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (itemsError) throw itemsError;
+
+      // Organize data into Cart objects
+      const carts: Cart[] = (cartsData || []).map(cart => ({
+        id: cart.id,
+        pharmacyId: cart.pharmacy_id,
+        pharmacyName: (cart.pharmacies as any)?.name,
+        status: cart.status as 'active' | 'completed' | 'cancelled',
+        createdAt: cart.created_at,
+        updatedAt: cart.updated_at,
+        completedAt: cart.completed_at || undefined,
+        items: (itemsData || [])
+          .filter(item => item.cart_id === cart.id)
+          .map(item => ({
+            id: item.id,
+            name: item.product_name,
+            brand: item.brand,
+            price: Number(item.price),
+            imageUrl: item.image_url || '',
+            quantity: item.quantity,
+            source: item.source as 'arthur' | 'shop',
+            reason: item.reason || undefined,
+            productId: item.product_id || undefined,
+          })),
+      }));
+
+      setActiveCarts(carts.filter(c => c.status === 'active'));
+      setCartHistory(carts.filter(c => c.status !== 'active'));
+    } catch (error) {
+      console.error('Error loading carts:', error);
+    }
+  };
+
+  const getOrCreateCart = async (pharmacyId?: string): Promise<string> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Find existing active cart for this pharmacy
+    const existingCart = activeCarts.find(c => c.pharmacyId === pharmacyId);
+    if (existingCart) return existingCart.id;
+
+    // Create new cart
+    const { data, error } = await supabase
+      .from('carts')
+      .insert({
+        user_id: user.id,
+        pharmacy_id: pharmacyId || null,
+        status: 'active',
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    await loadCarts();
+    return data.id;
+  };
+
+  const addToCart = async (product: Omit<CartItem, 'quantity'>, pharmacyId?: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const cartId = await getOrCreateCart(pharmacyId);
+
+      // Check if item already exists in this cart
+      const cart = [...activeCarts, ...cartHistory].find(c => c.id === cartId);
+      const existingItem = cart?.items.find(item =>
         (product.productId && item.productId === product.productId) ||
         (!product.productId && item.source === product.source && item.name === product.name && item.reason === product.reason)
       );
@@ -89,53 +156,31 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           .eq('id', existingItem.id);
 
         if (error) throw error;
-        
-        setItems(currentItems =>
-          currentItems.map(item =>
-            item.id === existingItem.id
-              ? { ...item, quantity: item.quantity + 1 }
-              : item
-          )
-        );
       } else {
         // Insert new item
         const isUuid = /^([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i.test(product.productId || '');
-        const payload = {
-          user_id: user.id,
-          product_id: isUuid ? product.productId : null,
-          product_name: product.name,
-          brand: product.brand,
-          price: product.price,
-          image_url: product.imageUrl,
-          quantity: 1,
-          source: product.source,
-          reason: product.reason,
-        } as const;
-
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('cart_items')
-          .insert(payload)
-          .select()
-          .single();
+          .insert({
+            user_id: user.id,
+            cart_id: cartId,
+            product_id: isUuid ? product.productId : null,
+            product_name: product.name,
+            brand: product.brand,
+            price: product.price,
+            image_url: product.imageUrl,
+            quantity: 1,
+            source: product.source,
+            reason: product.reason,
+          });
 
         if (error) throw error;
-
-        const newItem: CartItem = {
-          id: data.id,
-          name: data.product_name,
-          brand: data.brand,
-          price: Number(data.price),
-          imageUrl: data.image_url || '',
-          quantity: data.quantity,
-          source: data.source as 'arthur' | 'shop',
-          reason: data.reason || undefined,
-          productId: data.product_id || undefined,
-        };
-
-        setItems(currentItems => [...currentItems, newItem]);
       }
+
+      await loadCarts();
     } catch (error) {
       console.error('Error adding to cart:', error);
+      throw error;
     }
   };
 
@@ -147,8 +192,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         .eq('id', itemId);
 
       if (error) throw error;
-
-      setItems(currentItems => currentItems.filter(item => item.id !== itemId));
+      await loadCarts();
     } catch (error) {
       console.error('Error removing from cart:', error);
     }
@@ -156,7 +200,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const updateQuantity = async (itemId: string, quantity: number) => {
     if (quantity <= 0) {
-      removeFromCart(itemId);
+      await removeFromCart(itemId);
       return;
     }
 
@@ -167,52 +211,63 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         .eq('id', itemId);
 
       if (error) throw error;
-      
-      setItems(currentItems =>
-        currentItems.map(item =>
-          item.id === itemId ? { ...item, quantity } : item
-        )
-      );
+      await loadCarts();
     } catch (error) {
       console.error('Error updating quantity:', error);
     }
   };
 
-  const clearCart = async () => {
+  const clearCart = async (cartId: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const { error } = await supabase
         .from('cart_items')
         .delete()
-        .eq('user_id', user.id);
+        .eq('cart_id', cartId);
 
       if (error) throw error;
-
-      setItems([]);
+      await loadCarts();
     } catch (error) {
       console.error('Error clearing cart:', error);
     }
   };
 
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const arthurItems = items.filter(item => item.source === 'arthur');
-  const shopItems = items.filter(item => item.source === 'shop');
+  const completeCart = async (cartId: string) => {
+    try {
+      const { error } = await supabase
+        .from('carts')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', cartId);
+
+      if (error) throw error;
+      await loadCarts();
+    } catch (error) {
+      console.error('Error completing cart:', error);
+    }
+  };
+
+  const totalItems = activeCarts.reduce((sum, cart) =>
+    sum + cart.items.reduce((s, item) => s + item.quantity, 0), 0
+  );
+  const totalPrice = activeCarts.reduce((sum, cart) =>
+    sum + cart.items.reduce((s, item) => s + item.price * item.quantity, 0), 0
+  );
 
   return (
     <CartContext.Provider
       value={{
-        items,
+        activeCarts,
+        cartHistory,
         addToCart,
         removeFromCart,
         updateQuantity,
         clearCart,
+        completeCart,
         totalItems,
         totalPrice,
-        arthurItems,
-        shopItems,
+        loadCarts,
       }}
     >
       {children}
