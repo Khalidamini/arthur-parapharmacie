@@ -239,7 +239,7 @@ const ScanQR = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="min-h-screen bg-gradient-subtle pb-24">
       <div className="bg-card border-b border-border shadow-sm">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
           <Button
