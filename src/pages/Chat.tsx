@@ -35,6 +35,7 @@ const Chat = () => {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const lastMessageRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -73,7 +74,10 @@ const Chat = () => {
   }, [searchParams]);
 
   useEffect(() => {
-    scrollToBottom();
+    // Scroll vers le haut du dernier message plutôt que vers le bas
+    if (messages.length > 0) {
+      lastMessageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }, [messages]);
 
   const scrollToBottom = () => {
@@ -381,80 +385,81 @@ const Chat = () => {
               )}
 
               {/* Chat Messages */}
-              {messages.map((message) => (
-                <ChatMessage 
-                  key={message.id} 
-                  role={message.role} 
-                  content={message.content}
-                  onOptionSelect={(selected) => {
-                    setInput(selected);
-                    // Envoyer automatiquement le message après avoir sélectionné une option
-                    setTimeout(async () => {
-                      if (!selected.trim() || loading) return;
+              {messages.map((message, index) => (
+                <div key={message.id} ref={index === messages.length - 1 ? lastMessageRef : null}>
+                  <ChatMessage 
+                    role={message.role} 
+                    content={message.content}
+                    onOptionSelect={(selected) => {
+                      setInput(selected);
+                      // Envoyer automatiquement le message après avoir sélectionné une option
+                      setTimeout(async () => {
+                        if (!selected.trim() || loading) return;
 
-                      const userMessage: Message = {
-                        id: Date.now().toString(),
-                        role: 'user',
-                        content: selected.trim(),
-                      };
-
-                      setMessages(prev => [...prev, userMessage]);
-                      setInput('');
-                      setLoading(true);
-
-                      await saveMessage('user', userMessage.content);
-
-                      try {
-                        const { data, error } = await supabase.functions.invoke('chat-with-arthur', {
-                          body: {
-                            messages: [{ role: 'user', content: userMessage.content }],
-                            conversationId,
-                            userId,
-                          },
-                        });
-
-                        if (error) throw error;
-
-                        const assistantMessage: Message = {
-                          id: (Date.now() + 1).toString(),
-                          role: 'assistant',
-                          content: data.message,
+                        const userMessage: Message = {
+                          id: Date.now().toString(),
+                          role: 'user',
+                          content: selected.trim(),
                         };
 
-                        setMessages(prev => [...prev, assistantMessage]);
-                        await saveMessage('assistant', assistantMessage.content);
+                        setMessages(prev => [...prev, userMessage]);
+                        setInput('');
+                        setLoading(true);
 
-                        // Generate conversation title after first exchange
-                        if (messages.length === 0) {
-                          try {
-                            const { data: titleData } = await supabase.functions.invoke('generate-conversation-title', {
-                              body: { firstUserMessage: userMessage.content }
-                            });
-                            
-                            if (titleData?.title && conversationId) {
-                              await supabase
-                                .from('conversations')
-                                .update({ title: titleData.title })
-                                .eq('id', conversationId);
+                        await saveMessage('user', userMessage.content);
+
+                        try {
+                          const { data, error } = await supabase.functions.invoke('chat-with-arthur', {
+                            body: {
+                              messages: [{ role: 'user', content: userMessage.content }],
+                              conversationId,
+                              userId,
+                            },
+                          });
+
+                          if (error) throw error;
+
+                          const assistantMessage: Message = {
+                            id: (Date.now() + 1).toString(),
+                            role: 'assistant',
+                            content: data.message,
+                          };
+
+                          setMessages(prev => [...prev, assistantMessage]);
+                          await saveMessage('assistant', assistantMessage.content);
+
+                          // Generate conversation title after first exchange
+                          if (messages.length === 0) {
+                            try {
+                              const { data: titleData } = await supabase.functions.invoke('generate-conversation-title', {
+                                body: { firstUserMessage: userMessage.content }
+                              });
+                              
+                              if (titleData?.title && conversationId) {
+                                await supabase
+                                  .from('conversations')
+                                  .update({ title: titleData.title })
+                                  .eq('id', conversationId);
+                              }
+                            } catch (error) {
+                              console.error('Error generating title:', error);
                             }
-                          } catch (error) {
-                            console.error('Error generating title:', error);
                           }
-                        }
 
-                      } catch (error: any) {
-                        console.error('Error sending message:', error);
-                        toast({
-                          title: "Erreur",
-                          description: error.message || "Impossible de contacter Arthur",
-                          variant: "destructive",
-                        });
-                      } finally {
-                        setLoading(false);
-                      }
-                    }, 100);
-                  }}
-                />
+                        } catch (error: any) {
+                          console.error('Error sending message:', error);
+                          toast({
+                            title: "Erreur",
+                            description: error.message || "Impossible de contacter Arthur",
+                            variant: "destructive",
+                          });
+                        } finally {
+                          setLoading(false);
+                        }
+                      }, 100);
+                    }}
+                  />
+                </div>
               ))}
 
               {loading && (
