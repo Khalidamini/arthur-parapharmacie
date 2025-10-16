@@ -5,7 +5,6 @@ import { MessageSquare, Tag, QrCode, LogOut, MapPin, Heart, Shield, Sparkles } f
 import { supabase } from "@/integrations/supabase/client";
 import Footer from '@/components/Footer';
 import PromotionSlider from '@/components/PromotionSlider';
-
 interface Promotion {
   id: string;
   title: string;
@@ -52,7 +51,9 @@ const Index = () => {
         // Charger la pharmacie référente
         const {
           data
-        } = await (supabase as any).from('user_pharmacy_affiliation').select('pharmacy_id, pharmacies(name)').eq('user_id', user.id).order('updated_at', { ascending: false }).limit(1).maybeSingle();
+        } = await (supabase as any).from('user_pharmacy_affiliation').select('pharmacy_id, pharmacies(name)').eq('user_id', user.id).order('updated_at', {
+          ascending: false
+        }).limit(1).maybeSingle();
         if (data) {
           setCurrentPharmacy(data.pharmacies?.name || null);
           setCurrentPharmacyId(data.pharmacy_id);
@@ -69,7 +70,9 @@ const Index = () => {
       setUser(session?.user ?? null);
       if (session?.user) {
         // Recharger la pharmacie après connexion
-        (supabase as any).from('user_pharmacy_affiliation').select('pharmacy_id, pharmacies(name)').eq('user_id', session.user.id).order('updated_at', { ascending: false }).limit(1).maybeSingle().then(({
+        (supabase as any).from('user_pharmacy_affiliation').select('pharmacy_id, pharmacies(name)').eq('user_id', session.user.id).order('updated_at', {
+          ascending: false
+        }).limit(1).maybeSingle().then(({
           data
         }: any) => {
           if (data) {
@@ -82,30 +85,26 @@ const Index = () => {
     });
     return () => subscription.unsubscribe();
   }, []);
-
   const loadPromotions = async (pharmacyId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('promotions')
-        .select('*')
-        .eq('pharmacy_id', pharmacyId)
-        .order('created_at', { ascending: false });
-
+      const {
+        data,
+        error
+      } = await supabase.from('promotions').select('*').eq('pharmacy_id', pharmacyId).order('created_at', {
+        ascending: false
+      });
       if (error) {
         console.error('Error loading promotions:', error);
         return;
       }
-
       setPromotions(data || []);
     } catch (error) {
       console.error('Error in loadPromotions:', error);
     }
   };
-
   const handleSelectPromotion = (promotion: Promotion) => {
     console.log('Promotion sélectionnée:', promotion);
   };
-
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate('/auth');
@@ -172,7 +171,7 @@ const Index = () => {
             <Button onClick={() => navigate('/scan-qr')} variant="outline" className="w-full h-20 sm:h-24 border-2 hover:border-primary/50 transition-all group">
               <div className="flex flex-col items-center gap-1 sm:gap-2">
                 <QrCode className="h-5 w-5 sm:h-6 sm:w-6 text-primary group-hover:scale-110 transition-transform" />
-                <span className="font-medium text-xs sm:text-sm text-center leading-tight">Scanner QR</span>
+                <span className="font-medium text-xs sm:text-sm text-center leading-tight">Scanner pharmacie</span>
               </div>
             </Button>
             
@@ -186,7 +185,7 @@ const Index = () => {
             <Button onClick={() => navigate('/pharmacies')} variant="outline" className="w-full h-20 sm:h-24 border-2 hover:border-primary/50 transition-all group">
               <div className="flex flex-col items-center gap-1 sm:gap-2">
                 <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-primary group-hover:scale-110 transition-transform" />
-                <span className="font-medium text-xs sm:text-sm text-center leading-tight">Pharmacies</span>
+                <span className="font-medium text-xs sm:text-sm text-center leading-tight">Choix liste pharmacie</span>
               </div>
             </Button>
           </div>
@@ -229,14 +228,9 @@ const Index = () => {
       </section>
 
       {/* Slider de promotions juste au-dessus du footer */}
-      {currentPharmacyId && promotions.length > 0 && (
-        <div className="max-w-3xl mx-auto px-3 sm:px-4 pb-6">
-          <PromotionSlider 
-            promotions={promotions}
-            onSelectPromotion={handleSelectPromotion}
-          />
-        </div>
-      )}
+      {currentPharmacyId && promotions.length > 0 && <div className="max-w-3xl mx-auto px-3 sm:px-4 pb-6">
+          <PromotionSlider promotions={promotions} onSelectPromotion={handleSelectPromotion} />
+        </div>}
       
       <Footer />
     </div>;
