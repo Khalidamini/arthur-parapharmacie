@@ -161,7 +161,7 @@ Deno.serve(async (req) => {
       ownerId: ownerUser.id,
     })
 
-    // Send approval email using Resend (same infrastructure as auth emails)
+    // Send approval email to admin for manual forwarding
     const sendApprovalEmail = async () => {
       try {
         const resendApiKey = Deno.env.get('RESEND_API_KEY')
@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
         }
 
         const appUrl = Deno.env.get('SUPABASE_URL')?.replace('gtjmebionytcomoldgjl.supabase.co', '3b72382b-3b57-45aa-a867-b6a8dda6f0e1.lovableproject.com') || 'https://3b72382b-3b57-45aa-a867-b6a8dda6f0e1.lovableproject.com'
-        const dashboardUrl = `${appUrl}/pharmacy/dashboard`
+        const dashboardUrl = `${appUrl}/pharmacy-dashboard`
 
         const emailResponse = await fetch('https://api.resend.com/emails', {
           method: 'POST',
@@ -181,93 +181,63 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({
             from: 'Pharmacie App <onboarding@resend.dev>',
-            to: [registration.owner_email],
-            subject: 'Votre pharmacie a été approuvée !',
+            to: ['aminikhalid@gmail.com'],
+            subject: `✅ Transférer à ${registration.owner_email} - Approbation ${registration.pharmacy_name}`,
             html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background:#D1ECF1;color:#0C5460;padding:15px;border-radius:6px;margin-bottom:20px;">
+                  <strong>📧 À TRANSFÉRER À:</strong> ${registration.owner_email}<br/>
+                  <strong>👤 Destinataire:</strong> ${registration.owner_name}
+                </div>
+                
                 <h1 style="color: #4F46E5;">Félicitations ${registration.owner_name} !</h1>
+                
                 <p>Votre demande d'inscription pour <strong>${registration.pharmacy_name}</strong> a été approuvée.</p>
+                
                 <p>Vous pouvez maintenant accéder à votre espace de gestion :</p>
+                
                 <p style="text-align: center; margin: 30px 0;">
-                  <a href="${dashboardUrl}" style="display: inline-block; padding: 12px 24px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">Accéder à mon tableau de bord</a>
+                  <a href="${dashboardUrl}" style="display: inline-block; padding: 12px 24px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                    Accéder à mon tableau de bord
+                  </a>
                 </p>
-                <p>Votre code QR unique : <strong>${qrCode}</strong></p>
-                <p><strong>Coordonnées de votre pharmacie :</strong></p>
-                <ul>
-                  <li>Adresse : ${registration.address}</li>
-                  <li>Ville : ${registration.postal_code} ${registration.city}</li>
-                  ${registration.phone ? `<li>Téléphone : ${registration.phone}</li>` : ''}
-                  <li>Localisation : ${latitude !== 0 && longitude !== 0 ? 'Géolocalisée ✓' : 'À définir'}</li>
-                </ul>
+                
+                <div style="background:#F8F9FA;padding:20px;border-radius:6px;margin:20px 0;">
+                  <h3 style="margin-top:0;color:#333;">📋 Informations de votre pharmacie</h3>
+                  <p><strong>Code QR unique:</strong> ${qrCode}</p>
+                  <p><strong>Adresse:</strong> ${registration.address}</p>
+                  <p><strong>Ville:</strong> ${registration.postal_code} ${registration.city}</p>
+                  ${registration.phone ? `<p><strong>Téléphone:</strong> ${registration.phone}</p>` : ''}
+                  <p><strong>Localisation:</strong> ${latitude !== 0 && longitude !== 0 ? '✅ Géolocalisée avec succès' : '⚠️ À configurer dans le tableau de bord'}</p>
+                </div>
+                
+                <div style="background:#FFF3CD;padding:15px;border-radius:6px;margin:20px 0;">
+                  <h3 style="margin-top:0;color:#856404;">🔑 Prochaines étapes</h3>
+                  <ol style="margin:10px 0;padding-left:20px;color:#856404;">
+                    <li>Connectez-vous avec votre email: <strong>${registration.owner_email}</strong></li>
+                    <li>Complétez votre profil de pharmacie</li>
+                    <li>Ajoutez vos produits et promotions</li>
+                    <li>Gérez votre inventaire</li>
+                  </ol>
+                </div>
+                
                 <p style="color: #666; font-size: 14px; margin-top: 30px;">
-                  Cordialement,<br>L'équipe Pharmacie App
+                  Cordialement,<br>
+                  L'équipe Pharmacie App
                 </p>
               </div>
             `,
           }),
         })
 
-          if (!emailResponse.ok) {
-            const errorText = await emailResponse.text()
-            console.error('Failed to send approval email:', errorText)
-            // Fallback: send to admin for manual forward when domain is unverified/sandbox
-            try {
-              const needsManualForward =
-                errorText.includes('domain is not verified') ||
-                errorText.includes('only send testing emails')
-              if (needsManualForward) {
-                const fallbackResponse = await fetch('https://api.resend.com/emails', {
-                  method: 'POST',
-                  headers: {
-                    'Authorization': `Bearer ${resendApiKey}`,
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    from: 'Pharmacie App <onboarding@resend.dev>',
-                    to: ['aminikhalid@gmail.com'],
-                    subject: `MANUEL: Transférer l'approbation à ${registration.owner_email}`,
-                    html: `
-                      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                        <p style="background:#FFF3CD;color:#8A6D3B;padding:10px;border-radius:6px;">
-                          Email non délivré au destinataire à cause du mode test/nom de domaine non vérifié.<br/>
-                          Merci de transférer manuellement ce message à: <strong>${registration.owner_email}</strong>
-                        </p>
-                        <h1 style="color: #4F46E5;">Félicitations ${registration.owner_name} !</h1>
-                        <p>Votre demande d'inscription pour <strong>${registration.pharmacy_name}</strong> a été approuvée.</p>
-                        <p>Vous pouvez maintenant accéder à votre espace de gestion :</p>
-                        <p style="text-align: center; margin: 30px 0;">
-                          <a href="${dashboardUrl}" style="display: inline-block; padding: 12px 24px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">Accéder à mon tableau de bord</a>
-                        </p>
-                        <p>Votre code QR unique : <strong>${qrCode}</strong></p>
-                        <p><strong>Coordonnées de la pharmacie :</strong></p>
-                        <ul>
-                          <li>Adresse : ${registration.address}</li>
-                          <li>Ville : ${registration.postal_code} ${registration.city}</li>
-                          ${registration.phone ? `<li>Téléphone : ${registration.phone}</li>` : ''}
-                          <li>Localisation : ${latitude !== 0 && longitude !== 0 ? 'Géolocalisée ✓' : 'À définir'}</li>
-                        </ul>
-                        <p style="color: #666; font-size: 14px; margin-top: 30px;">
-                          Cordialement,<br>L'équipe Pharmacie App
-                        </p>
-                      </div>
-                    `,
-                  }),
-                })
-                if (!fallbackResponse.ok) {
-                  const fbText = await fallbackResponse.text()
-                  console.error('Fallback email to admin failed:', fbText)
-                } else {
-                  console.log('Fallback email sent to admin for manual forward')
-                }
-              }
-            } catch (fbError) {
-              console.error('Error in fallback email logic:', fbError)
-            }
-          } else {
-            console.log('Approval email sent successfully to', registration.owner_email)
-          }
+        if (!emailResponse.ok) {
+          const errorText = await emailResponse.text()
+          console.error('Failed to send email to admin:', errorText)
+        } else {
+          console.log('Email sent to admin for manual forwarding to', registration.owner_email)
+        }
       } catch (emailError) {
-        console.error('Error sending approval email:', emailError)
+        console.error('Error sending email:', emailError)
       }
     }
 
