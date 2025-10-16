@@ -201,6 +201,24 @@ const Chat = () => {
       setMessages(prev => [...prev, assistantMessage]);
       await saveMessage('assistant', assistantMessage.content);
 
+      // Generate conversation title after first exchange
+      if (messages.length === 0) {
+        try {
+          const { data: titleData } = await supabase.functions.invoke('generate-conversation-title', {
+            body: { firstUserMessage: userMessage.content }
+          });
+          
+          if (titleData?.title && conversationId) {
+            await supabase
+              .from('conversations')
+              .update({ title: titleData.title })
+              .eq('id', conversationId);
+          }
+        } catch (error) {
+          console.error('Error generating title:', error);
+        }
+      }
+
     } catch (error: any) {
       console.error('Error sending message:', error);
       toast({
@@ -348,6 +366,24 @@ const Chat = () => {
 
                         setMessages(prev => [...prev, assistantMessage]);
                         await saveMessage('assistant', assistantMessage.content);
+
+                        // Generate conversation title after first exchange
+                        if (messages.length === 0) {
+                          try {
+                            const { data: titleData } = await supabase.functions.invoke('generate-conversation-title', {
+                              body: { firstUserMessage: userMessage.content }
+                            });
+                            
+                            if (titleData?.title && conversationId) {
+                              await supabase
+                                .from('conversations')
+                                .update({ title: titleData.title })
+                                .eq('id', conversationId);
+                            }
+                          } catch (error) {
+                            console.error('Error generating title:', error);
+                          }
+                        }
 
                       } catch (error: any) {
                         console.error('Error sending message:', error);

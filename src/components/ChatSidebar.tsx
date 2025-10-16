@@ -39,10 +39,15 @@ export function ChatSidebar() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // Only load conversations that have at least one message
     const { data, error } = await supabase
       .from('conversations')
-      .select('*')
+      .select(`
+        *,
+        messages(count)
+      `)
       .eq('user_id', user.id)
+      .gt('messages.count', 0)
       .order('updated_at', { ascending: false });
 
     if (error) {
