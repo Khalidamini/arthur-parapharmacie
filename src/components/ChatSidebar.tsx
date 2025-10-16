@@ -33,6 +33,10 @@ export function ChatSidebar() {
 
   useEffect(() => {
     loadConversations();
+    
+    // Rafraîchir la liste toutes les 2 secondes pour détecter les nouvelles conversations
+    const interval = setInterval(loadConversations, 2000);
+    return () => clearInterval(interval);
   }, []);
 
   const loadConversations = async () => {

@@ -52,18 +52,25 @@ const Chat = () => {
       }
 
       setUserId(user.id);
-      
-      const existingConvId = searchParams.get('conversationId');
-      if (existingConvId) {
-        setConversationId(existingConvId);
-        loadConversationMessages(existingConvId);
-      }
-      // Ne plus créer automatiquement de conversation
     };
     
     getUser();
     loadPromotions();
   }, []);
+
+  // Surveiller les changements de conversationId dans l'URL
+  useEffect(() => {
+    const convId = searchParams.get('conversationId');
+    
+    if (convId && convId !== conversationId) {
+      setConversationId(convId);
+      loadConversationMessages(convId);
+    } else if (!convId) {
+      // Nouvelle conversation vide
+      setConversationId(null);
+      setMessages([]);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     scrollToBottom();
