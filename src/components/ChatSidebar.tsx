@@ -39,7 +39,7 @@ export function ChatSidebar() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Charger toutes les conversations de l'utilisateur, triées par dernière activité
+    // Charger toutes les conversations de l'utilisateur
     const { data, error } = await supabase
       .from('conversations')
       .select('*')
@@ -51,27 +51,39 @@ export function ChatSidebar() {
       return;
     }
 
-    setConversations(data || []);
-  };
+    // Filtrer les conversations qui ont au moins un message
+    const conversationsWithMessages: Conversation[] = [];
+    const emptyConversationIds: string[] = [];
 
-  const createNewConversation = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    for (const conv of data || []) {
+      const { data: messages } = await supabase
+        .from('messages')
+        .select('id')
+        .eq('conversation_id', conv.id)
+        .limit(1);
 
-    const { data, error } = await supabase
-      .from('conversations')
-      .insert({ user_id: user.id, title: 'Nouvelle conversation' })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error creating conversation:', error);
-      toast.error("Impossible de créer une nouvelle conversation");
-      return;
+      if (messages && messages.length > 0) {
+        conversationsWithMessages.push(conv);
+      } else {
+        emptyConversationIds.push(conv.id);
+      }
     }
 
-    setConversations(prev => [data, ...prev]);
-    navigate(`/chat?conversationId=${data.id}`);
+    // Supprimer les conversations vides
+    if (emptyConversationIds.length > 0) {
+      await supabase
+        .from('conversations')
+        .delete()
+        .in('id', emptyConversationIds);
+    }
+
+    setConversations(conversationsWithMessages);
+  };
+
+  const createNewConversation = () => {
+    // Ne pas créer de conversation en base de données
+    // La conversation sera créée automatiquement lors de l'envoi du premier message
+    navigate('/chat');
   };
 
   const deleteConversation = async (convId: string, e: React.MouseEvent) => {
