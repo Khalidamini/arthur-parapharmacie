@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +13,11 @@ import { fr } from 'date-fns/locale';
 
 const Cart = () => {
   const navigate = useNavigate();
-  const { activeCarts, cartHistory, updateQuantity, removeFromCart, clearCart, completeCart, totalPrice } = useCart();
+  const { activeCarts, cartHistory, updateQuantity, removeFromCart, clearCart, completeCart, totalPrice, loadCarts } = useCart();
+
+  useEffect(() => {
+    loadCarts();
+  }, []);
 
   const renderCartItems = (cart: any) => (
     <div className="space-y-3">
@@ -130,10 +135,10 @@ const Cart = () => {
               </Button>
             )}
           </div>
-          {!isActive && (
+          {!isActive && cart.completedAt && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
               <Clock className="h-4 w-4" />
-              {format(new Date(cart.completedAt || cart.updatedAt), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+              {format(new Date(cart.completedAt), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
             </div>
           )}
         </CardHeader>

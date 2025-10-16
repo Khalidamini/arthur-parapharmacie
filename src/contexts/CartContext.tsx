@@ -11,17 +11,18 @@ interface CartItem {
   source: 'arthur' | 'shop';
   reason?: string;
   productId?: string;
+  cartId?: string;
 }
 
 interface Cart {
   id: string;
   pharmacyId: string | null;
   pharmacyName?: string;
-  items: CartItem[];
   status: 'active' | 'completed' | 'cancelled';
   createdAt: string;
   updatedAt: string;
   completedAt?: string;
+  items: CartItem[];
 }
 
 interface CartContextType {
