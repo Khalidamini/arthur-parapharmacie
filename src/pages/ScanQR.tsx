@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Html5Qrcode } from "html5-qrcode";
+import Footer from '@/components/Footer';
 
 interface Pharmacy {
   id: string;
@@ -432,6 +433,7 @@ const ScanQR = () => {
           </Card>
         )}
       </div>
+      <Footer />
     </div>
   );
 };

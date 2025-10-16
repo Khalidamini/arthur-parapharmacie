@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, Check, Smartphone, MessageSquare } from "lucide-react";
+import Footer from '@/components/Footer';
 
 const Install = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -134,6 +135,7 @@ const Install = () => {
           <p>✨ Profitez d'une expérience optimale avec l'application installée</p>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

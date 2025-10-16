@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search, ArrowLeft, ShoppingCart, ShoppingBag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
+import Footer from '@/components/Footer';
 
 interface Product {
   id: string;
@@ -375,6 +376,7 @@ const Shop = () => {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 };

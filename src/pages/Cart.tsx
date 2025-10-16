@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
+import Footer from '@/components/Footer';
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -237,6 +238,7 @@ const Cart = () => {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 };

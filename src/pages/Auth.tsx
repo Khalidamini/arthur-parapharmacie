@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { MessageSquare } from "lucide-react";
+import Footer from '@/components/Footer';
 
 const Auth = () => {
   const [accessCode, setAccessCode] = useState('');
@@ -438,6 +439,7 @@ const Auth = () => {
           </CardContent>
         </Card>
       </div>
+      <Footer />
     </div>
   );
 };

@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import ChatMessage from '@/components/ChatMessage';
 import PromotionSlider from '@/components/PromotionSlider';
+import Footer from '@/components/Footer';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ChatSidebar } from '@/components/ChatSidebar';
 
@@ -468,6 +469,8 @@ const Chat = () => {
               </div>
             </div>
           </div>
+          
+          <Footer />
         </div>
       </div>
     </SidebarProvider>
