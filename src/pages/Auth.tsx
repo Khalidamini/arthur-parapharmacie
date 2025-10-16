@@ -257,8 +257,12 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-subtle p-4 pb-24">
       <div className="w-full max-w-md space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="text-center space-y-2">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-primary mb-2">
-            <MessageSquare className="h-8 w-8 text-primary-foreground" />
+          <div className="inline-flex h-16 w-16 items-center justify-center mb-2">
+            <img 
+              src="/icon-192.png" 
+              alt="Arthur Logo" 
+              className="h-16 w-16 rounded-full"
+            />
           </div>
           <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
             Arthur

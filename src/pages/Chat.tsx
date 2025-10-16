@@ -327,9 +327,11 @@ const Chat = () => {
                   <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
                 <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-                  <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gradient-primary flex items-center justify-center flex-shrink-0">
-                    <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
-                  </div>
+                  <img 
+                    src="/icon-192.png" 
+                    alt="Arthur Logo" 
+                    className="h-8 w-8 sm:h-10 sm:w-10 rounded-full flex-shrink-0"
+                  />
                   <div className="min-w-0">
                     <h1 className="font-semibold text-foreground text-sm sm:text-base truncate">Arthur</h1>
                     <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Assistant parapharmacie</p>
@@ -346,8 +348,12 @@ const Chat = () => {
 
               {/* Welcome Message */}
               {messages.length === 0 && <div className="text-center py-12 animate-in fade-in duration-500">
-                  <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-primary mb-4">
-                    <MessageSquare className="h-8 w-8 text-primary-foreground" />
+                  <div className="inline-flex h-16 w-16 items-center justify-center mb-4">
+                    <img 
+                      src="/icon-192.png" 
+                      alt="Arthur Logo" 
+                      className="h-16 w-16 rounded-full"
+                    />
                   </div>
                   <h2 className="text-2xl font-bold text-foreground mb-2">
                     Bonjour ! Je suis Arthur
