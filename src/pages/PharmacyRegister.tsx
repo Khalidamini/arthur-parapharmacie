@@ -80,17 +80,8 @@ const PharmacyRegister = () => {
           description: "Votre demande d'inscription a été envoyée. Vous recevrez un email de confirmation une fois votre compte validé.",
         });
 
-        // Auto-connexion
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: ownerEmail,
-          password: password,
-        });
-
-        if (signInError) {
-          navigate('/auth');
-        } else {
-          navigate('/pharmacy-dashboard');
-        }
+        // Rediriger vers la page de confirmation
+        navigate('/pharmacy-registration-pending');
       }
     } catch (error: any) {
       console.error('Registration error:', error);
