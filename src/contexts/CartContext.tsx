@@ -28,6 +28,7 @@ interface Cart {
 interface CartContextType {
   activeCarts: Cart[];
   cartHistory: Cart[];
+  selectedPharmacyId: string | null;
   addToCart: (product: Omit<CartItem, 'quantity'>, pharmacyId?: string) => Promise<void>;
   removeFromCart: (itemId: string) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
@@ -36,6 +37,7 @@ interface CartContextType {
   totalItems: number;
   totalPrice: number;
   loadCarts: () => Promise<void>;
+  setSelectedPharmacyId: (id: string | null) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -43,10 +45,33 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [activeCarts, setActiveCarts] = useState<Cart[]>([]);
   const [cartHistory, setCartHistory] = useState<Cart[]>([]);
+  const [selectedPharmacyId, setSelectedPharmacyId] = useState<string | null>(null);
 
   useEffect(() => {
+    loadSelectedPharmacy();
     loadCarts();
   }, []);
+
+  const loadSelectedPharmacy = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('user_pharmacy_affiliation')
+        .select('pharmacy_id')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (data) {
+        setSelectedPharmacyId(data.pharmacy_id);
+      }
+    } catch (error) {
+      console.error('Error loading selected pharmacy:', error);
+    }
+  };
 
   const loadCarts = async () => {
     try {
@@ -261,6 +286,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       value={{
         activeCarts,
         cartHistory,
+        selectedPharmacyId,
         addToCart,
         removeFromCart,
         updateQuantity,
@@ -269,6 +295,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         totalItems,
         totalPrice,
         loadCarts,
+        setSelectedPharmacyId,
       }}
     >
       {children}

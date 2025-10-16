@@ -1,23 +1,56 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, Building2, Check, Clock } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import Footer from '@/components/Footer';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Cart() {
   const navigate = useNavigate();
-  const { activeCarts, cartHistory, updateQuantity, removeFromCart, clearCart, completeCart, totalPrice, loadCarts } = useCart();
+  const { activeCarts, cartHistory, updateQuantity, removeFromCart, clearCart, completeCart, totalPrice, loadCarts, selectedPharmacyId, setSelectedPharmacyId } = useCart();
+  const [pharmacies, setPharmacies] = useState<any[]>([]);
 
   useEffect(() => {
     loadCarts();
+    loadUserPharmacies();
   }, []);
+
+  const loadUserPharmacies = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('user_pharmacy_affiliation')
+        .select('pharmacy_id, pharmacies(id, name)')
+        .eq('user_id', user.id);
+
+      if (data) {
+        const uniquePharmacies = Array.from(
+          new Map(data.map(item => [(item.pharmacies as any).id, item.pharmacies])).values()
+        );
+        setPharmacies(uniquePharmacies as any);
+      }
+    } catch (error) {
+      console.error('Error loading pharmacies:', error);
+    }
+  };
+
+  const filteredActiveCarts = selectedPharmacyId 
+    ? activeCarts.filter(cart => cart.pharmacyId === selectedPharmacyId)
+    : activeCarts;
+
+  const filteredHistory = selectedPharmacyId
+    ? cartHistory.filter(cart => cart.pharmacyId === selectedPharmacyId)
+    : cartHistory;
 
   const renderCartItems = (cart: any) => (
     <div className="space-y-3">
@@ -188,23 +221,42 @@ export default function Cart() {
             <ShoppingBag className="h-8 w-8" />
             <h1 className="text-3xl font-bold">Mes Paniers</h1>
           </div>
-          <p className="text-muted-foreground">
-            {activeCarts.length} panier(s) actif(s)
+          <p className="text-muted-foreground mb-4">
+            {filteredActiveCarts.length} panier(s) actif(s)
           </p>
+
+          {pharmacies.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+              <Select value={selectedPharmacyId || "all"} onValueChange={(value) => setSelectedPharmacyId(value === "all" ? null : value)}>
+                <SelectTrigger className="w-64">
+                  <SelectValue placeholder="Toutes les pharmacies" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les pharmacies</SelectItem>
+                  {pharmacies.map((pharmacy: any) => (
+                    <SelectItem key={pharmacy.id} value={pharmacy.id}>
+                      {pharmacy.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         <Tabs defaultValue="active" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="active">
-              Paniers actifs ({activeCarts.length})
+              Paniers actifs ({filteredActiveCarts.length})
             </TabsTrigger>
             <TabsTrigger value="history">
-              Historique ({cartHistory.length})
+              Historique ({filteredHistory.length})
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="active">
-            {activeCarts.length === 0 ? (
+            {filteredActiveCarts.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
                   <ShoppingBag className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
@@ -218,22 +270,24 @@ export default function Cart() {
               </Card>
             ) : (
               <div className="space-y-4">
-                {activeCarts.map(cart => renderCart(cart, true))}
+                {filteredActiveCarts.map(cart => renderCart(cart, true))}
                 
-                {activeCarts.length > 1 && (
+                {filteredActiveCarts.length > 1 && (
                   <Card className="bg-primary/5">
                     <CardContent className="p-6">
                       <div className="flex justify-between items-center">
                         <div>
                           <p className="font-semibold text-lg">Total tous paniers</p>
                           <p className="text-sm text-muted-foreground">
-                            {activeCarts.reduce((sum, cart) => 
+                            {filteredActiveCarts.reduce((sum, cart) =>
                               sum + cart.items.reduce((s, item) => s + item.quantity, 0), 0
                             )} article(s)
                           </p>
                         </div>
                         <p className="text-2xl font-bold text-primary">
-                          {totalPrice.toFixed(2)} €
+                          {filteredActiveCarts.reduce((sum, cart) => 
+                            sum + cart.items.reduce((s, item) => s + item.price * item.quantity, 0), 0
+                          ).toFixed(2)} €
                         </p>
                       </div>
                     </CardContent>
@@ -244,7 +298,7 @@ export default function Cart() {
           </TabsContent>
 
           <TabsContent value="history">
-            {cartHistory.length === 0 ? (
+            {filteredHistory.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
                   <Clock className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
@@ -255,7 +309,7 @@ export default function Cart() {
               </Card>
             ) : (
               <div className="space-y-4">
-                {cartHistory.map(cart => renderCart(cart, false))}
+                {filteredHistory.map(cart => renderCart(cart, false))}
               </div>
             )}
           </TabsContent>
