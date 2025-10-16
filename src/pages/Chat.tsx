@@ -31,6 +31,7 @@ const Chat = () => {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
   const {
@@ -54,6 +55,12 @@ const Chat = () => {
         return;
       }
       setUserId(user.id);
+      
+      // Récupérer le nom d'utilisateur
+      const { data: profileData } = await supabase.from('profiles').select('username').eq('id', user.id).single();
+      if (profileData?.username) {
+        setUsername(profileData.username);
+      }
     };
     getUser();
     loadPromotions();
@@ -356,7 +363,7 @@ const Chat = () => {
                     />
                   </div>
                   <h2 className="text-2xl font-bold text-foreground mb-2">
-                    Bonjour ! Je suis Arthur
+                    Bonjour{username ? ` ${username}` : ''} ! Je suis Arthur
                   </h2>
                   <p className="text-muted-foreground max-w-md mx-auto">
                     Votre assistant virtuel en parapharmacie. Posez-moi vos questions sur les produits de santé et de bien-être !
