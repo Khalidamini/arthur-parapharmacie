@@ -60,7 +60,7 @@ const PharmacyRegister = () => {
 
       if (authData.user) {
         // Créer la demande d'inscription de la pharmacie
-        const { error: registrationError } = await supabase
+        const { data: registrationData, error: registrationError } = await supabase
           .from('pharmacy_registrations')
           .insert({
             pharmacy_name: pharmacyName,
@@ -71,9 +71,23 @@ const PharmacyRegister = () => {
             owner_email: ownerEmail,
             owner_name: ownerName,
             status: 'pending',
-          });
+          })
+          .select()
+          .single();
 
         if (registrationError) throw registrationError;
+
+        // Notifier l'admin de la nouvelle inscription
+        if (registrationData) {
+          try {
+            await supabase.functions.invoke('notify-admin-new-registration', {
+              body: { registrationId: registrationData.id }
+            });
+          } catch (notifyError) {
+            console.error('Error notifying admin:', notifyError);
+            // Ne pas bloquer l'inscription si la notification échoue
+          }
+        }
 
         toast({
           title: "Demande envoyée",
