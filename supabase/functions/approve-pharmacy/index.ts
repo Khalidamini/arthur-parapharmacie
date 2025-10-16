@@ -180,10 +180,8 @@ Deno.serve(async (req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: 'Pharmacie App <onboarding@resend.dev>',
+            from: 'Pharmacie App <no-reply@auth.lovable.cloud>',
             to: [registration.owner_email],
-            // En mode test Resend, ajouter l'admin en copie pour vérifier
-            cc: ['aminikhalid@gmail.com'],
             subject: 'Votre pharmacie a été approuvée !',
             html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

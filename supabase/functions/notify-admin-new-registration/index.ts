@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: 'Pharmacie App <onboarding@resend.dev>',
+            from: 'Pharmacie App <no-reply@auth.lovable.cloud>',
             to: ['aminikhalid@gmail.com'],
             subject: '🔔 Nouvelle inscription de pharmacie',
             html: `
