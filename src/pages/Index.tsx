@@ -52,7 +52,7 @@ const Index = () => {
         // Charger la pharmacie référente
         const {
           data
-        } = await (supabase as any).from('user_pharmacy_affiliation').select('pharmacy_id, pharmacies(name)').eq('user_id', user.id).maybeSingle();
+        } = await (supabase as any).from('user_pharmacy_affiliation').select('pharmacy_id, pharmacies(name)').eq('user_id', user.id).order('updated_at', { ascending: false }).limit(1).maybeSingle();
         if (data) {
           setCurrentPharmacy(data.pharmacies?.name || null);
           setCurrentPharmacyId(data.pharmacy_id);
@@ -69,7 +69,7 @@ const Index = () => {
       setUser(session?.user ?? null);
       if (session?.user) {
         // Recharger la pharmacie après connexion
-        (supabase as any).from('user_pharmacy_affiliation').select('pharmacy_id, pharmacies(name)').eq('user_id', session.user.id).maybeSingle().then(({
+        (supabase as any).from('user_pharmacy_affiliation').select('pharmacy_id, pharmacies(name)').eq('user_id', session.user.id).order('updated_at', { ascending: false }).limit(1).maybeSingle().then(({
           data
         }: any) => {
           if (data) {

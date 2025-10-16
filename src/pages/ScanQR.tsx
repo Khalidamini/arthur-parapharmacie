@@ -197,37 +197,24 @@ const ScanQR = () => {
     try {
       const finalAffiliationType = autoAffiliationType || affiliationType;
       
-      // Vérifier si l'utilisateur a déjà une affiliation
-      const { data: existingAffiliation } = await (supabase as any)
+      // Supprimer toutes les affiliations existantes de l'utilisateur
+      const { error: deleteError } = await (supabase as any)
         .from('user_pharmacy_affiliation')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
+        .delete()
+        .eq('user_id', user.id);
 
-      if (existingAffiliation) {
-        // Mettre à jour l'affiliation existante
-        const { error } = await (supabase as any)
-          .from('user_pharmacy_affiliation')
-          .update({
-            pharmacy_id: pharmacy.id,
-            affiliation_type: finalAffiliationType,
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', user.id);
+      if (deleteError) throw deleteError;
 
-        if (error) throw error;
-      } else {
-        // Créer une nouvelle affiliation
-        const { error } = await (supabase as any)
-          .from('user_pharmacy_affiliation')
-          .insert({
-            user_id: user.id,
-            pharmacy_id: pharmacy.id,
-            affiliation_type: finalAffiliationType
-          });
+      // Créer la nouvelle affiliation
+      const { error } = await (supabase as any)
+        .from('user_pharmacy_affiliation')
+        .insert({
+          user_id: user.id,
+          pharmacy_id: pharmacy.id,
+          affiliation_type: finalAffiliationType
+        });
 
-        if (error) throw error;
-      }
+      if (error) throw error;
 
       setSuccess(true);
       toast({
