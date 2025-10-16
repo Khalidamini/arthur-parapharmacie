@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, Tag, ShoppingCart } from "lucide-react";
@@ -34,16 +34,22 @@ const PromotionSlider = ({ promotions, onSelectPromotion }: PromotionSliderProps
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { addToCart } = useCart();
 
-  // Auto-play: défiler toutes les 2 secondes
+  // Auto-play: défilement toutes les 2 secondes (pause dans le popup)
+  const intervalRef = useRef<number | null>(null);
   useEffect(() => {
-    if (promotions.length <= 1) return;
-    
-    const interval = setInterval(() => {
+    if (promotions.length <= 1 || isDialogOpen) return;
+
+    intervalRef.current = window.setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % promotions.length);
     }, 2000);
 
-    return () => clearInterval(interval);
-  }, [promotions.length]);
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [promotions.length, isDialogOpen]);
 
   const nextSlide = () => {
     setCurrentIndex((prev) => (prev + 1) % promotions.length);
