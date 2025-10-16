@@ -161,16 +161,16 @@ Deno.serve(async (req) => {
       ownerId: ownerUser.id,
     })
 
-    // Send approval email to pharmacy owner
-    const sendEmailInBackground = async () => {
+    // Send approval email using Resend (same infrastructure as auth emails)
+    const sendApprovalEmail = async () => {
       try {
         const resendApiKey = Deno.env.get('RESEND_API_KEY')
         if (!resendApiKey) {
-          console.error('RESEND_API_KEY not configured')
+          console.warn('RESEND_API_KEY not configured, skipping email')
           return
         }
 
-        const appUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovableproject.com') || 'https://app.lovable.com'
+        const appUrl = Deno.env.get('SUPABASE_URL')?.replace('gtjmebionytcomoldgjl.supabase.co', '3b72382b-3b57-45aa-a867-b6a8dda6f0e1.lovableproject.com') || 'https://3b72382b-3b57-45aa-a867-b6a8dda6f0e1.lovableproject.com'
         const dashboardUrl = `${appUrl}/pharmacy/dashboard`
 
         const emailResponse = await fetch('https://api.resend.com/emails', {
@@ -184,35 +184,42 @@ Deno.serve(async (req) => {
             to: [registration.owner_email],
             subject: 'Votre pharmacie a été approuvée !',
             html: `
-              <h1>Félicitations ${registration.owner_name} !</h1>
-              <p>Votre demande d'inscription pour <strong>${registration.pharmacy_name}</strong> a été approuvée.</p>
-              <p>Vous pouvez maintenant accéder à votre espace de gestion :</p>
-              <p><a href="${dashboardUrl}" style="display: inline-block; padding: 12px 24px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">Accéder à mon tableau de bord</a></p>
-              <p>Votre code QR unique : <strong>${qrCode}</strong></p>
-              <p>Coordonnées de votre pharmacie :</p>
-              <ul>
-                <li>Adresse : ${registration.address}</li>
-                <li>Ville : ${registration.postal_code} ${registration.city}</li>
-                ${registration.phone ? `<li>Téléphone : ${registration.phone}</li>` : ''}
-              </ul>
-              <p>Cordialement,<br>L'équipe Pharmacie App</p>
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h1 style="color: #4F46E5;">Félicitations ${registration.owner_name} !</h1>
+                <p>Votre demande d'inscription pour <strong>${registration.pharmacy_name}</strong> a été approuvée.</p>
+                <p>Vous pouvez maintenant accéder à votre espace de gestion :</p>
+                <p style="text-align: center; margin: 30px 0;">
+                  <a href="${dashboardUrl}" style="display: inline-block; padding: 12px 24px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">Accéder à mon tableau de bord</a>
+                </p>
+                <p>Votre code QR unique : <strong>${qrCode}</strong></p>
+                <p><strong>Coordonnées de votre pharmacie :</strong></p>
+                <ul>
+                  <li>Adresse : ${registration.address}</li>
+                  <li>Ville : ${registration.postal_code} ${registration.city}</li>
+                  ${registration.phone ? `<li>Téléphone : ${registration.phone}</li>` : ''}
+                  <li>Localisation : ${latitude !== 0 && longitude !== 0 ? 'Géolocalisée ✓' : 'À définir'}</li>
+                </ul>
+                <p style="color: #666; font-size: 14px; margin-top: 30px;">
+                  Cordialement,<br>L'équipe Pharmacie App
+                </p>
+              </div>
             `,
           }),
         })
 
         if (!emailResponse.ok) {
           const errorText = await emailResponse.text()
-          console.error('Failed to send email:', errorText)
+          console.error('Failed to send approval email:', errorText)
         } else {
-          console.log('Approval email sent successfully')
+          console.log('Approval email sent successfully to', registration.owner_email)
         }
       } catch (emailError) {
         console.error('Error sending approval email:', emailError)
       }
     }
 
-    // Send email in background (non-blocking)
-    sendEmailInBackground()
+    // Send email in background
+    sendApprovalEmail()
 
     return new Response(
       JSON.stringify({ 
