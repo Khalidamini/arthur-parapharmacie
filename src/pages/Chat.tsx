@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import ChatMessage from '@/components/ChatMessage';
 import PromotionSlider from '@/components/PromotionSlider';
 import Footer from '@/components/Footer';
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { ChatSidebar } from '@/components/ChatSidebar';
 
 interface Message {
   id: string;
@@ -241,166 +243,173 @@ const Chat = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-subtle">
-      {/* Header */}
-      <div className="bg-card border-b border-border shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/')}
-              className="rounded-full"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div className="flex items-center gap-2">
-              <div className="h-10 w-10 rounded-full bg-gradient-primary flex items-center justify-center">
-                <MessageSquare className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="font-semibold text-foreground">Arthur</h1>
-                <p className="text-xs text-muted-foreground">Assistant parapharmacie</p>
-              </div>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => navigate('/recommendations')}
-            className="flex items-center gap-2"
-          >
-            Mes recommandations
-          </Button>
-        </div>
-      </div>
-
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto pt-36">
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          {/* Promotions Slider - maintenant fixe en haut */}
-          <PromotionSlider 
-            promotions={promotions}
-            onSelectPromotion={handleSelectPromotion}
-          />
-
-          {/* Welcome Message */}
-          {messages.length === 0 && (
-            <div className="text-center py-12 animate-in fade-in duration-500">
-              <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-primary mb-4">
-                <MessageSquare className="h-8 w-8 text-primary-foreground" />
-              </div>
-              <h2 className="text-2xl font-bold text-foreground mb-2">
-                Bonjour ! Je suis Arthur
-              </h2>
-              <p className="text-muted-foreground max-w-md mx-auto">
-                Votre assistant virtuel en parapharmacie. Posez-moi vos questions sur les produits de santé et de bien-être !
-              </p>
-            </div>
-          )}
-
-          {/* Chat Messages */}
-          {messages.map((message) => (
-            <ChatMessage 
-              key={message.id} 
-              role={message.role} 
-              content={message.content}
-              onOptionSelect={(selected) => {
-                setInput(selected);
-                // Envoyer automatiquement le message après avoir sélectionné une option
-                setTimeout(async () => {
-                  if (!selected.trim() || loading) return;
-
-                  const userMessage: Message = {
-                    id: Date.now().toString(),
-                    role: 'user',
-                    content: selected.trim(),
-                  };
-
-                  setMessages(prev => [...prev, userMessage]);
-                  setInput('');
-                  setLoading(true);
-
-                  await saveMessage('user', userMessage.content);
-
-                  try {
-                    const { data, error } = await supabase.functions.invoke('chat-with-arthur', {
-                      body: {
-                        messages: [{ role: 'user', content: userMessage.content }],
-                        conversationId,
-                        userId,
-                      },
-                    });
-
-                    if (error) throw error;
-
-                    const assistantMessage: Message = {
-                      id: (Date.now() + 1).toString(),
-                      role: 'assistant',
-                      content: data.message,
-                    };
-
-                    setMessages(prev => [...prev, assistantMessage]);
-                    await saveMessage('assistant', assistantMessage.content);
-
-                  } catch (error: any) {
-                    console.error('Error sending message:', error);
-                    toast({
-                      title: "Erreur",
-                      description: error.message || "Impossible de contacter Arthur",
-                      variant: "destructive",
-                    });
-                  } finally {
-                    setLoading(false);
-                  }
-                }, 100);
-              }}
-            />
-          ))}
-
-          {loading && (
-            <div className="flex gap-3 justify-start mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="h-8 w-8 rounded-full bg-gradient-primary flex items-center justify-center">
-                <div className="h-2 w-2 bg-primary-foreground rounded-full animate-pulse"></div>
-              </div>
-              <div className="bg-card border border-border rounded-2xl px-4 py-3 shadow-sm">
-                <div className="flex gap-1">
-                  <div className="h-2 w-2 bg-muted-foreground/50 rounded-full animate-bounce"></div>
-                  <div className="h-2 w-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="h-2 w-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full bg-gradient-subtle">
+        <ChatSidebar />
+        
+        <div className="flex flex-col flex-1 h-screen">
+          {/* Header */}
+          <div className="bg-card border-b border-border shadow-sm">
+            <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <SidebarTrigger className="mr-2" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate('/')}
+                  className="rounded-full"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+                <div className="flex items-center gap-2">
+                  <div className="h-10 w-10 rounded-full bg-gradient-primary flex items-center justify-center">
+                    <MessageSquare className="h-5 w-5 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h1 className="font-semibold text-foreground">Arthur</h1>
+                    <p className="text-xs text-muted-foreground">Assistant parapharmacie</p>
+                  </div>
                 </div>
               </div>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/recommendations')}
+                className="flex items-center gap-2"
+              >
+                Mes recommandations
+              </Button>
             </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
-
-      {/* Input */}
-      <div className="bg-card border-t border-border shadow-lg pb-16">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex gap-2">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Posez votre question à Arthur..."
-              disabled={loading}
-              className="flex-1 rounded-full border-2 focus-visible:ring-primary"
-            />
-            <Button
-              onClick={handleSend}
-              disabled={loading || !input.trim()}
-              className="rounded-full bg-gradient-primary hover:opacity-90 transition-opacity px-6"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
           </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto pt-36">
+            <div className="max-w-4xl mx-auto px-4 py-6">
+              {/* Promotions Slider - maintenant fixe en haut */}
+              <PromotionSlider 
+                promotions={promotions}
+                onSelectPromotion={handleSelectPromotion}
+              />
+
+              {/* Welcome Message */}
+              {messages.length === 0 && (
+                <div className="text-center py-12 animate-in fade-in duration-500">
+                  <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-primary mb-4">
+                    <MessageSquare className="h-8 w-8 text-primary-foreground" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-foreground mb-2">
+                    Bonjour ! Je suis Arthur
+                  </h2>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    Votre assistant virtuel en parapharmacie. Posez-moi vos questions sur les produits de santé et de bien-être !
+                  </p>
+                </div>
+              )}
+
+              {/* Chat Messages */}
+              {messages.map((message) => (
+                <ChatMessage 
+                  key={message.id} 
+                  role={message.role} 
+                  content={message.content}
+                  onOptionSelect={(selected) => {
+                    setInput(selected);
+                    // Envoyer automatiquement le message après avoir sélectionné une option
+                    setTimeout(async () => {
+                      if (!selected.trim() || loading) return;
+
+                      const userMessage: Message = {
+                        id: Date.now().toString(),
+                        role: 'user',
+                        content: selected.trim(),
+                      };
+
+                      setMessages(prev => [...prev, userMessage]);
+                      setInput('');
+                      setLoading(true);
+
+                      await saveMessage('user', userMessage.content);
+
+                      try {
+                        const { data, error } = await supabase.functions.invoke('chat-with-arthur', {
+                          body: {
+                            messages: [{ role: 'user', content: userMessage.content }],
+                            conversationId,
+                            userId,
+                          },
+                        });
+
+                        if (error) throw error;
+
+                        const assistantMessage: Message = {
+                          id: (Date.now() + 1).toString(),
+                          role: 'assistant',
+                          content: data.message,
+                        };
+
+                        setMessages(prev => [...prev, assistantMessage]);
+                        await saveMessage('assistant', assistantMessage.content);
+
+                      } catch (error: any) {
+                        console.error('Error sending message:', error);
+                        toast({
+                          title: "Erreur",
+                          description: error.message || "Impossible de contacter Arthur",
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setLoading(false);
+                      }
+                    }, 100);
+                  }}
+                />
+              ))}
+
+              {loading && (
+                <div className="flex gap-3 justify-start mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="h-8 w-8 rounded-full bg-gradient-primary flex items-center justify-center">
+                    <div className="h-2 w-2 bg-primary-foreground rounded-full animate-pulse"></div>
+                  </div>
+                  <div className="bg-card border border-border rounded-2xl px-4 py-3 shadow-sm">
+                    <div className="flex gap-1">
+                      <div className="h-2 w-2 bg-muted-foreground/50 rounded-full animate-bounce"></div>
+                      <div className="h-2 w-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="h-2 w-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
+
+          {/* Input */}
+          <div className="bg-card border-t border-border shadow-lg pb-16">
+            <div className="max-w-4xl mx-auto px-4 py-4">
+              <div className="flex gap-2">
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                  placeholder="Posez votre question à Arthur..."
+                  disabled={loading}
+                  className="flex-1 rounded-full border-2 focus-visible:ring-primary"
+                />
+                <Button
+                  onClick={handleSend}
+                  disabled={loading || !input.trim()}
+                  className="rounded-full bg-gradient-primary hover:opacity-90 transition-opacity px-6"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+          
+          <Footer />
         </div>
       </div>
-      
-      <Footer />
-    </div>
+    </SidebarProvider>
   );
 };
 
