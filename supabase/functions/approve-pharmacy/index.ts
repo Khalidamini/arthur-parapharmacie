@@ -144,6 +144,20 @@ Deno.serve(async (req) => {
       throw new Error('Failed to assign owner role')
     }
 
+    // Affiliate the pharmacist to their own pharmacy
+    const { error: affiliationError } = await supabase
+      .from('user_pharmacy_affiliation')
+      .insert({
+        user_id: ownerUser.id,
+        pharmacy_id: pharmacy.id,
+        affiliation_type: 'permanent',
+      })
+
+    if (affiliationError) {
+      console.error('Error creating pharmacy affiliation:', affiliationError)
+      // Continue anyway - this is not critical
+    }
+
     // Update registration status
     const { error: updateError } = await supabase
       .from('pharmacy_registrations')
