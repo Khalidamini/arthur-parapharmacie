@@ -121,22 +121,15 @@ const Index = () => {
           </div>
           <nav className="flex items-center gap-2 sm:gap-3">
             {user ? <>
-            <Button variant="ghost" onClick={() => navigate('/recommendations')} className="text-xs sm:text-sm px-2 sm:px-4">
-                  Mon compte
-                </Button>
+            
                 <Button variant="outline" onClick={handleSignOut} className="text-xs sm:text-sm px-2 sm:px-4">
                   <LogOut className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="hidden sm:inline">Déconnexion</span>
                   <span className="sm:hidden">Sortir</span>
                 </Button>
-              </> : <>
-                <Button onClick={() => navigate('/auth')} className="bg-gradient-primary hover:opacity-90 transition-opacity text-xs sm:text-sm px-3 sm:px-4">
-                  Se connecter
-                </Button>
-                <Button onClick={() => navigate('/pharmacy-login')} variant="outline" className="text-xs sm:text-sm px-2 sm:px-4">
-                  Pharmaciens
-                </Button>
-              </>}
+              </> : <Button onClick={() => navigate('/auth')} className="bg-gradient-primary hover:opacity-90 transition-opacity text-xs sm:text-sm px-3 sm:px-4">
+                Se connecter
+              </Button>}
           </nav>
         </div>
       </header>
