@@ -111,8 +111,12 @@ const Index = () => {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-primary opacity-5"></div>
         <div className="max-w-3xl mx-auto px-4 py-24 text-center relative">
-          <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-gradient-primary mb-6 shadow-xl animate-in zoom-in duration-500">
-            <MessageSquare className="h-10 w-10 text-primary-foreground" />
+          <div className="inline-flex h-20 w-20 items-center justify-center mb-6 animate-in zoom-in duration-500">
+            <img 
+              src="/icon-192.png" 
+              alt="Arthur Logo" 
+              className="h-20 w-20 rounded-full shadow-xl"
+            />
           </div>
           <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
             Bonjour, je suis{' '}
