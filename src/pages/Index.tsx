@@ -113,7 +113,7 @@ const Index = () => {
   return <div className="min-h-screen bg-gradient-subtle pb-20">{/* Ajout de padding-bottom pour le footer */}
       {/* Header */}
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
-        <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gradient-primary flex items-center justify-center">
               <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
@@ -140,7 +140,7 @@ const Index = () => {
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-primary opacity-5"></div>
-        <div className="max-w-6xl mx-auto px-4 py-24 text-center relative">
+        <div className="max-w-4xl mx-auto px-4 py-24 text-center relative">
           <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-gradient-primary mb-6 shadow-xl animate-in zoom-in duration-500">
             <MessageSquare className="h-10 w-10 text-primary-foreground" />
           </div>
@@ -194,7 +194,7 @@ const Index = () => {
       </section>
 
       {/* Features Section */}
-      <section className="max-w-6xl mx-auto px-3 sm:px-4 py-12 sm:py-20 pb-24 sm:pb-28">
+      <section className="max-w-4xl mx-auto px-3 sm:px-4 py-12 sm:py-20 pb-24 sm:pb-28">
         <div className="grid gap-6 sm:gap-8 md:grid-cols-3">
           <div className="bg-card p-4 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-border shadow-md hover:shadow-lg transition-all hover:border-primary/30 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-accent flex items-center justify-center mb-3 sm:mb-4">
@@ -230,7 +230,7 @@ const Index = () => {
 
       {/* Slider de promotions juste au-dessus du footer */}
       {currentPharmacyId && promotions.length > 0 && (
-        <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-6">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-6">
           <PromotionSlider 
             promotions={promotions}
             onSelectPromotion={handleSelectPromotion}
