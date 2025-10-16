@@ -321,13 +321,8 @@ const Chat = () => {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto pt-36">
+          <div className="flex-1 overflow-y-auto pb-4">
             <div className="max-w-4xl mx-auto px-4 py-6">
-              {/* Promotions Slider - maintenant fixe en haut */}
-              <PromotionSlider 
-                promotions={promotions}
-                onSelectPromotion={handleSelectPromotion}
-              />
 
               {/* Welcome Message */}
               {messages.length === 0 && (
@@ -440,8 +435,20 @@ const Chat = () => {
             </div>
           </div>
 
+          {/* Promotions Slider - fixe au-dessus de l'input */}
+          {promotions.length > 0 && (
+            <div className="bg-card border-t border-border">
+              <div className="max-w-4xl mx-auto px-4 py-3">
+                <PromotionSlider 
+                  promotions={promotions}
+                  onSelectPromotion={handleSelectPromotion}
+                />
+              </div>
+            </div>
+          )}
+
           {/* Input */}
-          <div className="bg-card border-t border-border shadow-lg pb-16">
+          <div className="bg-card border-t border-border shadow-lg">
             <div className="max-w-4xl mx-auto px-4 py-4">
               <div className="flex gap-2">
                 <Input
