@@ -243,7 +243,7 @@ const Pharmacies = () => {
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <div className="bg-card border-b border-border shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+        <div className="max-w-3xl mx-auto px-4 py-4">
           <div className="flex items-center gap-3 mb-4">
             <Button
               variant="ghost"
@@ -295,7 +295,7 @@ const Pharmacies = () => {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="max-w-3xl mx-auto px-4 py-6">
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>

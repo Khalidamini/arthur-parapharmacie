@@ -36,7 +36,7 @@ const Footer = () => {
 
   return (
     <footer className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-lg">
-      <div className="container max-w-4xl mx-auto">
+      <div className="container max-w-3xl mx-auto">
         <div className="grid grid-cols-4 gap-0.5">
           {links.map((link) => {
             const Icon = link.icon;

@@ -320,7 +320,7 @@ const Chat = () => {
         <div className="flex flex-col flex-1 h-screen">
           {/* Header */}
           <div className="bg-card border-b border-border shadow-sm">
-            <div className="max-w-4xl w-full mx-auto px-2 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
+            <div className="max-w-3xl w-full mx-auto px-2 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
               <div className="flex items-center gap-1 sm:gap-3 min-w-0">
                 <SidebarTrigger className="flex-shrink-0" />
                 <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-full flex-shrink-0">
@@ -342,7 +342,7 @@ const Chat = () => {
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto pb-40">
-            <div className="max-w-4xl w-full mx-auto px-2 sm:px-4 py-4 sm:py-6">
+            <div className="max-w-3xl w-full mx-auto px-2 sm:px-4 py-4 sm:py-6">
 
               {/* Welcome Message */}
               {messages.length === 0 && <div className="text-center py-12 animate-in fade-in duration-500">
@@ -452,14 +452,14 @@ const Chat = () => {
 
           {/* Promotions Slider - fixe au-dessus de l'input */}
           {promotions.length > 0 && <div className="bg-card border-t border-border">
-              <div className="max-w-4xl w-full mx-auto px-2 sm:px-4 py-2 sm:py-3">
+              <div className="max-w-3xl w-full mx-auto px-2 sm:px-4 py-2 sm:py-3">
                 <PromotionSlider promotions={promotions} onSelectPromotion={handleSelectPromotion} />
               </div>
             </div>}
 
           {/* Input */}
           <div className="bg-card border-t border-border shadow-lg mb-24">
-            <div className="max-w-4xl w-full mx-auto px-2 sm:px-4 py-3 sm:py-4">
+            <div className="max-w-3xl w-full mx-auto px-2 sm:px-4 py-3 sm:py-4">
               <div className="flex gap-1 sm:gap-2">
                 <Input value={input} onChange={e => setInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSend()} placeholder="Posez votre question à Arthur..." disabled={loading} className="flex-1 rounded-full border-2 focus-visible:ring-primary" />
                 <Button onClick={handleSend} disabled={loading || !input.trim()} className="rounded-full bg-gradient-primary hover:opacity-90 transition-opacity px-6">

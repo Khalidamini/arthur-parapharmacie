@@ -122,7 +122,7 @@ const PromotionSlider = ({ promotions, onSelectPromotion }: PromotionSliderProps
   return (
     <>
       <div className="w-full" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
-        <div className="container max-w-4xl mx-auto relative">
+        <div className="container max-w-3xl mx-auto relative">
           <Card 
             className="cursor-pointer hover:shadow-xl transition-all duration-300 overflow-hidden border-2 border-primary/20 hover:border-primary/40"
             onClick={() => handlePromotionClick(currentIndex)}

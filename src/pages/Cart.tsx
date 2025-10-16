@@ -13,7 +13,7 @@ const Cart = () => {
 
   return (
     <div className="min-h-screen bg-background p-4 pb-24">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
