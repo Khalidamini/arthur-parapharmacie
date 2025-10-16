@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingBag, ShoppingCart, User, MapPin } from 'lucide-react';
+import { ShoppingBag, ShoppingCart, User, MapPin, Home } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 
 const Footer = () => {
@@ -7,6 +7,12 @@ const Footer = () => {
   const { totalItems } = useCart();
   
   const links = [
+    { 
+      to: '/', 
+      icon: Home, 
+      label: 'Accueil',
+      isActive: location.pathname === '/'
+    },
     { 
       to: '/shop', 
       icon: ShoppingBag, 
@@ -25,12 +31,6 @@ const Footer = () => {
       icon: User, 
       label: 'Mon compte',
       isActive: location.pathname === '/recommendations' && location.search.includes('tab=account')
-    },
-    { 
-      to: '/pharmacies', 
-      icon: MapPin, 
-      label: 'Pharmacies',
-      isActive: location.pathname === '/pharmacies'
     },
   ];
 

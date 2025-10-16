@@ -133,7 +133,7 @@ const Index = () => {
                 <Button onClick={() => navigate('/auth')} className="bg-gradient-primary hover:opacity-90 transition-opacity text-xs sm:text-sm px-3 sm:px-4">
                   Se connecter
                 </Button>
-                <Button onClick={() => navigate('/pharmacy-register')} variant="outline" className="text-xs sm:text-sm px-2 sm:px-4">
+                <Button onClick={() => navigate('/pharmacy-login')} variant="outline" className="text-xs sm:text-sm px-2 sm:px-4">
                   Pharmaciens
                 </Button>
               </>}
