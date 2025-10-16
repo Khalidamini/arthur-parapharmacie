@@ -328,40 +328,42 @@ const Chat = () => {
         <div className="flex flex-col flex-1 h-screen">
           {/* Header */}
           <div className="bg-card border-b border-border shadow-sm">
-            <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <SidebarTrigger className="mr-2" />
+            <div className="w-full mx-auto px-2 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1 sm:gap-3 min-w-0">
+                <SidebarTrigger className="flex-shrink-0" />
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => navigate('/')}
-                  className="rounded-full"
+                  className="rounded-full flex-shrink-0"
                 >
-                  <ArrowLeft className="h-5 w-5" />
+                  <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
-                <div className="flex items-center gap-2">
-                  <div className="h-10 w-10 rounded-full bg-gradient-primary flex items-center justify-center">
-                    <MessageSquare className="h-5 w-5 text-primary-foreground" />
+                <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+                  <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gradient-primary flex items-center justify-center flex-shrink-0">
+                    <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
                   </div>
-                  <div>
-                    <h1 className="font-semibold text-foreground">Arthur</h1>
-                    <p className="text-xs text-muted-foreground">Assistant parapharmacie</p>
+                  <div className="min-w-0">
+                    <h1 className="font-semibold text-foreground text-sm sm:text-base truncate">Arthur</h1>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Assistant parapharmacie</p>
                   </div>
                 </div>
               </div>
               <Button
                 variant="outline"
                 onClick={() => navigate('/recommendations')}
-                className="flex items-center gap-2"
+                className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm flex-shrink-0"
+                size="sm"
               >
-                Mes recommandations
+                <span className="hidden sm:inline">Mes recommandations</span>
+                <span className="sm:hidden">Recomm.</span>
               </Button>
             </div>
           </div>
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto pb-40">
-            <div className="max-w-4xl mx-auto px-4 py-6">
+            <div className="w-full mx-auto px-2 sm:px-4 py-4 sm:py-6">
 
               {/* Welcome Message */}
               {messages.length === 0 && (
@@ -477,7 +479,7 @@ const Chat = () => {
           {/* Promotions Slider - fixe au-dessus de l'input */}
           {promotions.length > 0 && (
             <div className="bg-card border-t border-border">
-              <div className="max-w-4xl mx-auto px-4 py-3">
+              <div className="w-full mx-auto px-2 sm:px-4 py-2 sm:py-3">
                 <PromotionSlider 
                   promotions={promotions}
                   onSelectPromotion={handleSelectPromotion}
@@ -488,8 +490,8 @@ const Chat = () => {
 
           {/* Input */}
           <div className="bg-card border-t border-border shadow-lg mb-24">
-            <div className="max-w-4xl mx-auto px-4 py-4">
-              <div className="flex gap-2">
+            <div className="w-full mx-auto px-2 sm:px-4 py-3 sm:py-4">
+              <div className="flex gap-1 sm:gap-2">
                 <Input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
