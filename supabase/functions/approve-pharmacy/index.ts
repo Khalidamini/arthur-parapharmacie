@@ -78,6 +78,35 @@ Deno.serve(async (req) => {
     // Generate a unique QR code for the pharmacy
     const qrCode = `PH-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
+    // Get coordinates using free Nominatim geocoding
+    let latitude = 0
+    let longitude = 0
+    
+    try {
+      const geocodeUrl = `https://nominatim.openstreetmap.org/search?` + 
+        `street=${encodeURIComponent(registration.address)}&` +
+        `city=${encodeURIComponent(registration.city)}&` +
+        `postalcode=${encodeURIComponent(registration.postal_code)}&` +
+        `format=json&limit=1`
+      
+      const geocodeResponse = await fetch(geocodeUrl, {
+        headers: {
+          'User-Agent': 'PharmacyApp/1.0'
+        }
+      })
+      
+      const geocodeData = await geocodeResponse.json()
+      
+      if (geocodeData && geocodeData.length > 0) {
+        latitude = parseFloat(geocodeData[0].lat)
+        longitude = parseFloat(geocodeData[0].lon)
+        console.log('Geocoding successful:', { latitude, longitude })
+      }
+    } catch (geocodeError) {
+      console.error('Geocoding error:', geocodeError)
+      // Continue with default coordinates if geocoding fails
+    }
+
     // Create the pharmacy
     const { data: pharmacy, error: pharmacyError } = await supabase
       .from('pharmacies')
@@ -88,8 +117,8 @@ Deno.serve(async (req) => {
         postal_code: registration.postal_code,
         phone: registration.phone,
         qr_code: qrCode,
-        latitude: 0, // Default values - should be updated later
-        longitude: 0,
+        latitude,
+        longitude,
       })
       .select()
       .single()
@@ -131,6 +160,59 @@ Deno.serve(async (req) => {
       pharmacyName: pharmacy.name,
       ownerId: ownerUser.id,
     })
+
+    // Send approval email to pharmacy owner
+    const sendEmailInBackground = async () => {
+      try {
+        const resendApiKey = Deno.env.get('RESEND_API_KEY')
+        if (!resendApiKey) {
+          console.error('RESEND_API_KEY not configured')
+          return
+        }
+
+        const appUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovableproject.com') || 'https://app.lovable.com'
+        const dashboardUrl = `${appUrl}/pharmacy/dashboard`
+
+        const emailResponse = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: 'Pharmacie App <onboarding@resend.dev>',
+            to: [registration.owner_email],
+            subject: 'Votre pharmacie a été approuvée !',
+            html: `
+              <h1>Félicitations ${registration.owner_name} !</h1>
+              <p>Votre demande d'inscription pour <strong>${registration.pharmacy_name}</strong> a été approuvée.</p>
+              <p>Vous pouvez maintenant accéder à votre espace de gestion :</p>
+              <p><a href="${dashboardUrl}" style="display: inline-block; padding: 12px 24px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">Accéder à mon tableau de bord</a></p>
+              <p>Votre code QR unique : <strong>${qrCode}</strong></p>
+              <p>Coordonnées de votre pharmacie :</p>
+              <ul>
+                <li>Adresse : ${registration.address}</li>
+                <li>Ville : ${registration.postal_code} ${registration.city}</li>
+                ${registration.phone ? `<li>Téléphone : ${registration.phone}</li>` : ''}
+              </ul>
+              <p>Cordialement,<br>L'équipe Pharmacie App</p>
+            `,
+          }),
+        })
+
+        if (!emailResponse.ok) {
+          const errorText = await emailResponse.text()
+          console.error('Failed to send email:', errorText)
+        } else {
+          console.log('Approval email sent successfully')
+        }
+      } catch (emailError) {
+        console.error('Error sending approval email:', emailError)
+      }
+    }
+
+    // Send email in background (non-blocking)
+    sendEmailInBackground()
 
     return new Response(
       JSON.stringify({ 
