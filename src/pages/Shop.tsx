@@ -222,7 +222,7 @@ const Shop = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="min-h-screen bg-background p-4 pb-24">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="mb-6">

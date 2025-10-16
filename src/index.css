@@ -99,9 +99,4 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
-
-  /* Add padding to bottom of all pages to account for fixed footer */
-  #root {
-    padding-bottom: 80px;
-  }
 }
