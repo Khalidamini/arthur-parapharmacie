@@ -130,28 +130,28 @@ const PromotionSlider = ({ promotions, onSelectPromotion }: PromotionSliderProps
             <CardContent className="p-2 sm:p-3">
               <div className="flex items-center gap-1.5 sm:gap-3">
                 {currentPromo.image_url && (
-                  <div className="relative h-14 w-14 sm:h-20 sm:w-20 flex-shrink-0 overflow-hidden bg-muted rounded-md">
+                  <div className="relative h-16 w-16 sm:h-24 sm:w-24 flex-shrink-0 overflow-hidden bg-muted rounded-md">
                     <img
                       src={currentPromo.image_url}
                       alt={currentPromo.title}
                       className="h-full w-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
-                    <Badge className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 bg-gradient-primary text-primary-foreground border-0 shadow-lg text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5">
+                    <Badge className="absolute top-1 right-1 bg-gradient-primary text-primary-foreground border-0 shadow-lg text-xs px-1.5 py-0.5">
                       -{currentPromo.discount_percentage}%
                     </Badge>
                   </div>
                 )}
-                <div className="flex-1 min-w-0 pr-1 sm:pr-2 py-1 sm:py-2">
-                  <div className="flex items-center gap-1 mb-0.5 sm:mb-1">
-                    <Tag className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-primary flex-shrink-0" />
-                    <h3 className="font-bold text-xs sm:text-base text-foreground truncate">{currentPromo.title}</h3>
+                <div className="flex-1 min-w-0 pr-2 py-2">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Tag className="h-3 w-3 sm:h-4 sm:w-4 text-primary flex-shrink-0" />
+                    <h3 className="font-bold text-sm sm:text-base text-foreground truncate">{currentPromo.title}</h3>
                   </div>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-1 mb-1 sm:mb-2">{currentPromo.description}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1 mb-2">{currentPromo.description}</p>
                   {currentPromo.original_price && (
-                    <div className="flex items-center gap-1 sm:gap-2">
-                      <span className="text-[10px] sm:text-sm text-muted-foreground line-through">{currentPromo.original_price.toFixed(2)}€</span>
-                      <span className="text-sm sm:text-lg font-bold text-primary">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs sm:text-sm text-muted-foreground line-through">{currentPromo.original_price.toFixed(2)}€</span>
+                      <span className="text-base sm:text-lg font-bold text-primary">
                         {(currentPromo.original_price * (1 - currentPromo.discount_percentage / 100)).toFixed(2)}€
                       </span>
                     </div>
@@ -166,35 +166,35 @@ const PromotionSlider = ({ promotions, onSelectPromotion }: PromotionSliderProps
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute left-4 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-background/90 backdrop-blur-sm hover:bg-background shadow-lg"
+                className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/90 backdrop-blur-sm hover:bg-background shadow-lg z-10"
                 onClick={(e) => {
                   e.stopPropagation();
                   prevSlide();
                 }}
               >
-                <ChevronLeft className="h-5 w-5" />
+                <ChevronLeft className="h-4 w-4" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute right-4 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-background/90 backdrop-blur-sm hover:bg-background shadow-lg"
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/90 backdrop-blur-sm hover:bg-background shadow-lg z-10"
                 onClick={(e) => {
                   e.stopPropagation();
                   nextSlide();
                 }}
               >
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="h-4 w-4" />
               </Button>
             </>
           )}
 
           {promotions.length > 1 && (
-            <div className="flex justify-center gap-2 mt-3">
+            <div className="flex justify-center gap-1.5 mt-2">
               {promotions.map((_, index) => (
                 <button
                   key={index}
                   className={`h-1.5 rounded-full transition-all duration-300 ${
-                    index === currentIndex ? 'w-8 bg-primary' : 'w-1.5 bg-muted'
+                    index === currentIndex ? 'w-6 bg-primary' : 'w-1.5 bg-muted'
                   }`}
                   onClick={(e) => {
                     e.stopPropagation();
