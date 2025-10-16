@@ -18,6 +18,7 @@ import NotFound from "./pages/NotFound";
 import PharmacyRegister from "./pages/PharmacyRegister";
 import PharmacyDashboard from "./pages/PharmacyDashboard";
 import PharmacyRegistrationPending from "./pages/PharmacyRegistrationPending";
+import AdminPharmacies from "./pages/AdminPharmacies";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/pharmacy-register" element={<PharmacyRegister />} />
             <Route path="/pharmacy-registration-pending" element={<PharmacyRegistrationPending />} />
             <Route path="/pharmacy-dashboard" element={<PharmacyDashboard />} />
+            <Route path="/admin/pharmacies" element={<AdminPharmacies />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

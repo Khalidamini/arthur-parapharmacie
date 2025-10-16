@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["admin_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["admin_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["admin_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cart_items: {
         Row: {
           brand: string
@@ -542,8 +566,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
+      admin_role: "admin" | "super_admin"
       pharmacy_role:
         | "owner"
         | "admin"
@@ -677,6 +706,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      admin_role: ["admin", "super_admin"],
       pharmacy_role: [
         "owner",
         "admin",
