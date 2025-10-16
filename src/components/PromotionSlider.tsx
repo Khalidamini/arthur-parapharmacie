@@ -39,14 +39,20 @@ const PromotionSlider = ({ promotions, onSelectPromotion }: PromotionSliderProps
   useEffect(() => {
     if (promotions.length <= 1 || isDialogOpen) return;
 
+    console.debug('[PromotionSlider] autoplay start');
     intervalRef.current = window.setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % promotions.length);
+      setCurrentIndex((prev) => {
+        const next = (prev + 1) % promotions.length;
+        console.debug('[PromotionSlider] autoplay tick', { prev, next });
+        return next;
+      });
     }, 2000);
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
+        console.debug('[PromotionSlider] autoplay cleared');
       }
     };
   }, [promotions.length, isDialogOpen]);
