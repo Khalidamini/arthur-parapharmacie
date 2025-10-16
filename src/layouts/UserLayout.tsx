@@ -24,9 +24,11 @@ const UserLayout = ({ children, user }: UserLayoutProps) => {
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
         <div className="max-w-3xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gradient-primary flex items-center justify-center">
-              <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
-            </div>
+            <img 
+              src="/icon-192.png" 
+              alt="Arthur Logo" 
+              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full"
+            />
             <span className="font-bold text-base sm:text-xl bg-gradient-primary bg-clip-text text-transparent">Arthur</span>
           </div>
           <nav className="flex items-center gap-2 sm:gap-3">

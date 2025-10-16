@@ -24,9 +24,11 @@ const PharmacyLayout = ({ children, pharmacyName }: PharmacyLayoutProps) => {
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-gradient-primary flex items-center justify-center">
-              <Building2 className="h-5 w-5 text-primary-foreground" />
-            </div>
+            <img 
+              src="/icon-192.png" 
+              alt="Arthur Logo" 
+              className="h-10 w-10 rounded-full"
+            />
             <div>
               <h1 className="font-bold text-xl">Back-Office Pharmacie</h1>
               {pharmacyName && (
