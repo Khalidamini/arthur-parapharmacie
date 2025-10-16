@@ -113,23 +113,24 @@ const Index = () => {
   return <div className="min-h-screen bg-gradient-subtle pb-20">{/* Ajout de padding-bottom pour le footer */}
       {/* Header */}
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-10 w-10 rounded-full bg-gradient-primary flex items-center justify-center">
-              <MessageSquare className="h-5 w-5 text-primary-foreground" />
+            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gradient-primary flex items-center justify-center">
+              <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
             </div>
-            <span className="font-bold text-xl bg-gradient-primary bg-clip-text text-transparent">Arthur</span>
+            <span className="font-bold text-base sm:text-xl bg-gradient-primary bg-clip-text text-transparent">Arthur</span>
           </div>
-          <nav className="flex items-center gap-3">
+          <nav className="flex items-center gap-2 sm:gap-3">
             {user ? <>
-            <Button variant="ghost" onClick={() => navigate('/recommendations')}>
+            <Button variant="ghost" onClick={() => navigate('/recommendations')} className="text-xs sm:text-sm px-2 sm:px-4">
                   Mon compte
                 </Button>
-                <Button variant="outline" onClick={handleSignOut}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Déconnexion
+                <Button variant="outline" onClick={handleSignOut} className="text-xs sm:text-sm px-2 sm:px-4">
+                  <LogOut className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Déconnexion</span>
+                  <span className="sm:hidden">Sortir</span>
                 </Button>
-              </> : <Button onClick={() => navigate('/auth')} className="bg-gradient-primary hover:opacity-90 transition-opacity">
+              </> : <Button onClick={() => navigate('/auth')} className="bg-gradient-primary hover:opacity-90 transition-opacity text-xs sm:text-sm px-3 sm:px-4">
                 Se connecter
               </Button>}
           </nav>
@@ -160,32 +161,32 @@ const Index = () => {
             </div>}
 
           {/* Actions principales */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto mb-12">
-            <Button onClick={() => navigate('/chat')} className="w-full h-24 bg-gradient-primary border-2 border-primary hover:opacity-90 transition-all group">
-              <div className="flex flex-col items-center gap-2">
-                <MessageSquare className="h-6 w-6 text-primary-foreground group-hover:scale-110 transition-transform" />
-                <span className="font-medium text-primary-foreground">Chat</span>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 max-w-3xl mx-auto mb-8 sm:mb-12 px-4">
+            <Button onClick={() => navigate('/chat')} className="w-full h-20 sm:h-24 bg-gradient-primary border-2 border-primary hover:opacity-90 transition-all group">
+              <div className="flex flex-col items-center gap-1 sm:gap-2">
+                <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground group-hover:scale-110 transition-transform" />
+                <span className="font-medium text-xs sm:text-sm text-primary-foreground">Chat</span>
               </div>
             </Button>
             
-            <Button onClick={() => navigate('/scan-qr')} variant="outline" className="w-full h-24 border-2 hover:border-primary/50 transition-all group">
-              <div className="flex flex-col items-center gap-2">
-                <QrCode className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
-                <span className="font-medium">Scanner QR pharmacie</span>
+            <Button onClick={() => navigate('/scan-qr')} variant="outline" className="w-full h-20 sm:h-24 border-2 hover:border-primary/50 transition-all group">
+              <div className="flex flex-col items-center gap-1 sm:gap-2">
+                <QrCode className="h-5 w-5 sm:h-6 sm:w-6 text-primary group-hover:scale-110 transition-transform" />
+                <span className="font-medium text-xs sm:text-sm text-center leading-tight">Scanner QR</span>
               </div>
             </Button>
             
-            <Button onClick={() => navigate('/recommendations')} variant="outline" className="w-full h-24 border-2 hover:border-primary/50 transition-all group">
-              <div className="flex flex-col items-center gap-2">
-                <Tag className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
-                <span className="font-medium">Mon compte</span>
+            <Button onClick={() => navigate('/recommendations')} variant="outline" className="w-full h-20 sm:h-24 border-2 hover:border-primary/50 transition-all group">
+              <div className="flex flex-col items-center gap-1 sm:gap-2">
+                <Tag className="h-5 w-5 sm:h-6 sm:w-6 text-primary group-hover:scale-110 transition-transform" />
+                <span className="font-medium text-xs sm:text-sm">Mon compte</span>
               </div>
             </Button>
             
-            <Button onClick={() => navigate('/pharmacies')} variant="outline" className="w-full h-24 border-2 hover:border-primary/50 transition-all group">
-              <div className="flex flex-col items-center gap-2">
-                <MapPin className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
-                <span className="font-medium">Liste des pharmacies</span>
+            <Button onClick={() => navigate('/pharmacies')} variant="outline" className="w-full h-20 sm:h-24 border-2 hover:border-primary/50 transition-all group">
+              <div className="flex flex-col items-center gap-1 sm:gap-2">
+                <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-primary group-hover:scale-110 transition-transform" />
+                <span className="font-medium text-xs sm:text-sm text-center leading-tight">Pharmacies</span>
               </div>
             </Button>
           </div>
@@ -193,34 +194,34 @@ const Index = () => {
       </section>
 
       {/* Features Section */}
-      <section className="max-w-6xl mx-auto px-4 py-20">
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="bg-card p-6 rounded-2xl border-2 border-border shadow-md hover:shadow-lg transition-all hover:border-primary/30 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center mb-4">
-              <Heart className="h-6 w-6 text-accent-foreground" />
+      <section className="max-w-6xl mx-auto px-3 sm:px-4 py-12 sm:py-20 pb-24 sm:pb-28">
+        <div className="grid gap-6 sm:gap-8 md:grid-cols-3">
+          <div className="bg-card p-4 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-border shadow-md hover:shadow-lg transition-all hover:border-primary/30 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-accent flex items-center justify-center mb-3 sm:mb-4">
+              <Heart className="h-5 w-5 sm:h-6 sm:w-6 text-accent-foreground" />
             </div>
-            <h3 className="text-xl font-semibold text-foreground mb-2">Conseils personnalisés</h3>
-            <p className="text-muted-foreground">
+            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-2">Conseils personnalisés</h3>
+            <p className="text-sm sm:text-base text-muted-foreground">
               Des recommandations adaptées à vos besoins spécifiques en parapharmacie
             </p>
           </div>
           
-          <div className="bg-card p-6 rounded-2xl border-2 border-border shadow-md hover:shadow-lg transition-all hover:border-primary/30 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
-            <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center mb-4">
-              <Sparkles className="h-6 w-6 text-accent-foreground" />
+          <div className="bg-card p-4 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-border shadow-md hover:shadow-lg transition-all hover:border-primary/30 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-accent flex items-center justify-center mb-3 sm:mb-4">
+              <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-accent-foreground" />
             </div>
-            <h3 className="text-xl font-semibold text-foreground mb-2">Promotions exclusives</h3>
-            <p className="text-muted-foreground">
+            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-2">Promotions exclusives</h3>
+            <p className="text-sm sm:text-base text-muted-foreground">
               Accédez aux offres spéciales de votre pharmacie référente
             </p>
           </div>
           
-          <div className="bg-card p-6 rounded-2xl border-2 border-border shadow-md hover:shadow-lg transition-all hover:border-primary/30 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
-            <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center mb-4">
-              <Shield className="h-6 w-6 text-accent-foreground" />
+          <div className="bg-card p-4 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-border shadow-md hover:shadow-lg transition-all hover:border-primary/30 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-accent flex items-center justify-center mb-3 sm:mb-4">
+              <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-accent-foreground" />
             </div>
-            <h3 className="text-xl font-semibold text-foreground mb-2">Expertise professionnelle</h3>
-            <p className="text-muted-foreground">
+            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-2">Expertise professionnelle</h3>
+            <p className="text-sm sm:text-base text-muted-foreground">
               Des conseils basés sur des connaissances pharmaceutiques fiables
             </p>
           </div>
@@ -229,7 +230,7 @@ const Index = () => {
 
       {/* Slider de promotions juste au-dessus du footer */}
       {currentPharmacyId && promotions.length > 0 && (
-        <div className="max-w-6xl mx-auto px-4 pb-6">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-6">
           <PromotionSlider 
             promotions={promotions}
             onSelectPromotion={handleSelectPromotion}

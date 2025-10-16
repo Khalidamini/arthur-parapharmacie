@@ -127,31 +127,31 @@ const PromotionSlider = ({ promotions, onSelectPromotion }: PromotionSliderProps
             className="cursor-pointer hover:shadow-xl transition-all duration-300 overflow-hidden border-2 border-primary/20 hover:border-primary/40"
             onClick={() => handlePromotionClick(currentIndex)}
           >
-            <CardContent className="p-0">
-              <div className="flex items-center gap-4">
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-2 sm:gap-4">
                 {currentPromo.image_url && (
-                  <div className="relative h-32 w-32 flex-shrink-0 overflow-hidden bg-muted">
+                  <div className="relative h-20 w-20 sm:h-32 sm:w-32 flex-shrink-0 overflow-hidden bg-muted rounded-md">
                     <img
                       src={currentPromo.image_url}
                       alt={currentPromo.title}
                       className="h-full w-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
-                    <Badge className="absolute top-2 right-2 bg-gradient-primary text-primary-foreground border-0 shadow-lg text-sm px-2.5 py-1">
+                    <Badge className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-gradient-primary text-primary-foreground border-0 shadow-lg text-xs sm:text-sm px-1.5 sm:px-2.5 py-0.5 sm:py-1">
                       -{currentPromo.discount_percentage}%
                     </Badge>
                   </div>
                 )}
-                <div className="flex-1 min-w-0 pr-4 py-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Tag className="h-5 w-5 text-primary flex-shrink-0" />
-                    <h3 className="font-bold text-lg text-foreground truncate">{currentPromo.title}</h3>
+                <div className="flex-1 min-w-0 pr-2 sm:pr-4 py-2 sm:py-4">
+                  <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                    <Tag className="h-3 w-3 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                    <h3 className="font-bold text-sm sm:text-lg text-foreground truncate">{currentPromo.title}</h3>
                   </div>
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{currentPromo.description}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mb-2 sm:mb-3">{currentPromo.description}</p>
                   {currentPromo.original_price && (
-                    <div className="flex items-center gap-3">
-                      <span className="text-base text-muted-foreground line-through">{currentPromo.original_price.toFixed(2)}€</span>
-                      <span className="text-2xl font-bold text-primary">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <span className="text-xs sm:text-base text-muted-foreground line-through">{currentPromo.original_price.toFixed(2)}€</span>
+                      <span className="text-lg sm:text-2xl font-bold text-primary">
                         {(currentPromo.original_price * (1 - currentPromo.discount_percentage / 100)).toFixed(2)}€
                       </span>
                     </div>
