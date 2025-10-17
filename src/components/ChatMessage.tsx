@@ -80,6 +80,19 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
     textContent = content;
   }
 
+  // Générer une URL d'image gratuite via Unsplash Source
+  const generateFreeImageUrl = (productName: string): string => {
+    // Nettoyer le nom du produit pour la recherche
+    const searchTerm = productName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .trim()
+      .replace(/\s+/g, ',');
+    
+    // Utiliser Unsplash Source (gratuit, sans API key)
+    return `https://source.unsplash.com/800x600/?${searchTerm},product,health`;
+  };
+
   // Charger les produits si on a une réponse de type products
   const loadProducts = async (productRecommendations: Array<{ name: string; reason: string }>) => {
     setLoadingProducts(true);
@@ -91,15 +104,32 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
         .select('id, name, brand, price, image_url, description')
         .in('name', productNames);
       
+      const proxyBase = import.meta.env.VITE_SUPABASE_URL;
+      
       // Créer un produit pour chaque recommandation, même si non trouvé en DB
       const productsWithReasons = productRecommendations.map(rec => {
         const dbProduct = data?.find((p: Product) => p.name === rec.name);
-        return dbProduct || {
+        if (dbProduct) {
+          // Si le produit est en DB mais n'a pas d'image, générer une URL gratuite
+          if (!dbProduct.image_url || dbProduct.image_url === '') {
+            const freeImageUrl = generateFreeImageUrl(dbProduct.name);
+            dbProduct.image_url = proxyBase 
+              ? `${proxyBase}/functions/v1/image-proxy?url=${encodeURIComponent(freeImageUrl)}`
+              : freeImageUrl;
+          }
+          return dbProduct;
+        }
+        
+        // Produit non trouvé en DB : générer une image gratuite
+        const freeImageUrl = generateFreeImageUrl(rec.name);
+        return {
           id: `temp-${rec.name}`,
           name: rec.name,
           brand: 'À vérifier en pharmacie',
           price: 0,
-          image_url: '',
+          image_url: proxyBase 
+            ? `${proxyBase}/functions/v1/image-proxy?url=${encodeURIComponent(freeImageUrl)}`
+            : freeImageUrl,
           description: rec.reason
         };
       });
