@@ -9,5 +9,8 @@ verify_jwt = false
 [functions.generate-product-image]
 verify_jwt = false
 
+[functions.image-proxy]
+verify_jwt = false
+
 [functions.notify-admin-new-registration]
 verify_jwt = false

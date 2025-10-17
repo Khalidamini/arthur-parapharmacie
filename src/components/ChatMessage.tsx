@@ -207,7 +207,7 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
                 {products.map((product, idx) => {
                   const recommendation = parsedContent.products[idx];
                   const isInDatabase = !product.id.startsWith('temp-');
-                  const rawImage = recommendation?.image_url || product.image_url;
+                  const rawImage = (recommendation as any)?.image_url || (recommendation as any)?.imageUrl || product.image_url;
                   const isExternal = rawImage?.startsWith('http');
                   const proxyBase = import.meta.env.VITE_SUPABASE_URL;
                   const displayImage = isExternal && proxyBase
