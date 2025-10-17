@@ -154,21 +154,21 @@ B) RECOMMANDATIONS PROFESSIONNELLES DE PRODUITS :
     {
       "name": "Nom exact du produit avec marque",
       "reason": "Explication professionnelle de pourquoi ce produit est adapté (principes actifs, mécanisme d'action, bénéfices attendus)",
-      "image_url": "https://example.com/image.jpg",
+      "image_url": "URL HTTPS réelle de l'image du produit depuis le site du fabricant ou d'une pharmacie en ligne (ex: bioderma.fr, laroche-posay.fr, vichy.fr, avene.com, pharmacie-principale.fr)",
       "average_price": "15.90€",
       "available_in_pharmacy": true
     },
     {
       "name": "Nom du produit 2",
       "reason": "Explication professionnelle",
-      "image_url": "https://example.com/image.jpg",
+      "image_url": "URL HTTPS réelle de l'image du produit depuis le site du fabricant",
       "average_price": "12.50€",
       "available_in_pharmacy": true
     },
     {
       "name": "Nom du produit 3",
       "reason": "Explication professionnelle",
-      "image_url": "https://example.com/image.jpg",
+      "image_url": "URL HTTPS réelle de l'image du produit depuis le site du fabricant",
       "average_price": "18.00€",
       "available_in_pharmacy": false
     }
@@ -187,7 +187,7 @@ RÈGLES IMPÉRATIVES :
 - EXACTEMENT 3 produits dans les recommandations
 - Explications PROFESSIONNELLES et DÉTAILLÉES basées sur ta connaissance pharmacologique
 - PRIORISE les produits de la liste de la pharmacie référente
-- Utilise UNIQUEMENT des URLs HTTPS d'images provenant de sources fiables
+- URLS D'IMAGES : Tu DOIS fournir des URLs HTTPS réelles et fonctionnelles pointant vers les images officielles des produits sur les sites des fabricants (Bioderma, La Roche-Posay, Vichy, Avène, Nuxe, etc.) ou sur des pharmacies en ligne françaises (1001pharmacies.com, pharmacie-principale.fr, etc.)
 - ADAPTE selon le profil patient complet
 - PERFECTIONNE-TOI en tenant compte de l'historique des conversations
 - Si danger médical ou situation complexe : ORIENTE vers un professionnel de santé
