@@ -1,48 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, Building2, Check, Clock } from "lucide-react";
+import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, Building2 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import Footer from '@/components/Footer';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { supabase } from "@/integrations/supabase/client";
 
 export default function Cart() {
   const navigate = useNavigate();
-  const { activeCarts, cartHistory, updateQuantity, removeFromCart, clearCart, completeCart, totalPrice, loadCarts, selectedPharmacyId, setSelectedPharmacyId } = useCart();
-  const [pharmacies, setPharmacies] = useState<any[]>([]);
+  const { activeCarts, cartHistory, updateQuantity, removeFromCart, clearCart, completeCart, loadCarts, selectedPharmacyId } = useCart();
 
   useEffect(() => {
     loadCarts();
-    loadUserPharmacies();
   }, []);
-
-  const loadUserPharmacies = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data } = await supabase
-        .from('user_pharmacy_affiliation')
-        .select('pharmacy_id, pharmacies(id, name)')
-        .eq('user_id', user.id);
-
-      if (data) {
-        const uniquePharmacies = Array.from(
-          new Map(data.map(item => [(item.pharmacies as any).id, item.pharmacies])).values()
-        );
-        setPharmacies(uniquePharmacies as any);
-      }
-    } catch (error) {
-      console.error('Error loading pharmacies:', error);
-    }
-  };
 
   const filteredActiveCarts = activeCarts.filter(cart => cart.pharmacyId === selectedPharmacyId);
   const filteredHistory = cartHistory.filter(cart => cart.pharmacyId === selectedPharmacyId);
@@ -127,7 +99,7 @@ export default function Cart() {
     </div>
   );
 
-  const renderCart = (cart: any, isActive: boolean = true) => {
+  const renderCart = (cart: any) => {
     const cartTotal = cart.items.reduce((sum: number, item: any) => sum + item.price * item.quantity, 0);
     const arthurItems = cart.items.filter((item: any) => item.source === 'arthur');
 
@@ -140,35 +112,15 @@ export default function Cart() {
               <CardTitle className="text-lg">
                 {cart.pharmacyName || 'Panier général'}
               </CardTitle>
-              {!isActive && (
-                <Badge variant={cart.status === 'completed' ? 'default' : 'secondary'}>
-                  {cart.status === 'completed' ? (
-                    <>
-                      <Check className="h-3 w-3 mr-1" />
-                      Validé
-                    </>
-                  ) : (
-                    'Annulé'
-                  )}
-                </Badge>
-              )}
             </div>
-            {isActive && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => clearCart(cart.id)}
-              >
-                Vider
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => clearCart(cart.id)}
+            >
+              Vider
+            </Button>
           </div>
-          {!isActive && cart.completedAt && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
-              <Clock className="h-4 w-4" />
-              {format(new Date(cart.completedAt), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
-            </div>
-          )}
         </CardHeader>
         <CardContent>
           {renderCartItems(cart)}
@@ -185,20 +137,18 @@ export default function Cart() {
                 <span>{arthurItems.reduce((sum: number, item: any) => sum + item.price * item.quantity, 0).toFixed(2)} €</span>
               </div>
             )}
-            <div className="flex justify-between font-bold">
+            <div className="flex justify-between font-bold text-lg">
               <span>Total</span>
               <span className="text-primary">{cartTotal.toFixed(2)} €</span>
             </div>
           </div>
 
-          {isActive && (
-            <Button 
-              className="w-full mt-4 bg-gradient-primary" 
-              onClick={() => completeCart(cart.id)}
-            >
-              Valider la commande
-            </Button>
-          )}
+          <Button 
+            className="w-full mt-4 bg-gradient-primary" 
+            onClick={() => completeCart(cart.id)}
+          >
+            Valider la commande
+          </Button>
         </CardContent>
       </Card>
     );
@@ -214,100 +164,25 @@ export default function Cart() {
           </Button>
           <div className="flex items-center gap-2 mb-2">
             <ShoppingBag className="h-8 w-8" />
-            <h1 className="text-3xl font-bold">Mes Paniers</h1>
+            <h1 className="text-3xl font-bold">Mon Panier</h1>
           </div>
-          <p className="text-muted-foreground mb-4">
-            {filteredActiveCarts.length} panier(s) actif(s)
-          </p>
-
-          {pharmacies.length > 0 && (
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-              <Select value={selectedPharmacyId || ""} onValueChange={(value) => setSelectedPharmacyId(value)}>
-                <SelectTrigger className="w-64">
-                  <SelectValue placeholder="Sélectionner une pharmacie" />
-                </SelectTrigger>
-                <SelectContent>
-                  {pharmacies.map((pharmacy: any) => (
-                    <SelectItem key={pharmacy.id} value={pharmacy.id}>
-                      {pharmacy.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
         </div>
 
-        <Tabs defaultValue="active" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="active">
-              Paniers actifs ({filteredActiveCarts.length})
-            </TabsTrigger>
-            <TabsTrigger value="history">
-              Historique ({filteredHistory.length})
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="active">
-            {filteredActiveCarts.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <ShoppingBag className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-lg text-muted-foreground mb-4">
-                    Aucun panier actif
-                  </p>
-                  <Button onClick={() => navigate('/chat')}>
-                    Consulter Arthur
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {filteredActiveCarts.map(cart => renderCart(cart, true))}
-                
-                {filteredActiveCarts.length > 1 && (
-                  <Card className="bg-primary/5">
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-semibold text-lg">Total tous paniers</p>
-                          <p className="text-sm text-muted-foreground">
-                            {filteredActiveCarts.reduce((sum, cart) =>
-                              sum + cart.items.reduce((s, item) => s + item.quantity, 0), 0
-                            )} article(s)
-                          </p>
-                        </div>
-                        <p className="text-2xl font-bold text-primary">
-                          {filteredActiveCarts.reduce((sum, cart) => 
-                            sum + cart.items.reduce((s, item) => s + item.price * item.quantity, 0), 0
-                          ).toFixed(2)} €
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="history">
-            {filteredHistory.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <Clock className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-lg text-muted-foreground">
-                    Aucun historique
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {filteredHistory.map(cart => renderCart(cart, false))}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+        {filteredActiveCarts.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <ShoppingBag className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-lg text-muted-foreground mb-4">
+                Votre panier est vide
+              </p>
+              <Button onClick={() => navigate('/chat')}>
+                Consulter Arthur
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          filteredActiveCarts.map(cart => renderCart(cart))
+        )}
       </div>
       <Footer />
     </div>
