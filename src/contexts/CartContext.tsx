@@ -8,7 +8,7 @@ interface CartItem {
   price: number;
   imageUrl: string;
   quantity: number;
-  source: 'arthur' | 'shop';
+  source: 'arthur' | 'shop' | 'promotion';
   reason?: string;
   productId?: string;
   cartId?: string;

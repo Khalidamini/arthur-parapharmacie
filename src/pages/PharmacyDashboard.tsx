@@ -90,6 +90,13 @@ const PharmacyDashboard = () => {
   return (
     <PharmacyLayout pharmacyName={pharmacyData?.name}>
       <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="mb-6">
+          <Button onClick={() => navigate('/pharmacy-orders')} className="mb-4">
+            <Package className="mr-2 h-4 w-4" />
+            Voir les commandes clients
+          </Button>
+        </div>
+
         <Tabs defaultValue="info" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="info">

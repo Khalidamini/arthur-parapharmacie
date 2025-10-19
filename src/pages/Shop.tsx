@@ -156,60 +156,40 @@ const Shop = () => {
     setFilteredProducts(filtered);
   };
 
-  const toggleProductSelection = (productId: string) => {
-    const newSelection = new Set(selectedProducts);
-    if (newSelection.has(productId)) {
-      newSelection.delete(productId);
-    } else {
-      newSelection.add(productId);
-    }
-    setSelectedProducts(newSelection);
-    // Save to localStorage
-    localStorage.setItem('selectedProducts', JSON.stringify(Array.from(newSelection)));
-  };
+  const toggleProductSelection = async (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
 
-  const addSelectedToCart = async () => {
-    if (selectedProducts.size === 0) {
-      toast({
-        title: "Panier vide",
-        description: "Veuillez sélectionner au moins un produit",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const toAdd = Array.from(selectedProducts)
-      .map(id => products.find(p => p.id === id))
-      .filter((p): p is Product => Boolean(p));
-
-    try {
-      await Promise.all(
-        toAdd.map(p =>
-          cart.addToCart({
-            id: p.id,
-            name: p.name,
-            brand: p.brand,
-            price: p.price,
-            imageUrl: p.image_url || '',
-            source: 'shop',
-            productId: p.id,
-          })
-        )
-      );
-
-      toast({
-        title: "Produits ajoutés",
-        description: `${toAdd.length} produit(s) ajouté(s) au panier`,
-      });
-
-      setSelectedProducts(new Set());
-      localStorage.removeItem('selectedProducts');
-      navigate('/cart');
-    } catch (e) {
-      console.error('Error adding selected products to cart', e);
-      toast({ title: 'Erreur', description: 'Impossible d\'ajouter au panier', variant: 'destructive' });
+    const isSelected = selectedProducts.has(productId);
+    
+    if (!isSelected) {
+      // Ajouter automatiquement au panier
+      try {
+        await cart.addToCart({
+          id: product.id,
+          name: product.name,
+          brand: product.brand,
+          price: product.price,
+          imageUrl: product.image_url || '',
+          source: 'shop',
+          productId: product.id,
+        });
+        
+        toast({
+          title: "Ajouté au panier",
+          description: `${product.name} ajouté au panier`,
+        });
+      } catch (e) {
+        console.error('Error adding to cart', e);
+        toast({ 
+          title: 'Erreur', 
+          description: 'Impossible d\'ajouter au panier', 
+          variant: 'destructive' 
+        });
+      }
     }
   };
+
 
   const categories = Array.from(new Set(products.map((p) => p.category)));
 
@@ -231,15 +211,9 @@ const Shop = () => {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Retour
             </Button>
-            <Button variant="outline" onClick={() => {
-              if (selectedProducts.size > 0) {
-                addSelectedToCart();
-              } else {
-                navigate('/cart');
-              }
-            }}>
+            <Button variant="outline" onClick={() => navigate('/cart')}>
               <ShoppingBag className="mr-2 h-4 w-4" />
-              Panier ({selectedProducts.size})
+              Panier ({cart.totalItems})
             </Button>
           </div>
           <h1 className="text-3xl font-bold">Boutique</h1>
@@ -285,39 +259,13 @@ const Shop = () => {
           </Select>
         </div>
 
-        {/* Selected Products Info */}
-        {selectedProducts.size > 0 && (
-          <div className="mb-4 p-4 bg-primary/10 rounded-lg flex items-center justify-between">
-            <p className="font-medium">
-              {selectedProducts.size} produit(s) sélectionné(s)
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSelectedProducts(new Set());
-                  localStorage.removeItem('selectedProducts');
-                }}
-              >
-                Désélectionner tout
-              </Button>
-              <Button size="sm" onClick={addSelectedToCart}>
-                Ajouter au panier
-              </Button>
-            </div>
-          </div>
-        )}
 
         {/* Products Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts.map((product) => (
             <Card
               key={product.id}
-              className={`cursor-pointer transition-all hover:shadow-lg ${
-                selectedProducts.has(product.id) ? "ring-2 ring-primary" : ""
-              }`}
-              onClick={() => toggleProductSelection(product.id)}
+              className="transition-all hover:shadow-lg"
             >
               <CardHeader>
                 {product.image_url && (
@@ -358,10 +306,13 @@ const Shop = () => {
               <CardFooter>
                 <Button
                   className="w-full"
-                  variant={selectedProducts.has(product.id) ? "default" : "outline"}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleProductSelection(product.id);
+                  }}
                 >
                   <ShoppingCart className="mr-2 h-4 w-4" />
-                  {selectedProducts.has(product.id) ? "Sélectionné" : "Sélectionner"}
+                  Ajouter au panier
                 </Button>
               </CardFooter>
             </Card>
