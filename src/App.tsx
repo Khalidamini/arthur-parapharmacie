@@ -21,6 +21,8 @@ import PharmacyRegistrationPending from "./pages/PharmacyRegistrationPending";
 import AdminPharmacies from "./pages/AdminPharmacies";
 import PharmacyLogin from "./pages/PharmacyLogin";
 import PharmacyOrders from "./pages/PharmacyOrders";
+import PharmacyResetPassword from "./pages/PharmacyResetPassword";
+import PharmacyUpdatePassword from "./pages/PharmacyUpdatePassword";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +47,8 @@ const App = () => (
             <Route path="/pharmacy-register" element={<PharmacyRegister />} />
             <Route path="/pharmacy-registration-pending" element={<PharmacyRegistrationPending />} />
             <Route path="/pharmacy-login" element={<PharmacyLogin />} />
+            <Route path="/pharmacy-reset-password" element={<PharmacyResetPassword />} />
+            <Route path="/pharmacy-update-password" element={<PharmacyUpdatePassword />} />
             <Route path="/pharmacy-dashboard" element={<PharmacyDashboard />} />
             <Route path="/pharmacy-orders" element={<PharmacyOrders />} />
             <Route path="/admin/pharmacies" element={<AdminPharmacies />} />

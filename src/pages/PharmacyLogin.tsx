@@ -155,6 +155,15 @@ const PharmacyLogin = () => {
                   autoComplete="current-password"
                 />
               </div>
+
+              <div className="flex items-center justify-end">
+                <Link 
+                  to="/pharmacy-reset-password" 
+                  className="text-sm text-primary hover:underline"
+                >
+                  Mot de passe oublié ?
+                </Link>
+              </div>
               
               <Button
                 type="submit"
