@@ -35,6 +35,7 @@ const Shop = () => {
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [pharmacyName, setPharmacyName] = useState("");
+  const [pharmacyId, setPharmacyId] = useState<string>("");
 
   // Load selected products from localStorage
   useEffect(() => {
@@ -78,6 +79,8 @@ const Shop = () => {
       }
 
       setPharmacyName(affiliation.pharmacies.name);
+      setPharmacyId(affiliation.pharmacy_id);
+      cart.setSelectedPharmacyId(affiliation.pharmacy_id);
 
       // Get products available in this pharmacy
       const { data: pharmacyProducts, error: productsError } = await supabase
@@ -173,7 +176,7 @@ const Shop = () => {
           imageUrl: product.image_url || '',
           source: 'shop',
           productId: product.id,
-        });
+        }, pharmacyId || cart.selectedPharmacyId || undefined);
         
         toast({
           title: "Ajouté au panier",

@@ -33,7 +33,7 @@ const PromotionSlider = ({ promotions, onSelectPromotion }: PromotionSliderProps
   const [dialogIndex, setDialogIndex] = useState(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const { addToCart } = useCart();
+  const { addToCart, selectedPharmacyId } = useCart();
 
   // Auto-play: défilement toutes les 2 secondes (pause au survol et dans le popup)
   const intervalRef = useRef<number | null>(null);
@@ -106,7 +106,7 @@ const PromotionSlider = ({ promotions, onSelectPromotion }: PromotionSliderProps
         source: 'shop',
         imageUrl: selectedPromotion.image_url || '',
         brand: 'Promotion'
-      });
+      }, selectedPharmacyId || undefined);
       
       toast.success("Promotion ajoutée au panier !");
       setIsDialogOpen(false);

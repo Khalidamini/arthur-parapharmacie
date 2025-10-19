@@ -25,7 +25,7 @@ interface ProductDialogProps {
 
 export const ProductDialog = ({ product, open, onOpenChange }: ProductDialogProps) => {
   const [isAdding, setIsAdding] = useState(false);
-  const { addToCart } = useCart();
+  const { addToCart, selectedPharmacyId } = useCart();
   const { toast } = useToast();
 
   if (!product) return null;
@@ -41,7 +41,7 @@ export const ProductDialog = ({ product, open, onOpenChange }: ProductDialogProp
       source: product.source || 'arthur',
       reason: product.reason,
       productId: (/^([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i.test(product.productId || '')) ? product.productId : (/^([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i.test(product.id) ? product.id : undefined),
-    });
+    }, selectedPharmacyId || undefined);
     
     toast({
       title: "Produit ajouté",
