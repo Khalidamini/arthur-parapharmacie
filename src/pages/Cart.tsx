@@ -44,13 +44,8 @@ export default function Cart() {
     }
   };
 
-  const filteredActiveCarts = selectedPharmacyId 
-    ? activeCarts.filter(cart => cart.pharmacyId === selectedPharmacyId)
-    : activeCarts;
-
-  const filteredHistory = selectedPharmacyId
-    ? cartHistory.filter(cart => cart.pharmacyId === selectedPharmacyId)
-    : cartHistory;
+  const filteredActiveCarts = activeCarts.filter(cart => cart.pharmacyId === selectedPharmacyId);
+  const filteredHistory = cartHistory.filter(cart => cart.pharmacyId === selectedPharmacyId);
 
   const renderCartItems = (cart: any) => (
     <div className="space-y-3">
@@ -228,12 +223,11 @@ export default function Cart() {
           {pharmacies.length > 0 && (
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4 text-muted-foreground" />
-              <Select value={selectedPharmacyId || "all"} onValueChange={(value) => setSelectedPharmacyId(value === "all" ? null : value)}>
+              <Select value={selectedPharmacyId || ""} onValueChange={(value) => setSelectedPharmacyId(value)}>
                 <SelectTrigger className="w-64">
-                  <SelectValue placeholder="Toutes les pharmacies" />
+                  <SelectValue placeholder="Sélectionner une pharmacie" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Toutes les pharmacies</SelectItem>
                   {pharmacies.map((pharmacy: any) => (
                     <SelectItem key={pharmacy.id} value={pharmacy.id}>
                       {pharmacy.name}
