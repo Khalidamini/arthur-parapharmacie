@@ -16,8 +16,9 @@ export default function Cart() {
     loadCarts();
   }, []);
 
-  const filteredActiveCarts = activeCarts.filter(cart => cart.pharmacyId === selectedPharmacyId);
-  const filteredHistory = cartHistory.filter(cart => cart.pharmacyId === selectedPharmacyId);
+  const filteredActiveCarts = selectedPharmacyId 
+    ? activeCarts.filter(cart => cart.pharmacyId === selectedPharmacyId)
+    : activeCarts;
 
   const renderCartItems = (cart: any) => (
     <div className="space-y-3">
