@@ -4,9 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, Building2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, Building2, Clock, Check } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import Footer from '@/components/Footer';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 export default function Cart() {
   const navigate = useNavigate();
@@ -19,6 +22,13 @@ export default function Cart() {
   const filteredActiveCarts = selectedPharmacyId 
     ? activeCarts.filter(cart => cart.pharmacyId === selectedPharmacyId)
     : activeCarts;
+  const filteredHistory = selectedPharmacyId
+    ? cartHistory.filter(cart => cart.pharmacyId === selectedPharmacyId).sort((a, b) => 
+        new Date(b.completedAt || b.updatedAt).getTime() - new Date(a.completedAt || a.updatedAt).getTime()
+      )
+    : cartHistory.sort((a, b) => 
+        new Date(b.completedAt || b.updatedAt).getTime() - new Date(a.completedAt || a.updatedAt).getTime()
+      );
 
   const renderCartItems = (cart: any) => (
     <div className="space-y-3">
@@ -100,9 +110,11 @@ export default function Cart() {
     </div>
   );
 
-  const renderCart = (cart: any) => {
+  const renderCart = (cart: any, isActive: boolean = true) => {
     const cartTotal = cart.items.reduce((sum: number, item: any) => sum + item.price * item.quantity, 0);
     const arthurItems = cart.items.filter((item: any) => item.source === 'arthur');
+    const shopItems = cart.items.filter((item: any) => item.source === 'shop');
+    const promoItems = cart.items.filter((item: any) => item.source === 'promotion');
 
     return (
       <Card key={cart.id} className="mb-4">
@@ -113,15 +125,35 @@ export default function Cart() {
               <CardTitle className="text-lg">
                 {cart.pharmacyName || 'Panier général'}
               </CardTitle>
+              {!isActive && (
+                <Badge variant={cart.status === 'completed' ? 'default' : 'secondary'}>
+                  {cart.status === 'completed' ? (
+                    <>
+                      <Check className="h-3 w-3 mr-1" />
+                      Validé
+                    </>
+                  ) : (
+                    'Annulé'
+                  )}
+                </Badge>
+              )}
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => clearCart(cart.id)}
-            >
-              Vider
-            </Button>
+            {isActive && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => clearCart(cart.id)}
+              >
+                Vider
+              </Button>
+            )}
           </div>
+          {!isActive && cart.completedAt && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+              <Clock className="h-4 w-4" />
+              {format(new Date(cart.completedAt), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           {renderCartItems(cart)}
@@ -132,10 +164,28 @@ export default function Cart() {
             {arthurItems.length > 0 && (
               <div className="flex justify-between text-sm">
                 <span className="flex items-center gap-1">
-                  <Badge variant="outline" className="bg-primary/10 text-xs">IA</Badge>
-                  Recommandations ({arthurItems.reduce((sum: number, item: any) => sum + item.quantity, 0)})
+                  <Badge variant="outline" className="bg-primary/10 text-xs">Arthur</Badge>
+                  ({arthurItems.reduce((sum: number, item: any) => sum + item.quantity, 0)})
                 </span>
                 <span>{arthurItems.reduce((sum: number, item: any) => sum + item.price * item.quantity, 0).toFixed(2)} €</span>
+              </div>
+            )}
+            {shopItems.length > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="flex items-center gap-1">
+                  <Badge variant="outline" className="text-xs">Boutique</Badge>
+                  ({shopItems.reduce((sum: number, item: any) => sum + item.quantity, 0)})
+                </span>
+                <span>{shopItems.reduce((sum: number, item: any) => sum + item.price * item.quantity, 0).toFixed(2)} €</span>
+              </div>
+            )}
+            {promoItems.length > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="flex items-center gap-1">
+                  <Badge variant="outline" className="bg-orange-100 text-xs">Promos</Badge>
+                  ({promoItems.reduce((sum: number, item: any) => sum + item.quantity, 0)})
+                </span>
+                <span>{promoItems.reduce((sum: number, item: any) => sum + item.price * item.quantity, 0).toFixed(2)} €</span>
               </div>
             )}
             <div className="flex justify-between font-bold text-lg">
@@ -144,12 +194,14 @@ export default function Cart() {
             </div>
           </div>
 
-          <Button 
-            className="w-full mt-4 bg-gradient-primary" 
-            onClick={() => completeCart(cart.id)}
-          >
-            Valider la commande
-          </Button>
+          {isActive && (
+            <Button 
+              className="w-full mt-4 bg-gradient-primary" 
+              onClick={() => completeCart(cart.id)}
+            >
+              Valider la commande
+            </Button>
+          )}
         </CardContent>
       </Card>
     );
@@ -165,25 +217,55 @@ export default function Cart() {
           </Button>
           <div className="flex items-center gap-2 mb-2">
             <ShoppingBag className="h-8 w-8" />
-            <h1 className="text-3xl font-bold">Mon Panier</h1>
+            <h1 className="text-3xl font-bold">Mes Paniers</h1>
           </div>
         </div>
 
-        {filteredActiveCarts.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <ShoppingBag className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-lg text-muted-foreground mb-4">
-                Votre panier est vide
-              </p>
-              <Button onClick={() => navigate('/chat')}>
-                Consulter Arthur
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredActiveCarts.map(cart => renderCart(cart))
-        )}
+        <Tabs defaultValue="active" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="active">
+              Paniers actifs ({filteredActiveCarts.length})
+            </TabsTrigger>
+            <TabsTrigger value="history">
+              Historique ({filteredHistory.length})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="active">
+            {filteredActiveCarts.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <ShoppingBag className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-lg text-muted-foreground mb-4">
+                    Votre panier est vide
+                  </p>
+                  <Button onClick={() => navigate('/chat')}>
+                    Consulter Arthur
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              filteredActiveCarts.map(cart => renderCart(cart, true))
+            )}
+          </TabsContent>
+
+          <TabsContent value="history">
+            {filteredHistory.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Clock className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-lg text-muted-foreground">
+                    Aucun historique
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {filteredHistory.map(cart => renderCart(cart, false))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
       <Footer />
     </div>
