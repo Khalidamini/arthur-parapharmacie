@@ -23,6 +23,8 @@ import PharmacyLogin from "./pages/PharmacyLogin";
 import PharmacyOrders from "./pages/PharmacyOrders";
 import PharmacyResetPassword from "./pages/PharmacyResetPassword";
 import PharmacyUpdatePassword from "./pages/PharmacyUpdatePassword";
+import Checkout from "./pages/Checkout";
+import PaymentSuccess from "./pages/PaymentSuccess";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +54,8 @@ const App = () => (
             <Route path="/pharmacy-dashboard" element={<PharmacyDashboard />} />
             <Route path="/pharmacy-orders" element={<PharmacyOrders />} />
             <Route path="/admin/pharmacies" element={<AdminPharmacies />} />
+            <Route path="/checkout/:cartId" element={<Checkout />} />
+            <Route path="/payment-success" element={<PaymentSuccess />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -96,27 +96,36 @@ export type Database = {
       }
       carts: {
         Row: {
+          amount_total: number | null
           completed_at: string | null
           created_at: string
           id: string
+          payment_intent_id: string | null
+          payment_status: string | null
           pharmacy_id: string | null
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          amount_total?: number | null
           completed_at?: string | null
           created_at?: string
           id?: string
+          payment_intent_id?: string | null
+          payment_status?: string | null
           pharmacy_id?: string | null
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          amount_total?: number | null
           completed_at?: string | null
           created_at?: string
           id?: string
+          payment_intent_id?: string | null
+          payment_status?: string | null
           pharmacy_id?: string | null
           status?: string
           updated_at?: string
@@ -201,6 +210,7 @@ export type Database = {
           phone: string | null
           postal_code: string
           qr_code: string
+          stripe_account_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -215,6 +225,7 @@ export type Database = {
           phone?: string | null
           postal_code: string
           qr_code: string
+          stripe_account_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -229,6 +240,7 @@ export type Database = {
           phone?: string | null
           postal_code?: string
           qr_code?: string
+          stripe_account_id?: string | null
           updated_at?: string | null
         }
         Relationships: []
