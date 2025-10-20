@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, ShoppingBag, User, Calendar, Package, Search } from "lucide-react";
+import { ArrowLeft, ShoppingBag, User, Calendar, Package, Search, Bell } from "lucide-react";
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import PharmacyLayout from '@/layouts/PharmacyLayout';
@@ -28,9 +28,13 @@ interface Cart {
   id: string;
   user_id: string;
   status: string;
+  payment_status: string | null;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
+  ready_for_pickup: boolean;
+  notification_sent_at: string | null;
+  pickup_message: string | null;
   items: CartItem[];
   profiles?: {
     email: string;
@@ -105,9 +109,13 @@ const PharmacyOrders = () => {
           id,
           user_id,
           status,
+          payment_status,
           created_at,
           updated_at,
-          completed_at
+          completed_at,
+          ready_for_pickup,
+          notification_sent_at,
+          pickup_message
         `)
         .eq('pharmacy_id', pharmId)
         .order('created_at', { ascending: false });
@@ -152,7 +160,9 @@ const PharmacyOrders = () => {
     let filtered = [...carts];
 
     // Filtrer par statut
-    if (statusFilter !== 'all') {
+    if (statusFilter === 'paid') {
+      filtered = filtered.filter(c => c.payment_status === 'paid');
+    } else if (statusFilter !== 'all') {
       filtered = filtered.filter(c => c.status === statusFilter);
     }
 
@@ -191,11 +201,44 @@ const PharmacyOrders = () => {
     setFilteredCarts(filtered);
   };
 
+  const handleNotifyCustomer = async (cartId: string) => {
+    try {
+      const { error } = await supabase
+        .from('carts')
+        .update({
+          ready_for_pickup: true,
+          notification_sent_at: new Date().toISOString(),
+          pickup_message: 'Votre commande est prête à être récupérée en pharmacie.'
+        })
+        .eq('id', cartId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Notification envoyée",
+        description: "Le client a été notifié que sa commande est prête.",
+      });
+
+      // Recharger les données
+      if (pharmacyId) {
+        await loadCarts(pharmacyId);
+      }
+    } catch (error) {
+      console.error('Error notifying customer:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'envoyer la notification.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const renderCart = (cart: Cart) => {
     const total = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const arthurItems = cart.items.filter(item => item.source === 'arthur');
     const shopItems = cart.items.filter(item => item.source === 'shop');
     const promoItems = cart.items.filter(item => item.source === 'promotion');
+    const isPaid = cart.payment_status === 'paid';
 
     return (
       <Card key={cart.id} className="mb-4">
@@ -212,23 +255,40 @@ const PharmacyOrders = () => {
               </div>
               {cart.completed_at && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  Complété le {format(new Date(cart.completed_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                  Payé le {format(new Date(cart.completed_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                </div>
+              )}
+              {cart.notification_sent_at && (
+                <div className="flex items-center gap-2 text-sm text-success">
+                  <Bell className="h-3 w-3" />
+                  Client notifié le {format(new Date(cart.notification_sent_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
                 </div>
               )}
             </div>
-            <div className="text-right">
-              <Badge variant={
-                cart.status === 'completed' ? 'default' : 
-                cart.status === 'active' ? 'secondary' : 
-                'outline'
-              }>
-                {cart.status === 'completed' ? 'Acheté' : 
-                 cart.status === 'active' ? 'En cours' : 
-                 'Abandonné'}
-              </Badge>
-              <p className="text-2xl font-bold text-primary mt-2">
+            <div className="text-right space-y-2">
+              <div className="flex gap-2 justify-end">
+                <Badge variant={isPaid ? 'default' : 'outline'}>
+                  {isPaid ? '✓ Payé' : 'Non payé'}
+                </Badge>
+                {cart.ready_for_pickup && (
+                  <Badge variant="secondary">
+                    Prêt
+                  </Badge>
+                )}
+              </div>
+              <p className="text-2xl font-bold text-primary">
                 {total.toFixed(2)} €
               </p>
+              {isPaid && !cart.ready_for_pickup && (
+                <Button 
+                  size="sm" 
+                  onClick={() => handleNotifyCustomer(cart.id)}
+                  className="w-full"
+                >
+                  <Bell className="mr-2 h-4 w-4" />
+                  Notifier client
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -413,6 +473,7 @@ const PharmacyOrders = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les statuts</SelectItem>
+                <SelectItem value="paid">Payées</SelectItem>
                 <SelectItem value="active">En cours</SelectItem>
                 <SelectItem value="completed">Achetés</SelectItem>
                 <SelectItem value="cancelled">Abandonnés</SelectItem>
@@ -443,13 +504,13 @@ const PharmacyOrders = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Paniers achetés</p>
+                  <p className="text-sm text-muted-foreground">Commandes payées</p>
                   <p className="text-2xl font-bold">
-                    {carts.filter(c => c.status === 'completed').length}
+                    {carts.filter(c => c.payment_status === 'paid').length}
                   </p>
                 </div>
                 <Badge variant="default" className="text-lg px-3 py-1">
-                  Achetés
+                  Payées
                 </Badge>
               </div>
             </CardContent>

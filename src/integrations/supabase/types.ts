@@ -100,9 +100,12 @@ export type Database = {
           completed_at: string | null
           created_at: string
           id: string
+          notification_sent_at: string | null
           payment_intent_id: string | null
           payment_status: string | null
           pharmacy_id: string | null
+          pickup_message: string | null
+          ready_for_pickup: boolean | null
           status: string
           updated_at: string
           user_id: string
@@ -112,9 +115,12 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           id?: string
+          notification_sent_at?: string | null
           payment_intent_id?: string | null
           payment_status?: string | null
           pharmacy_id?: string | null
+          pickup_message?: string | null
+          ready_for_pickup?: boolean | null
           status?: string
           updated_at?: string
           user_id: string
@@ -124,9 +130,12 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           id?: string
+          notification_sent_at?: string | null
           payment_intent_id?: string | null
           payment_status?: string | null
           pharmacy_id?: string | null
+          pickup_message?: string | null
+          ready_for_pickup?: boolean | null
           status?: string
           updated_at?: string
           user_id?: string
