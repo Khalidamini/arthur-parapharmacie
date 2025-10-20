@@ -13,7 +13,7 @@ import { fr } from 'date-fns/locale';
 
 export default function Cart() {
   const navigate = useNavigate();
-  const { activeCarts, cartHistory, updateQuantity, removeFromCart, clearCart, completeCart, loadCarts, selectedPharmacyId } = useCart();
+  const { activeCarts, cartHistory, updateQuantity, removeFromCart, clearCart, deleteCart, completeCart, loadCarts, selectedPharmacyId } = useCart();
 
   useEffect(() => {
     loadCarts();
@@ -138,15 +138,13 @@ export default function Cart() {
                 </Badge>
               )}
             </div>
-            {isActive && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => clearCart(cart.id)}
-              >
-                Vider
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => deleteCart(cart.id)}
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
           </div>
           {!isActive && cart.completedAt && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
@@ -197,9 +195,9 @@ export default function Cart() {
           {isActive && (
             <Button 
               className="w-full mt-4 bg-gradient-primary" 
-              onClick={() => completeCart(cart.id)}
+              onClick={() => navigate(`/checkout/${cart.id}`)}
             >
-              Valider la commande
+              Payer en ligne
             </Button>
           )}
         </CardContent>

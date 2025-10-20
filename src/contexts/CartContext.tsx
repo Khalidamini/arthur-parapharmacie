@@ -33,6 +33,7 @@ interface CartContextType {
   removeFromCart: (itemId: string) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   clearCart: (cartId: string) => Promise<void>;
+  deleteCart: (cartId: string) => Promise<void>;
   completeCart: (cartId: string) => Promise<void>;
   totalItems: number;
   totalPrice: number;
@@ -257,6 +258,29 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const deleteCart = async (cartId: string) => {
+    try {
+      // Delete all items first
+      const { error: itemsError } = await supabase
+        .from('cart_items')
+        .delete()
+        .eq('cart_id', cartId);
+
+      if (itemsError) throw itemsError;
+
+      // Then delete the cart
+      const { error: cartError } = await supabase
+        .from('carts')
+        .delete()
+        .eq('id', cartId);
+
+      if (cartError) throw cartError;
+      await loadCarts();
+    } catch (error) {
+      console.error('Error deleting cart:', error);
+    }
+  };
+
   const completeCart = async (cartId: string) => {
     try {
       const { error } = await supabase
@@ -291,6 +315,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         removeFromCart,
         updateQuantity,
         clearCart,
+        deleteCart,
         completeCart,
         totalItems,
         totalPrice,
