@@ -53,14 +53,32 @@ serve(async (req) => {
     const results = [];
 
     for (const account of pharmacyAccounts) {
-      // Créer l'utilisateur
+      // Essayer de créer l'utilisateur
       const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
         email: account.email,
         password: account.password,
         email_confirm: true,
       });
 
-      if (userError) {
+      let userId = userData?.user?.id;
+
+      // Si l'utilisateur existe déjà, récupérer son ID
+      if (userError && userError.message.includes('already been registered')) {
+        const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+        const existingUser = existingUsers?.users.find(u => u.email === account.email);
+        
+        if (existingUser) {
+          userId = existingUser.id;
+          console.log(`User ${account.email} already exists, using existing user ID`);
+        } else {
+          results.push({
+            email: account.email,
+            success: false,
+            error: 'User exists but could not be found'
+          });
+          continue;
+        }
+      } else if (userError) {
         console.error(`Error creating user ${account.email}:`, userError);
         results.push({
           email: account.email,
@@ -70,11 +88,39 @@ serve(async (req) => {
         continue;
       }
 
+      if (!userId) {
+        results.push({
+          email: account.email,
+          success: false,
+          error: 'No user ID available'
+        });
+        continue;
+      }
+
+      // Vérifier si le rôle existe déjà
+      const { data: existingRole } = await supabaseAdmin
+        .from('user_roles')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('pharmacy_id', account.pharmacyId)
+        .single();
+
+      if (existingRole) {
+        results.push({
+          email: account.email,
+          userId: userId,
+          pharmacyName: account.pharmacyName,
+          success: true,
+          message: 'Role already exists'
+        });
+        continue;
+      }
+
       // Attribuer le rôle de propriétaire de pharmacie
       const { error: roleError } = await supabaseAdmin
         .from('user_roles')
         .insert({
-          user_id: userData.user.id,
+          user_id: userId,
           pharmacy_id: account.pharmacyId,
           role: 'owner'
         });
@@ -83,16 +129,16 @@ serve(async (req) => {
         console.error(`Error assigning role to ${account.email}:`, roleError);
         results.push({
           email: account.email,
-          userId: userData.user.id,
+          userId: userId,
           success: false,
-          error: `User created but role assignment failed: ${roleError.message}`
+          error: `User exists but role assignment failed: ${roleError.message}`
         });
         continue;
       }
 
       results.push({
         email: account.email,
-        userId: userData.user.id,
+        userId: userId,
         pharmacyName: account.pharmacyName,
         success: true
       });
