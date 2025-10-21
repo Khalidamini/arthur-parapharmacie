@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Building2, Users, Package, Tag, Upload } from "lucide-react";
 import PharmacyLayout from '@/layouts/PharmacyLayout';
+import PharmacyProductsList from '@/components/PharmacyProductsList';
+import PharmacyPromotionsList from '@/components/PharmacyPromotionsList';
 
 const PharmacyDashboard = () => {
   const navigate = useNavigate();
@@ -165,30 +167,11 @@ const PharmacyDashboard = () => {
               <CardHeader>
                 <CardTitle>Catalogue produits</CardTitle>
                 <CardDescription>
-                  Gérez votre catalogue de produits
+                  Gérez votre catalogue de produits et créez des promotions
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-4">
-                  <Button>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Importer CSV
-                  </Button>
-                  <Button variant="outline">
-                    <Package className="mr-2 h-4 w-4" />
-                    Ajouter un produit
-                  </Button>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Importez votre catalogue via CSV ou utilisez notre mini-API standardisée pour synchroniser automatiquement vos produits.
-                </p>
-                <div className="border rounded-lg p-4 bg-muted/50">
-                  <h4 className="font-semibold mb-2">Options d'importation :</h4>
-                  <ul className="space-y-2 text-sm">
-                    <li>• Import CSV : Format standardisé (nom, marque, prix, catégorie, stock)</li>
-                    <li>• API synchronisation : Connexion automatique à votre base de données</li>
-                  </ul>
-                </div>
+              <CardContent className="space-y-6">
+                {pharmacyId && <PharmacyProductsList pharmacyId={pharmacyId} />}
               </CardContent>
             </Card>
           </TabsContent>
@@ -199,17 +182,15 @@ const PharmacyDashboard = () => {
               <CardHeader>
                 <CardTitle>Promotions actives</CardTitle>
                 <CardDescription>
-                  Créez et gérez vos promotions depuis votre catalogue produits
+                  Gérez vos promotions affichées dans l'application Arthur
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <Button>
-                  <Tag className="mr-2 h-4 w-4" />
-                  Créer une promotion
-                </Button>
-                <p className="text-sm text-muted-foreground mt-4">
-                  Les promotions seront affichées dans le slider sur l'application Arthur pour vos clients.
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Les promotions sont affichées dans le slider de l'application Arthur pour vos clients.
+                  Pour créer une promotion, allez dans l'onglet Produits.
                 </p>
+                {pharmacyId && <PharmacyPromotionsList pharmacyId={pharmacyId} />}
               </CardContent>
             </Card>
           </TabsContent>
