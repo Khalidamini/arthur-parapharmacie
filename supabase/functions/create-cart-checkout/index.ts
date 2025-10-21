@@ -38,19 +38,26 @@ serve(async (req) => {
     // Get cart details
     const { data: cart, error: cartError } = await supabaseClient
       .from('carts')
-      .select(`
-        *,
-        pharmacies (
-          name,
-          stripe_account_id
-        )
-      `)
+      .select('*')
       .eq('id', cartId)
       .eq('user_id', user.id)
       .single();
 
     if (cartError || !cart) {
-      throw new Error("Cart not found");
+      console.error('Cart error:', cartError);
+      throw new Error(`Cart not found: ${cartError?.message || 'Unknown error'}`);
+    }
+
+    // Get pharmacy details if pharmacy_id exists
+    let pharmacyAccount = null;
+    if (cart.pharmacy_id) {
+      const { data: pharmacy } = await supabaseClient
+        .from('pharmacies')
+        .select('name, stripe_account_id')
+        .eq('id', cart.pharmacy_id)
+        .single();
+      
+      pharmacyAccount = pharmacy?.stripe_account_id;
     }
 
     // Get cart items
@@ -98,8 +105,6 @@ serve(async (req) => {
       quantity: item.quantity,
     }));
 
-    const pharmacyAccount = (cart.pharmacies as any)?.stripe_account_id;
-    
     // Create checkout session
     const sessionConfig: any = {
       customer: customerId,
