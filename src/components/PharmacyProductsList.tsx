@@ -49,6 +49,40 @@ export default function PharmacyProductsList({ pharmacyId }: PharmacyProductsLis
 
   useEffect(() => {
     loadProducts();
+
+    // Subscribe to realtime updates for pharmacy_products and products
+    const channel = supabase
+      .channel('pharmacy-products-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pharmacy_products',
+          filter: `pharmacy_id=eq.${pharmacyId}`,
+        },
+        () => {
+          console.log('Pharmacy products changed, reloading...');
+          loadProducts();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'products',
+        },
+        () => {
+          console.log('Products changed, reloading...');
+          loadProducts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [pharmacyId]);
 
   const loadProducts = async () => {

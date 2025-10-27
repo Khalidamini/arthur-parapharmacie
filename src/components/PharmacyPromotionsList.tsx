@@ -40,6 +40,28 @@ export default function PharmacyPromotionsList({ pharmacyId }: PharmacyPromotion
 
   useEffect(() => {
     loadPromotions();
+
+    // Subscribe to realtime updates for promotions
+    const channel = supabase
+      .channel('promotions-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'promotions',
+          filter: `pharmacy_id=eq.${pharmacyId}`,
+        },
+        () => {
+          console.log('Promotions changed, reloading...');
+          loadPromotions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [pharmacyId]);
 
   const loadPromotions = async () => {

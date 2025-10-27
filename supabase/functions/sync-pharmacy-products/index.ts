@@ -155,7 +155,8 @@ Deno.serve(async (req) => {
         }
       } catch (error) {
         console.error(`Error processing product ${productData.name}:`, error);
-        syncResults.errors.push(`${productData.name}: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        syncResults.errors.push(`${productData.name}: ${errorMessage}`);
       }
     }
 
@@ -170,8 +171,9 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error('Error in sync-pharmacy-products:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       { 
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
