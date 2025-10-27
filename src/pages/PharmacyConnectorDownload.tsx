@@ -16,8 +16,8 @@ export default function PharmacyConnectorDownload() {
 
   const handleDownload = () => {
     setDownloadStarted(true);
-    // Simuler le téléchargement - en production, ce serait un vrai fichier
-    window.open('https://github.com/lovable-dev/arthur-connector/releases/latest', '_blank');
+    // Le connecteur sera bientôt disponible en téléchargement
+    // En attendant, on affiche le message de confirmation sans lien externe
   };
 
   return (
@@ -84,10 +84,10 @@ export default function PharmacyConnectorDownload() {
             </div>
 
             {downloadStarted && (
-              <Alert className="bg-green-50 border-green-200">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <AlertDescription className="text-green-800">
-                  <strong>Téléchargement lancé !</strong> Passez à l'étape 2 ci-dessous pendant que le fichier se télécharge.
+              <Alert className="bg-blue-50 border-blue-200">
+                <AlertCircle className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800">
+                  <strong>Connecteur bientôt disponible !</strong> En attendant, nous vous proposons notre solution clé en main avec installation par un technicien. Contactez-nous via l'onglet "Clé en main" du guide de synchronisation.
                 </AlertDescription>
               </Alert>
             )}
