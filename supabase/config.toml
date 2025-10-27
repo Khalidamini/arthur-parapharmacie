@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.sync-pharmacy-products]
 verify_jwt = true
+
+[functions.contact-turnkey-solution]
+verify_jwt = true

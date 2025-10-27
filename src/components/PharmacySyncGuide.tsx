@@ -1,7 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Code, Zap, FileJson, Server, Clock } from "lucide-react";
+import { BookOpen, Code, Zap, FileJson, Server, Clock, Rocket } from "lucide-react";
+import TurnkeySolutionContact from "./TurnkeySolutionContact";
 
 interface PharmacySyncGuideProps {
   pharmacyId: string;
@@ -24,7 +25,7 @@ export default function PharmacySyncGuide({ pharmacyId }: PharmacySyncGuideProps
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="manual" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="manual">
                 <FileJson className="mr-2 h-4 w-4" />
                 Import manuel
@@ -36,6 +37,10 @@ export default function PharmacySyncGuide({ pharmacyId }: PharmacySyncGuideProps
               <TabsTrigger value="api">
                 <Code className="mr-2 h-4 w-4" />
                 API
+              </TabsTrigger>
+              <TabsTrigger value="turnkey">
+                <Rocket className="mr-2 h-4 w-4" />
+                Clé en main
               </TabsTrigger>
             </TabsList>
 
@@ -146,8 +151,8 @@ Invoke-WebRequest -Uri "${apiEndpoint}" \\
 
                 <div>
                   <h4 className="font-semibold mb-2">Option 3 : Service de synchronisation Arthur</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Pour une solution clé en main, contactez-nous pour installer le service de synchronisation Arthur qui se connecte directement à votre base de données.
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Pour une solution clé en main, consultez l'onglet "Clé en main" pour demander l'installation du service.
                   </p>
                 </div>
               </div>
@@ -274,6 +279,89 @@ curl -X POST '${import.meta.env.VITE_SUPABASE_URL}/auth/v1/token?grant_type=pass
                   </div>
                 </div>
               </div>
+            </TabsContent>
+
+            {/* Solution clé en main */}
+            <TabsContent value="turnkey" className="space-y-4">
+              <Alert>
+                <AlertDescription>
+                  La solution premium pour une synchronisation sans effort. Notre équipe installe et configure tout pour vous.
+                </AlertDescription>
+              </Alert>
+
+              <TurnkeySolutionContact pharmacyId={pharmacyId} />
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Comment ça fonctionne ?</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-semibold">
+                      1
+                    </div>
+                    <div>
+                      <p className="font-semibold">Vous remplissez le formulaire</p>
+                      <p className="text-muted-foreground text-xs">
+                        Indiquez-nous vos coordonnées et votre logiciel de gestion
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-semibold">
+                      2
+                    </div>
+                    <div>
+                      <p className="font-semibold">Notre équipe vous contacte</p>
+                      <p className="text-muted-foreground text-xs">
+                        Sous 24-48h, un technicien planifie l'installation avec vous
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-semibold">
+                      3
+                    </div>
+                    <div>
+                      <p className="font-semibold">Installation sur site</p>
+                      <p className="text-muted-foreground text-xs">
+                        Un connecteur est installé et configuré directement dans votre pharmacie
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-semibold">
+                      4
+                    </div>
+                    <div>
+                      <p className="font-semibold">Synchronisation automatique activée</p>
+                      <p className="text-muted-foreground text-xs">
+                        Vos produits, stocks et prix sont synchronisés en temps réel avec Arthur
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-primary/20 bg-primary/5">
+                <CardContent className="pt-6">
+                  <div className="space-y-2 text-sm">
+                    <p className="font-semibold">✅ Avantages de la solution clé en main :</p>
+                    <ul className="space-y-1 text-muted-foreground">
+                      <li>• Aucune compétence technique requise</li>
+                      <li>• Installation et configuration par nos experts</li>
+                      <li>• Compatible avec tous les logiciels de gestion</li>
+                      <li>• Synchronisation bidirectionnelle (produits + commandes)</li>
+                      <li>• Mises à jour automatiques du connecteur</li>
+                      <li>• Support technique prioritaire</li>
+                      <li>• Garantie de bon fonctionnement</li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </CardContent>
