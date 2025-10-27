@@ -9,6 +9,7 @@ import { Building2, Users, Package, Tag, Upload } from "lucide-react";
 import PharmacyLayout from '@/layouts/PharmacyLayout';
 import PharmacyProductsList from '@/components/PharmacyProductsList';
 import PharmacyPromotionsList from '@/components/PharmacyPromotionsList';
+import PharmacyProductsSync from '@/components/PharmacyProductsSync';
 
 const PharmacyDashboard = () => {
   const navigate = useNavigate();
@@ -100,7 +101,7 @@ const PharmacyDashboard = () => {
         </div>
 
         <Tabs defaultValue="info" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="info">
               <Building2 className="mr-2 h-4 w-4" />
               Informations
@@ -112,6 +113,10 @@ const PharmacyDashboard = () => {
             <TabsTrigger value="promotions">
               <Tag className="mr-2 h-4 w-4" />
               Promotions
+            </TabsTrigger>
+            <TabsTrigger value="sync">
+              <Upload className="mr-2 h-4 w-4" />
+              Synchronisation
             </TabsTrigger>
             <TabsTrigger value="team">
               <Users className="mr-2 h-4 w-4" />
@@ -191,6 +196,21 @@ const PharmacyDashboard = () => {
                   Pour créer une promotion, allez dans l'onglet Produits.
                 </p>
                 {pharmacyId && <PharmacyPromotionsList pharmacyId={pharmacyId} />}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Synchronisation du catalogue */}
+          <TabsContent value="sync">
+            <Card>
+              <CardHeader>
+                <CardTitle>Synchronisation automatique</CardTitle>
+                <CardDescription>
+                  Importez vos produits depuis votre système de gestion
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {pharmacyId && <PharmacyProductsSync pharmacyId={pharmacyId} />}
               </CardContent>
             </Card>
           </TabsContent>

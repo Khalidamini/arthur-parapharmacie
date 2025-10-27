@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.create-pharmacy-test-accounts]
 verify_jwt = false
+
+[functions.sync-pharmacy-products]
+verify_jwt = true
