@@ -6,8 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileText, Loader2, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Upload, FileText, Loader2, RefreshCw, CheckCircle2, HelpCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PharmacySyncGuide from "./PharmacySyncGuide";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface PharmacyProductsSyncProps {
   pharmacyId: string;
@@ -116,13 +125,34 @@ export default function PharmacyProductsSync({ pharmacyId }: PharmacyProductsSyn
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <RefreshCw className="h-5 w-5" />
-            Synchronisation du catalogue
-          </CardTitle>
-          <CardDescription>
-            Importez ou mettez à jour vos produits depuis votre système de gestion
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <RefreshCw className="h-5 w-5" />
+                Synchronisation du catalogue
+              </CardTitle>
+              <CardDescription>
+                Importez ou mettez à jour vos produits depuis votre système de gestion
+              </CardDescription>
+            </div>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  Guide complet
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Guide de synchronisation</DialogTitle>
+                  <DialogDescription>
+                    Comment connecter votre système à Arthur et automatiser la synchronisation
+                  </DialogDescription>
+                </DialogHeader>
+                <PharmacySyncGuide pharmacyId={pharmacyId} />
+              </DialogContent>
+            </Dialog>
+          </div>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="json" className="w-full">
