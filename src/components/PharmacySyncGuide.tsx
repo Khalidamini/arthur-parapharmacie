@@ -1,8 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Code, Zap, FileJson, Server, Clock, Rocket } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { BookOpen, Code, Zap, FileJson, Server, Clock, Rocket, Download } from "lucide-react";
 import TurnkeySolutionContact from "./TurnkeySolutionContact";
+import { Link } from "react-router-dom";
 
 interface PharmacySyncGuideProps {
   pharmacyId: string;
@@ -24,15 +26,19 @@ export default function PharmacySyncGuide({ pharmacyId }: PharmacySyncGuideProps
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="manual" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+          <Tabs defaultValue="download" className="w-full">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="download">
+                <Download className="mr-2 h-4 w-4" />
+                Télécharger
+              </TabsTrigger>
               <TabsTrigger value="manual">
                 <FileJson className="mr-2 h-4 w-4" />
                 Import manuel
               </TabsTrigger>
               <TabsTrigger value="auto">
                 <Zap className="mr-2 h-4 w-4" />
-                Automatique
+                Planifié
               </TabsTrigger>
               <TabsTrigger value="api">
                 <Code className="mr-2 h-4 w-4" />
@@ -43,6 +49,71 @@ export default function PharmacySyncGuide({ pharmacyId }: PharmacySyncGuideProps
                 Clé en main
               </TabsTrigger>
             </TabsList>
+
+            {/* Connecteur téléchargeable */}
+            <TabsContent value="download" className="space-y-4">
+              <Alert className="border-primary bg-primary/5">
+                <Download className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Solution recommandée :</strong> Installation en 5 minutes, zéro compétence technique requise
+                </AlertDescription>
+              </Alert>
+
+              <Card className="border-2 border-primary">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Download className="h-5 w-5" />
+                    Connecteur Arthur - Installation automatique
+                  </CardTitle>
+                  <CardDescription>
+                    Téléchargez le logiciel qui synchronise automatiquement vos produits
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div className="text-center p-4 bg-muted rounded-lg">
+                      <div className="text-3xl mb-2">⚡</div>
+                      <p className="font-semibold text-sm">5 minutes</p>
+                      <p className="text-xs text-muted-foreground">Installation complète</p>
+                    </div>
+                    <div className="text-center p-4 bg-muted rounded-lg">
+                      <div className="text-3xl mb-2">🎯</div>
+                      <p className="font-semibold text-sm">100% automatique</p>
+                      <p className="text-xs text-muted-foreground">Détection du logiciel</p>
+                    </div>
+                    <div className="text-center p-4 bg-muted rounded-lg">
+                      <div className="text-3xl mb-2">✨</div>
+                      <p className="font-semibold text-sm">Zéro technique</p>
+                      <p className="text-xs text-muted-foreground">Guide visuel inclus</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 text-sm">
+                    <p className="font-semibold">Ce que fait le connecteur :</p>
+                    <ul className="space-y-1 text-muted-foreground">
+                      <li>✓ Se connecte à votre Pharmagest, LGPI ou Winpharma</li>
+                      <li>✓ Récupère automatiquement vos produits et stocks</li>
+                      <li>✓ Synchronise avec Arthur toutes les 15 minutes</li>
+                      <li>✓ Fonctionne en arrière-plan sans ralentir votre PC</li>
+                      <li>✓ Notifications de synchronisation réussie</li>
+                    </ul>
+                  </div>
+
+                  <Button asChild size="lg" className="w-full">
+                    <Link to="/pharmacy-connector-download">
+                      <Download className="mr-2 h-5 w-5" />
+                      Accéder au guide d'installation
+                    </Link>
+                  </Button>
+
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                    <p className="text-sm text-green-800">
+                      <strong>Gratuit</strong> - Compatible Windows 10/11 et macOS - Installation en 1 clic
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
             {/* Import manuel */}
             <TabsContent value="manual" className="space-y-4">
