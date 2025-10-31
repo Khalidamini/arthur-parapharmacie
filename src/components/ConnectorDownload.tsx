@@ -114,116 +114,87 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Download className="h-5 w-5" />
-            Étape 1 : Télécharger le connecteur
+            Télécharger le connecteur Arthur
           </CardTitle>
           <CardDescription>
-            Deux versions disponibles selon vos préférences
+            Solution professionnelle simple et universelle
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Version Python Simple - RECOMMANDÉE */}
-          <div className="border-2 border-primary rounded-lg p-4 bg-primary/5">
-            <div className="flex items-start gap-3 mb-3">
-              <CheckCircle2 className="h-5 w-5 text-primary mt-0.5" />
+        <CardContent className="space-y-4">
+          <div className="border-2 border-primary rounded-lg p-6 bg-gradient-to-br from-primary/5 to-primary/10">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="p-3 bg-primary rounded-lg">
+                <Package className="h-8 w-8 text-primary-foreground" />
+              </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-lg">Version Simple (Recommandée)</h3>
-                <p className="text-sm text-muted-foreground">
-                  Script Python léger, aucune installation lourde
+                <h3 className="text-xl font-bold mb-2">Connecteur Universel</h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Solution légère et professionnelle - Un seul fichier Python
                 </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <span>Windows, Mac, Linux</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <span>Pharmagest, LGPI, Winpharma</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <span>Installation en 2 minutes</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <span>Sync auto toutes les 15 min</span>
+                  </div>
+                </div>
+
+                <Button 
+                  size="lg"
+                  className="w-full"
+                  onClick={() => window.open('https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.py', '_blank')}
+                >
+                  <Download className="mr-2 h-5 w-5" />
+                  Télécharger le connecteur (Python)
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-muted rounded-lg p-4 space-y-3 text-sm">
+            <div className="flex items-start gap-2">
+              <span className="flex-shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">1</span>
+              <div>
+                <p className="font-semibold">Installer Python</p>
+                <p className="text-muted-foreground">Si pas déjà installé - <a href="https://www.python.org/downloads/" target="_blank" rel="noopener" className="text-primary hover:underline">python.org/downloads</a></p>
               </div>
             </div>
             
-            <div className="space-y-3">
-              <div className="flex gap-2 text-sm">
-                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                <span>Fonctionne sur Windows, Mac et Linux</span>
+            <div className="flex items-start gap-2">
+              <span className="flex-shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">2</span>
+              <div>
+                <p className="font-semibold">Enregistrer le fichier</p>
+                <p className="text-muted-foreground">Sur le bureau ou dans Documents</p>
               </div>
-              <div className="flex gap-2 text-sm">
-                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                <span>Installation en 2 minutes</span>
-              </div>
-              <div className="flex gap-2 text-sm">
-                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                <span>Synchronisation automatique toutes les 15 min</span>
-              </div>
-              
-              <Button 
-                className="w-full mt-3"
-                onClick={() => window.open('https://github.com/votre-org/arthur-connector-simple/archive/refs/heads/main.zip', '_blank')}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Télécharger la version simple
-              </Button>
-              
-              <div className="bg-muted/50 rounded p-3 text-xs space-y-1">
-                <p className="font-semibold">Installation rapide :</p>
-                <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-                  <li>Installer Python (si pas déjà installé)</li>
-                  <li>Extraire le fichier ZIP</li>
-                  <li>Lancer: <code className="bg-background px-1 rounded">python arthur-connector.py --configure</code></li>
-                </ol>
+            </div>
+            
+            <div className="flex items-start gap-2">
+              <span className="flex-shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">3</span>
+              <div>
+                <p className="font-semibold">Lancer la configuration</p>
+                <p className="text-muted-foreground">Double-clic sur le fichier puis entrer les informations ci-dessous</p>
               </div>
             </div>
           </div>
 
-          {/* Version Application - EN PRÉPARATION */}
-          <div className="border rounded-lg p-4 opacity-60">
-            <div className="flex items-start gap-3 mb-3">
-              <Package className="h-5 w-5 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="font-semibold">Version Application</h3>
-                <p className="text-sm text-muted-foreground">
-                  Application standalone avec interface graphique
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Button
-                variant="outline"
-                disabled
-                className="h-auto py-4 flex-col gap-2"
-              >
-                <Monitor className="h-6 w-6" />
-                <div className="text-center">
-                  <div className="font-semibold text-sm">Windows</div>
-                  <div className="text-xs text-muted-foreground">Bientôt disponible</div>
-                </div>
-              </Button>
-
-              <Button
-                variant="outline"
-                disabled
-                className="h-auto py-4 flex-col gap-2"
-              >
-                <Apple className="h-6 w-6" />
-                <div className="text-center">
-                  <div className="font-semibold text-sm">macOS</div>
-                  <div className="text-xs text-muted-foreground">Bientôt disponible</div>
-                </div>
-              </Button>
-
-              <Button
-                variant="outline"
-                disabled
-                className="h-auto py-4 flex-col gap-2"
-              >
-                <Package className="h-6 w-6" />
-                <div className="text-center">
-                  <div className="font-semibold text-sm">Linux</div>
-                  <div className="text-xs text-muted-foreground">Bientôt disponible</div>
-                </div>
-              </Button>
-            </div>
-          </div>
-
-          <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-2">
-            <p className="font-semibold">📦 Après téléchargement</p>
-            <ul className="space-y-1 text-muted-foreground">
-              <li>• Extraire le fichier ZIP</li>
-              <li>• Ouvrir le dossier dans un terminal</li>
-              <li>• Suivre les instructions du README.md</li>
-            </ul>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+            <p className="font-semibold text-blue-900 mb-2">💡 Aucune connaissance technique requise</p>
+            <p className="text-blue-800">
+              Le connecteur détecte automatiquement votre logiciel de pharmacie
+              et synchronise vos produits en temps réel.
+            </p>
           </div>
         </CardContent>
       </Card>
