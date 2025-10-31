@@ -1,0 +1,54 @@
+{
+  "name": "arthur-pharmacy-connector",
+  "version": "1.0.0",
+  "description": "Connecteur automatique Arthur pour pharmacies",
+  "main": "dist/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "tsc",
+    "package": "electron-builder",
+    "package:all": "electron-builder -mwl"
+  },
+  "author": "Arthur",
+  "license": "MIT",
+  "dependencies": {
+    "node-schedule": "^2.1.1",
+    "better-sqlite3": "^9.2.2",
+    "electron-log": "^5.0.1",
+    "electron-updater": "^6.1.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "@types/better-sqlite3": "^7.6.8",
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1",
+    "typescript": "^5.3.3"
+  },
+  "build": {
+    "appId": "com.arthur.pharmacy.connector",
+    "productName": "Arthur Pharmacy Connector",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.healthcare-fitness",
+      "target": ["dmg", "zip"]
+    },
+    "win": {
+      "target": ["nsis", "portable"]
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Office"
+    },
+    "publish": {
+      "provider": "generic",
+      "url": "https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/"
+    }
+  }
+}
