@@ -9,7 +9,7 @@ import { Building2, Users, Package, Tag, Upload } from "lucide-react";
 import PharmacyLayout from '@/layouts/PharmacyLayout';
 import PharmacyProductsList from '@/components/PharmacyProductsList';
 import PharmacyPromotionsList from '@/components/PharmacyPromotionsList';
-import PharmacyProductsSync from '@/components/PharmacyProductsSync';
+import ProductImportWizard from '@/components/ProductImportWizard';
 
 const PharmacyDashboard = () => {
   const navigate = useNavigate();
@@ -200,19 +200,9 @@ const PharmacyDashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* Synchronisation du catalogue */}
+          {/* Import du catalogue */}
           <TabsContent value="sync">
-            <Card>
-              <CardHeader>
-                <CardTitle>Synchronisation automatique</CardTitle>
-                <CardDescription>
-                  Importez vos produits depuis votre système de gestion
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {pharmacyId && <PharmacyProductsSync pharmacyId={pharmacyId} />}
-              </CardContent>
-            </Card>
+            {pharmacyId && <ProductImportWizard pharmacyId={pharmacyId} />}
           </TabsContent>
 
           {/* Gestion de l'équipe */}
