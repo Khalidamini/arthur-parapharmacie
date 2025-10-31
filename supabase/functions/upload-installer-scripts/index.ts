@@ -191,21 +191,45 @@ echo "Installation des dépendances..."
 pip install --upgrade pip > /dev/null 2>&1
 pip install requests schedule > /dev/null 2>&1
 
+# Vérifier la disponibilité de Tkinter (GUI)
+echo "Vérification de l'environnement graphique (Tkinter)..."
+python - <<'PY'
+import sys
+try:
+    import tkinter, tkinter.ttk  # noqa
+except Exception:
+    sys.exit(2)
+sys.exit(0)
+PY
+TK_STATUS=$?
+if [ "$TK_STATUS" -eq 2 ]; then
+  echo ""
+  echo "❌ Tkinter (interface graphique) n'est pas disponible dans votre Python."
+  echo "▶ Installez Python depuis https://www.python.org/downloads/macos/ (inclut Tkinter),"
+  echo "  puis relancez l'installateur."
+  echo ""
+  exit 1
+fi
+
 # Télécharger le connecteur
 echo "Téléchargement du connecteur Arthur..."
 curl -L -o arthur-connector-gui.py "$CONNECTOR_URL"
 
-# Créer le script de lancement
+# Créer le script de lancement (utilise pythonw si présent)
 cat > arthur-connector.command << 'EOF'
 #!/bin/bash
 cd "$HOME/Library/Application Support/ArthurConnector"
 source venv/bin/activate
-python arthur-connector-gui.py "$@"
+PY_BIN="python"
+if command -v pythonw >/dev/null 2>&1; then
+  PY_BIN="pythonw"
+fi
+"$PY_BIN" arthur-connector-gui.py "$@"
 EOF
 
 chmod +x arthur-connector.command
 
-# Créer le plist pour LaunchAgent
+# Créer le plist pour LaunchAgent (démarrage automatique en arrière-plan)
 PLIST_PATH="$HOME/Library/LaunchAgents/com.arthur.connector.plist"
 mkdir -p "$HOME/Library/LaunchAgents"
 
@@ -238,15 +262,21 @@ EOF
 # Charger le LaunchAgent
 launchctl load "$PLIST_PATH" 2>/dev/null || true
 
+# Supprimer la quarantaine Gatekeeper pour le dossier d'installation
+xattr -dr com.apple.quarantine "$INSTALL_DIR" 2>/dev/null || true
+
 echo ""
 echo "✅ Installation terminée !"
 echo ""
 echo "Le connecteur Arthur est maintenant installé et démarrera automatiquement."
 echo "Emplacement : $INSTALL_DIR"
-        echo ""
-        echo "Pour le lancer manuellement : $INSTALL_DIR/arthur-connector.command"
-        echo "Pour le désinstaller : launchctl unload $PLIST_PATH && rm -rf '$INSTALL_DIR'"
-        echo ""`,
+echo ""
+echo "Pour le lancer manuellement : $INSTALL_DIR/arthur-connector.command"
+echo "Pour le désinstaller : launchctl unload $PLIST_PATH && rm -rf '$INSTALL_DIR'"
+echo ""
+echo "Si la fenêtre ne s'affiche pas :"
+echo "  xattr -dr com.apple.quarantine '$INSTALL_DIR' && open '$INSTALL_DIR/arthur-connector.command'"
+echo ""`,
 
         'install-mac.command': `#!/bin/bash
 # Arthur Connector - Installateur macOS automatique (double-clic)
@@ -288,21 +318,45 @@ echo "Installation des dépendances..."
 pip install --upgrade pip > /dev/null 2>&1
 pip install requests schedule > /dev/null 2>&1
 
+# Vérifier la disponibilité de Tkinter (GUI)
+echo "Vérification de l'environnement graphique (Tkinter)..."
+python - <<'PY'
+import sys
+try:
+    import tkinter, tkinter.ttk  # noqa
+except Exception:
+    sys.exit(2)
+sys.exit(0)
+PY
+TK_STATUS=$?
+if [ "$TK_STATUS" -eq 2 ]; then
+  echo ""
+  echo "❌ Tkinter (interface graphique) n'est pas disponible dans votre Python."
+  echo "▶ Installez Python depuis https://www.python.org/downloads/macos/ (inclut Tkinter),"
+  echo "  puis relancez l'installateur."
+  echo ""
+  exit 1
+fi
+
 # Télécharger le connecteur
 echo "Téléchargement du connecteur Arthur..."
 curl -L -o arthur-connector-gui.py "$CONNECTOR_URL"
 
-# Créer le script de lancement
+# Créer le script de lancement (utilise pythonw si présent)
 cat > arthur-connector.command << 'EOF'
 #!/bin/bash
 cd "$HOME/Library/Application Support/ArthurConnector"
 source venv/bin/activate
-python arthur-connector-gui.py "$@"
+PY_BIN="python"
+if command -v pythonw >/dev/null 2>&1; then
+  PY_BIN="pythonw"
+fi
+"$PY_BIN" arthur-connector-gui.py "$@"
 EOF
 
 chmod +x arthur-connector.command
 
-# Créer le plist pour LaunchAgent
+# Créer le plist pour LaunchAgent (démarrage automatique en arrière-plan)
 PLIST_PATH="$HOME/Library/LaunchAgents/com.arthur.connector.plist"
 mkdir -p "$HOME/Library/LaunchAgents"
 
@@ -335,8 +389,11 @@ EOF
 # Charger le LaunchAgent
 launchctl load "$PLIST_PATH" 2>/dev/null || true
 
+# Supprimer la quarantaine Gatekeeper pour le dossier d'installation
+xattr -dr com.apple.quarantine "$INSTALL_DIR" 2>/dev/null || true
+
 # Ouvrir le lanceur automatiquement
-open "$INSTALL_DIR/arthur-connector.command" 2>/dev/null || true
+open -a Terminal "$INSTALL_DIR/arthur-connector.command" 2>/dev/null || true
 
 echo ""
 echo "✅ Installation terminée !"
@@ -344,22 +401,15 @@ echo ""
 echo "Le connecteur Arthur est maintenant installé et démarrera automatiquement."
 echo "Emplacement : $INSTALL_DIR"
 echo ""
-echo "⚠️  IMPORTANT - Autorisation macOS requise :"
-echo ""
-echo "Si macOS bloque l'exécution du connecteur, utilisez une de ces méthodes :"
-echo ""
-echo "📌 Méthode 1 (Terminal) - Recommandée :"
-echo "   Copiez et collez cette commande dans le Terminal :"
-echo "   xattr -cr '$INSTALL_DIR/arthur-connector.command'"
-echo ""
-echo "📌 Méthode 2 (Interface graphique) :"
-echo "   1. Ouvrez : Préférences Système → Confidentialité et sécurité"
-echo "   2. Cherchez le message concernant 'arthur-connector'"
-echo "   3. Cliquez sur 'Autoriser quand même'"
+echo "⚠️  Si la fenêtre ne s'affiche pas :"
+echo "   1) Autorisez l'app : Préférences Système → Confidentialité et sécurité → 'Autoriser quand même'"
+echo "   2) OU exécutez dans le Terminal :"
+echo "      xattr -dr com.apple.quarantine '$INSTALL_DIR' && open '$INSTALL_DIR/arthur-connector.command'"
 echo ""
 echo "Commandes utiles :"
 echo "  Lancer      : $INSTALL_DIR/arthur-connector.command"
 echo "  Désinstaller: launchctl unload $PLIST_PATH && rm -rf '$INSTALL_DIR'"
+echo "  Logs       : $INSTALL_DIR/connector-error.log"
 echo ""
 read -p "Appuyez sur Entrée pour fermer cette fenêtre..."
 `,
