@@ -142,19 +142,58 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
 
   const handleDownload = async (platform: 'windows' | 'mac' | 'linux') => {
     const url = downloadLinks[platform];
-    
-    // Lancer le téléchargement directement
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = url.split('/').pop() || 'arthur-connector';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast({
-      title: "Téléchargement lancé",
-      description: "Si le téléchargement ne démarre pas, utilisez la version Python ci-dessous.",
-    });
+    try {
+      const resp = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+      if (resp.ok) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = url.split('/').pop() || 'arthur-connector';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        toast({
+          title: "Téléchargement lancé",
+          description: "L'installateur est en cours de téléchargement.",
+        });
+        return;
+      }
+
+      // Fallback: télécharger le script Python si l'installateur n'est pas encore publié
+      const pyUrl =
+        'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.py?download=arthur-connector.py&cb=' +
+        Date.now();
+
+      const fallback = document.createElement('a');
+      fallback.href = pyUrl;
+      fallback.download = 'arthur-connector.py';
+      document.body.appendChild(fallback);
+      fallback.click();
+      fallback.remove();
+
+      toast({
+        title: "Installateur indisponible",
+        description:
+          "L'installateur n'est pas encore publié. Téléchargement du script Python lancé en remplacement.",
+      });
+    } catch (error) {
+      // En cas d'erreur réseau, même fallback Python
+      const pyUrl =
+        'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.py?download=arthur-connector.py&cb=' +
+        Date.now();
+
+      const a = document.createElement('a');
+      a.href = pyUrl;
+      a.download = 'arthur-connector.py';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      toast({
+        title: "Problème de téléchargement",
+        description:
+          "Impossible de récupérer l'installateur. Nous avons lancé le téléchargement du script Python.",
+      });
+    }
   };
 
   return (
