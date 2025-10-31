@@ -79,7 +79,7 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
   };
 
   const downloadLinks = {
-    windows: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector-setup.exe?download=arthur-connector-setup.exe',
+    windows: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/install-windows.ps1?download=install-windows.ps1',
     mac: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/install-mac.sh?download=install-mac.sh',
     linux: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/install-linux.sh?download=install-linux.sh'
   };
@@ -127,23 +127,6 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
   const handleDownload = async (platform: 'windows' | 'mac' | 'linux') => {
     const url = downloadLinks[platform];
 
-    // Vérifie la dispo de l'EXE Windows pour éviter un 404
-    if (platform === 'windows') {
-      try {
-        const head = await fetch(url, { method: 'HEAD', cache: 'no-store' });
-        if (!head.ok) {
-          toast({
-            title: "Bientôt disponible",
-            description: "L'installateur Windows sera publié sous peu. Utilisez macOS/Linux si nécessaire.",
-            variant: "destructive",
-          });
-          return;
-        }
-      } catch {
-        // ignore et on tente quand même
-      }
-    }
-
     try {
       // Téléchargement binaire pour éviter l'ouverture en texte dans le navigateur
       const resp = await fetch(url, { cache: 'no-store' });
@@ -153,20 +136,20 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
 
       const a = document.createElement('a');
       a.href = blobUrl;
-      const fallbackName = platform === 'windows' ? 'arthur-connector-setup.exe' : platform === 'mac' ? 'install-mac.sh' : 'install-linux.sh';
-      a.download = url.split('/').pop() || fallbackName;
+      const fallbackName = platform === 'windows' ? 'install-windows.ps1' : platform === 'mac' ? 'install-mac.sh' : 'install-linux.sh';
+      a.download = fallbackName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(blobUrl);
 
       const msg = {
-        windows: "Le téléchargement de l'installeur Windows a démarré. Double-cliquez pour lancer l'installation.",
-        mac: "Le téléchargement a démarré. Ouvrez le fichier téléchargé pour lancer l'installation.",
-        linux: "Le téléchargement a démarré. Ouvrez le fichier téléchargé pour lancer l'installation.",
+        windows: "Installation téléchargée ! Faites un clic droit sur 'install-windows.ps1' → Exécuter avec PowerShell.",
+        mac: "Le script a été téléchargé. Dans le Terminal : cd ~/Downloads && chmod +x install-mac.sh && ./install-mac.sh",
+        linux: "Le script a été téléchargé. Dans le Terminal : cd ~/Downloads && chmod +x install-linux.sh && ./install-linux.sh",
       };
 
-      toast({ title: 'Téléchargement lancé', description: msg[platform], duration: 8000 });
+      toast({ title: 'Téléchargement réussi', description: msg[platform], duration: 10000 });
     } catch (e) {
       toast({
         title: 'Erreur de téléchargement',
