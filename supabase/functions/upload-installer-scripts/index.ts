@@ -344,9 +344,25 @@ echo ""
 echo "Le connecteur Arthur est maintenant installé et démarrera automatiquement."
 echo "Emplacement : $INSTALL_DIR"
 echo ""
-echo "Pour le lancer manuellement : $INSTALL_DIR/arthur-connector.command"
-echo "Pour le désinstaller : launchctl unload $PLIST_PATH && rm -rf '$INSTALL_DIR'"
-echo ""`,
+echo "⚠️  IMPORTANT - Autorisation macOS requise :"
+echo ""
+echo "Si macOS bloque l'exécution du connecteur, utilisez une de ces méthodes :"
+echo ""
+echo "📌 Méthode 1 (Terminal) - Recommandée :"
+echo "   Copiez et collez cette commande dans le Terminal :"
+echo "   xattr -cr '$INSTALL_DIR/arthur-connector.command'"
+echo ""
+echo "📌 Méthode 2 (Interface graphique) :"
+echo "   1. Ouvrez : Préférences Système → Confidentialité et sécurité"
+echo "   2. Cherchez le message concernant 'arthur-connector'"
+echo "   3. Cliquez sur 'Autoriser quand même'"
+echo ""
+echo "Commandes utiles :"
+echo "  Lancer      : $INSTALL_DIR/arthur-connector.command"
+echo "  Désinstaller: launchctl unload $PLIST_PATH && rm -rf '$INSTALL_DIR'"
+echo ""
+read -p "Appuyez sur Entrée pour fermer cette fenêtre..."
+`,
 
         'install-linux.sh': `#!/bin/bash
 # Arthur Connector - Installateur Linux automatique
