@@ -128,6 +128,8 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
     const url = downloadLinks[platform];
 
     try {
+      // S'assure que les scripts sont bien disponibles (idempotent)
+      await uploadInstallers(true);
       // Téléchargement binaire pour éviter l'ouverture en texte dans le navigateur
       const resp = await fetch(url, { cache: 'no-store' });
       if (!resp.ok) throw new Error('download_failed');
