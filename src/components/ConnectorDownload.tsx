@@ -7,6 +7,7 @@ import { Download, CheckCircle2, Copy, Monitor, Apple, Settings, Key, Info, Load
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import JSZip from "jszip";
 interface ConnectorDownloadProps {
   pharmacyId: string;
 }
@@ -77,8 +78,138 @@ export default function ConnectorDownload({
   };
   const downloadLinks = {
     windows: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/install-windows.ps1?download=install-windows.ps1',
-    mac: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/install-mac.command?download=install-mac.command',
+    mac: 'zip-local',
     linux: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/install-linux.sh?download=install-linux.sh'
+  };
+
+  // URL des fonctions backend (pour préremplir la config GUI)
+  const FUNCTIONS_URL = (import.meta as any).env.VITE_SUPABASE_URL + '/functions/v1';
+
+  // Fichier Python minimal pour afficher l'interface graphique et enregistrer la configuration
+  const pythonGui = `#!/usr/bin/env python3
+import tkinter as tk
+from tkinter import ttk, messagebox
+import json, pathlib, webbrowser
+
+CONFIG_DIR = pathlib.Path.home() / '.arthur-connector'
+CONFIG_FILE = CONFIG_DIR / 'config.json'
+
+def load_config():
+    try:
+        if CONFIG_FILE.exists():
+            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {'pharmacy_id':'','api_key':'','api_url':'${FUNCTIONS_URL}','sync_interval':15}
+
+def save_config(data):
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=2)
+
+def on_save():
+    data = {
+        'pharmacy_id': pharmacy_var.get().strip(),
+        'api_key': api_var.get().strip(),
+        'api_url': url_var.get().strip(),
+        'sync_interval': 15
+    }
+    save_config(data)
+    messagebox.showinfo('Arthur Connector', 'Configuration enregistrée.')
+
+root = tk.Tk()
+root.title('Arthur Connector')
+root.geometry('520x300')
+
+frm = ttk.Frame(root, padding=16)
+frm.pack(fill='both', expand=True)
+
+style = ttk.Style()
+try:
+    style.theme_use('clam')
+except Exception:
+    pass
+
+pharmacy_var = tk.StringVar()
+api_var = tk.StringVar()
+url_var = tk.StringVar(value='${FUNCTIONS_URL}')
+
+# Layout
+labels = [('ID Pharmacie', pharmacy_var), ('Clé API', api_var), ('URL API', url_var)]
+for i, (text, var) in enumerate(labels):
+    ttk.Label(frm, text=text).grid(row=i, column=0, sticky='w', pady=6)
+    entry = ttk.Entry(frm, textvariable=var, width=46)
+    if text == 'Clé API':
+        entry.configure(show='•')
+    entry.grid(row=i, column=1, sticky='ew')
+
+btns = ttk.Frame(frm)
+btns.grid(row=3, column=0, columnspan=2, pady=12)
+
+ttk.Button(btns, text='Enregistrer', command=on_save).pack(side='left', padx=6)
+
+def open_help():
+    try:
+        webbrowser.open('https://arthur.pharmacy')
+    except Exception:
+        pass
+
+ttk.Button(btns, text='Aide', command=open_help).pack(side='left', padx=6)
+
+frm.columnconfigure(1, weight=1)
+
+cfg = load_config()
+pharmacy_var.set(cfg.get('pharmacy_id',''))
+api_var.set(cfg.get('api_key',''))
+url_var.set(cfg.get('api_url','${FUNCTIONS_URL}'))
+
+root.mainloop()
+`;
+
+  // Script d'installation macOS (ouvre directement l'interface graphique)
+  const macCommand = `#!/bin/bash
+set -euo pipefail
+APP_DIR="$HOME/Library/Application Support/ArthurConnector"
+mkdir -p "$APP_DIR"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+echo "→ Préparation de l'environnement..."
+if ! command -v python3 >/dev/null 2>&1; then
+  osascript -e 'display alert "Arthur Connector" message "Python 3 est requis. Installez les Outils de ligne de commande Xcode puis réessayez." as warning'
+  exit 1
+fi
+
+if [ ! -d "$APP_DIR/venv" ]; then
+  python3 -m venv "$APP_DIR/venv"
+fi
+source "$APP_DIR/venv/bin/activate"
+python3 -m pip install --upgrade pip >/dev/null 2>&1 || true
+python3 -m pip install requests schedule >/dev/null 2>&1 || true
+
+# Copier la GUI fournie dans le zip
+cp -f "$SCRIPT_DIR/arthur-connector-gui.py" "$APP_DIR/arthur-connector-gui.py"
+
+# Lancer la GUI
+echo "→ Lancement de l'interface graphique..."
+python3 "$APP_DIR/arthur-connector-gui.py"
+`;
+
+  const createMacZip = async () => {
+    const zip = new JSZip();
+    const folder = zip.folder('ArthurConnector');
+    if (!folder) return;
+    folder.file('arthur-connector-gui.py', pythonGui);
+    folder.file('install-mac.command', macCommand, { unixPermissions: '755' });
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ArthurConnector-mac.zip';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
   const uploadInstallers = async (silent = false) => {
     try {
@@ -118,40 +249,44 @@ export default function ConnectorDownload({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const handleDownload = async (platform: 'windows' | 'mac' | 'linux') => {
-    const url = downloadLinks[platform];
     try {
+      if (platform === 'mac') {
+        await createMacZip();
+        toast({
+          title: 'Téléchargement réussi',
+          description: "Ouvrez 'ArthurConnector-mac.zip', puis double-cliquez sur 'install-mac.command'. L'interface s'ouvrira.",
+          duration: 12000,
+        });
+        return;
+      }
+
+      const url = downloadLinks[platform];
       // S'assure que les scripts sont bien disponibles (idempotent)
       await uploadInstallers(true);
       // Téléchargement binaire pour éviter l'ouverture en texte dans le navigateur
-      const resp = await fetch(url, {
-        cache: 'no-store'
-      });
+      const resp = await fetch(url, { cache: 'no-store' });
       if (!resp.ok) throw new Error('download_failed');
       const blob = await resp.blob();
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = blobUrl;
-      const fallbackName = platform === 'windows' ? 'install-windows.ps1' : platform === 'mac' ? 'install-mac.command' : 'install-linux.sh';
+      const fallbackName = platform === 'windows' ? 'install-windows.ps1' : 'install-linux.sh';
       a.download = fallbackName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(blobUrl);
+
       const msg = {
         windows: "Fichier téléchargé ! Clic droit sur 'install-windows.ps1' → Exécuter avec PowerShell.",
-        mac: "Fichier téléchargé ! Si le double-clic échoue, ouvrez Terminal et exécutez: chmod +x ~/Downloads/install-mac.command",
-        linux: "Fichier téléchargé ! Clic droit sur 'install-linux.sh' → Exécuter dans un terminal."
-      };
-      toast({
-        title: 'Téléchargement réussi',
-        description: msg[platform],
-        duration: 10000
-      });
+        linux: "Fichier téléchargé ! Clic droit sur 'install-linux.sh' → Exécuter dans un terminal.",
+      } as const;
+      toast({ title: 'Téléchargement réussi', description: msg[platform], duration: 10000 });
     } catch (e) {
       toast({
         title: 'Erreur de téléchargement',
         description: "Impossible de récupérer l'installateur. Merci de réessayer.",
-        variant: 'destructive'
+        variant: 'destructive',
       });
     }
   };
@@ -229,18 +364,19 @@ export default function ConnectorDownload({
                   <span className="font-semibold text-blue-900 dark:text-blue-100">macOS</span>
                 </div>
                 <ol className="list-decimal list-inside space-y-1 text-xs text-gray-700 dark:text-gray-300">
-                  <li>Trouvez le fichier <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">install-mac.command</code> dans vos Téléchargements</li>
-                  <li>Ouvrez Terminal et exécutez la commande ci-dessous, puis relancez le fichier</li>
+                  <li>Ouvrez <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">ArthurConnector-mac.zip</code> puis double-cliquez sur <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">install-mac.command</code></li>
+                  <li>L'interface graphique s'ouvre immédiatement</li>
                 </ol>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                  ⚠️ Si macOS bloque: Préférences Système → Confidentialité et sécurité → Autoriser quand même
+                  ou exécutez la commande ci-dessous dans Terminal puis relancez le fichier:
+                </p>
                 <div className="flex items-center gap-2 mt-2">
-                  <code className="flex-1 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-xs overflow-x-auto">chmod +x ~/Downloads/install-mac.command && xattr -dr com.apple.quarantine ~/Downloads/install-mac.command && open ~/Downloads/install-mac.command</code>
-                  <Button variant="outline" size="icon" onClick={() => copyToClipboard('chmod +x ~/Downloads/install-mac.command && xattr -dr com.apple.quarantine ~/Downloads/install-mac.command && open ~/Downloads/install-mac.command', 'Commande macOS')}>
+                  <code className="flex-1 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-xs overflow-x-auto">xattr -dr com.apple.quarantine ~/Downloads/ArthurConnector/install-mac.command && open ~/Downloads/ArthurConnector/install-mac.command</code>
+                  <Button variant="outline" size="icon" onClick={() => copyToClipboard('xattr -dr com.apple.quarantine ~/Downloads/ArthurConnector/install-mac.command && open ~/Downloads/ArthurConnector/install-mac.command', 'Commande macOS')}>
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                  ⚠️ Si macOS bloque encore: Préférences Système → Confidentialité et sécurité → Autoriser quand même
-                </p>
               </div>
 
               <div className="bg-white dark:bg-gray-900 rounded p-3">
