@@ -2,7 +2,8 @@
 """
 Arthur Pharmacy Connector v1.0
 Connecteur officiel pour synchroniser automatiquement votre catalogue pharmacie avec Arthur
-Compatible: Pharmagest, LGPI, Winpharma | Windows, macOS, Linux
+Compatible: Pharmagest, LGPI, Winpharma, César, Alliadis, Cegid, Everest, Officine Partner, Sanocom, Opus
+Windows, macOS, Linux
 """
 
 import os
@@ -38,7 +39,8 @@ BANNER = """
 ║              ARTHUR PHARMACY CONNECTOR v1.0              ║
 ║                                                           ║
 ║     Synchronisation automatique de votre catalogue       ║
-║           Compatible: Pharmagest • LGPI • Winpharma      ║
+║   Compatible: Pharmagest • LGPI • Winpharma • César     ║
+║     Alliadis • Cegid • Everest • Officine Partner       ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
 """
@@ -107,22 +109,67 @@ class DatabaseDetector:
             r'C:\Winpharma',
             r'C:\Program Files\Winpharma',
             r'C:\Pharmacie',
+            r'C:\Program Files\Officine Partner',
+            r'C:\Program Files (x86)\Officine Partner',
+            r'C:\OfficePartner',
+            r'C:\Program Files\Cesar',
+            r'C:\Program Files (x86)\Cesar',
+            r'C:\Cesar',
+            r'C:\Program Files\Alliadis',
+            r'C:\Alliadis',
+            r'C:\Program Files\Cegid',
+            r'C:\Program Files (x86)\Cegid',
+            r'C:\Cegid',
+            r'C:\Program Files\Everest',
+            r'C:\Everest',
+            r'C:\Program Files\Sanocom',
+            r'C:\Sanocom',
+            r'C:\Program Files\Opus',
+            r'C:\Opus',
         ],
         'Darwin': [
             '/Applications/Pharmagest',
             '/Applications/LGPI',
             '/Applications/Winpharma',
+            '/Applications/Officine Partner',
+            '/Applications/Cesar',
+            '/Applications/Alliadis',
+            '/Applications/Cegid',
+            '/Applications/Everest',
+            '/Applications/Sanocom',
+            '/Applications/Opus',
             str(Path.home() / 'Library/Application Support/Pharmagest'),
             str(Path.home() / 'Library/Application Support/LGPI'),
             str(Path.home() / 'Library/Application Support/Winpharma'),
+            str(Path.home() / 'Library/Application Support/Officine Partner'),
+            str(Path.home() / 'Library/Application Support/Cesar'),
+            str(Path.home() / 'Library/Application Support/Alliadis'),
+            str(Path.home() / 'Library/Application Support/Cegid'),
+            str(Path.home() / 'Library/Application Support/Everest'),
+            str(Path.home() / 'Library/Application Support/Sanocom'),
+            str(Path.home() / 'Library/Application Support/Opus'),
         ],
         'Linux': [
             '/opt/pharmagest',
             '/opt/lgpi',
             '/opt/winpharma',
+            '/opt/officine-partner',
+            '/opt/cesar',
+            '/opt/alliadis',
+            '/opt/cegid',
+            '/opt/everest',
+            '/opt/sanocom',
+            '/opt/opus',
             str(Path.home() / '.pharmagest'),
             str(Path.home() / '.lgpi'),
             str(Path.home() / '.winpharma'),
+            str(Path.home() / '.officine-partner'),
+            str(Path.home() / '.cesar'),
+            str(Path.home() / '.alliadis'),
+            str(Path.home() / '.cegid'),
+            str(Path.home() / '.everest'),
+            str(Path.home() / '.sanocom'),
+            str(Path.home() / '.opus'),
         ]
     }
     
@@ -183,6 +230,20 @@ class DatabaseDetector:
             return 'LGPI'
         elif 'winpharma' in path_lower:
             return 'Winpharma'
+        elif 'officine' in path_lower or 'partner' in path_lower:
+            return 'Officine Partner'
+        elif 'cesar' in path_lower:
+            return 'César'
+        elif 'alliadis' in path_lower:
+            return 'Alliadis'
+        elif 'cegid' in path_lower:
+            return 'Cegid'
+        elif 'everest' in path_lower:
+            return 'Everest'
+        elif 'sanocom' in path_lower:
+            return 'Sanocom'
+        elif 'opus' in path_lower:
+            return 'Opus'
         return 'Logiciel de pharmacie'
 
 
