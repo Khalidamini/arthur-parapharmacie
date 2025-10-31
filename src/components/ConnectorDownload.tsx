@@ -139,7 +139,7 @@ export default function ConnectorDownload({
       URL.revokeObjectURL(blobUrl);
       const msg = {
         windows: "Fichier téléchargé ! Clic droit sur 'install-windows.ps1' → Exécuter avec PowerShell.",
-        mac: "Fichier téléchargé ! Double-cliquez sur 'install-mac.command' dans vos Téléchargements.",
+        mac: "Fichier téléchargé ! Si le double-clic échoue, ouvrez Terminal et exécutez: chmod +x ~/Downloads/install-mac.command",
         linux: "Fichier téléchargé ! Clic droit sur 'install-linux.sh' → Exécuter dans un terminal."
       };
       toast({
@@ -230,12 +230,16 @@ export default function ConnectorDownload({
                 </div>
                 <ol className="list-decimal list-inside space-y-1 text-xs text-gray-700 dark:text-gray-300">
                   <li>Trouvez le fichier <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">install-mac.command</code> dans vos Téléchargements</li>
-                  <li><strong>Double-cliquez</strong> sur le fichier</li>
-                  <li>Attendez la fin de l'installation (2-3 minutes)</li>
-                  <li>C'est fini ! Le connecteur démarre automatiquement</li>
+                  <li>Ouvrez Terminal et exécutez la commande ci-dessous, puis relancez le fichier</li>
                 </ol>
+                <div className="flex items-center gap-2 mt-2">
+                  <code className="flex-1 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-xs overflow-x-auto">chmod +x ~/Downloads/install-mac.command && xattr -dr com.apple.quarantine ~/Downloads/install-mac.command && open ~/Downloads/install-mac.command</code>
+                  <Button variant="outline" size="icon" onClick={() => copyToClipboard('chmod +x ~/Downloads/install-mac.command && xattr -dr com.apple.quarantine ~/Downloads/install-mac.command && open ~/Downloads/install-mac.command', 'Commande macOS')}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
                 <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                  ⚠️ Si macOS bloque l'exécution : Préférences Système → Sécurité → Autoriser
+                  ⚠️ Si macOS bloque encore: Préférences Système → Confidentialité et sécurité → Autoriser quand même
                 </p>
               </div>
 
