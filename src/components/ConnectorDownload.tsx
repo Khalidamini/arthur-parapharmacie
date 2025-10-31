@@ -141,28 +141,20 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
   };
 
   const handleDownload = async (platform: 'windows' | 'mac' | 'linux') => {
-    try {
-      const url = downloadLinks[platform];
-      
-      // Vérifier si le fichier existe
-      const response = await fetch(url, { method: 'HEAD' });
-      
-      if (!response.ok) {
-        toast({
-          title: "Connecteur en préparation",
-          description: "Les fichiers d'installation seront bientôt disponibles. Contactez le support pour plus d'informations.",
-        });
-        return;
-      }
-      
-      window.open(url, '_blank');
-    } catch (error) {
-      toast({
-        title: "Téléchargement indisponible",
-        description: "Le connecteur est en cours de préparation. Contactez le support Arthur.",
-        variant: "destructive",
-      });
-    }
+    const url = downloadLinks[platform];
+    
+    // Lancer le téléchargement directement
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = url.split('/').pop() || 'arthur-connector';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Téléchargement lancé",
+      description: "Si le téléchargement ne démarre pas, utilisez la version Python ci-dessous.",
+    });
   };
 
   return (
