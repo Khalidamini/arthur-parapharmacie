@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Download, CheckCircle2, Copy, Monitor, Apple, Package, RefreshCw, Key, Upload } from "lucide-react";
+import { Download, CheckCircle2, Copy, Monitor, Apple, Settings, Key, Info, Loader2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -14,70 +14,13 @@ interface ConnectorDownloadProps {
 
 export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps) {
   const [apiKey, setApiKey] = useState<string>('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [fileReady, setFileReady] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     loadApiKey();
-    checkFileAvailability();
-
-    // Re-vérifie après 2s pour contourner le cache
-    const t = setTimeout(checkFileAvailability, 2000);
-    return () => clearTimeout(t);
   }, [pharmacyId]);
-
-  const checkFileAvailability = async () => {
-    try {
-      const url = 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.py?cb=' + Date.now();
-      const response = await fetch(url, { method: 'HEAD', cache: 'no-store' });
-      setFileReady(response.ok);
-    } catch (error) {
-      console.error('Error checking file:', error);
-      setFileReady(false);
-    }
-  };
-
-  const handleUploadConnector = async () => {
-    setUploading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('upload-connector-files');
-      if (error) throw error;
-
-      // Vérifier la disponibilité publique avec retries (propagation CDN)
-      const publicUrl = 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.py';
-      let available = false;
-      for (let i = 0; i < 5; i++) {
-        const resp = await fetch(`${publicUrl}?cb=${Date.now()}`, { method: 'HEAD', cache: 'no-store' });
-        if (resp.ok) { available = true; break; }
-        await new Promise(r => setTimeout(r, 800));
-      }
-
-      setFileReady(available);
-      toast({
-        title: available ? '✓ Connecteur prêt' : 'Connecteur en préparation',
-        description: available
-          ? 'Le fichier Python est disponible au téléchargement.'
-          : "Le fichier a été créé mais la mise à jour peut prendre quelques secondes. Réessayez d'ici peu.",
-      });
-
-      if (!available) {
-        // Lancer une vérification différée
-        setTimeout(checkFileAvailability, 1500);
-      }
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast({
-        title: 'Erreur',
-        description: "Impossible d'uploader le connecteur. Vérifiez vos permissions.",
-        variant: 'destructive',
-      });
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const loadApiKey = async () => {
     try {
@@ -136,236 +79,108 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
 
   const downloadLinks = {
     windows: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector-setup.exe',
-    mac: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.dmg',
-    linux: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.AppImage'
+    mac: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/install-mac.sh',
+    linux: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/install-linux.sh'
   };
 
-  const handleDownload = async (platform: 'windows' | 'mac' | 'linux') => {
+  const handleDownload = (platform: 'windows' | 'mac' | 'linux') => {
     const url = downloadLinks[platform];
-    try {
-      const resp = await fetch(url, { method: 'HEAD', cache: 'no-store' });
-      if (resp.ok) {
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = url.split('/').pop() || 'arthur-connector';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        toast({
-          title: "Téléchargement lancé",
-          description: "L'installateur est en cours de téléchargement.",
-        });
-        return;
-      }
-
-      // Fallback: télécharger le script Python si l'installateur n'est pas encore publié
-      const pyUrl =
-        'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.py?download=arthur-connector.py&cb=' +
-        Date.now();
-
-      const fallback = document.createElement('a');
-      fallback.href = pyUrl;
-      fallback.download = 'arthur-connector.py';
-      document.body.appendChild(fallback);
-      fallback.click();
-      fallback.remove();
-
-      toast({
-        title: "Installateur indisponible",
-        description:
-          "L'installateur n'est pas encore publié. Téléchargement du script Python lancé en remplacement.",
-      });
-    } catch (error) {
-      // En cas d'erreur réseau, même fallback Python
-      const pyUrl =
-        'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.py?download=arthur-connector.py&cb=' +
-        Date.now();
-
-      const a = document.createElement('a');
-      a.href = pyUrl;
-      a.download = 'arthur-connector.py';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
-      toast({
-        title: "Problème de téléchargement",
-        description:
-          "Impossible de récupérer l'installateur. Nous avons lancé le téléchargement du script Python.",
-      });
-    }
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = url.split('/').pop() || 'arthur-connector-install';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    const instructions = {
+      windows: "Double-cliquez sur le fichier téléchargé pour lancer l'installation automatique.",
+      mac: "Ouvrez un terminal, allez dans le dossier Téléchargements et exécutez : chmod +x install-mac.sh && ./install-mac.sh",
+      linux: "Ouvrez un terminal, allez dans le dossier Téléchargements et exécutez : chmod +x install-linux.sh && ./install-linux.sh"
+    };
+    
+    toast({
+      title: "Téléchargement lancé",
+      description: instructions[platform],
+      duration: 8000,
+    });
   };
 
   return (
     <div className="space-y-6">
-      {/* Étape 1 : Téléchargement */}
-      <Card>
+      {/* Étape 1 : Téléchargement et Installation */}
+      <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Download className="h-5 w-5" />
-            Télécharger le connecteur Arthur
+            Étape 1 : Télécharger et Installer
           </CardTitle>
           <CardDescription>
-            Solution professionnelle simple et universelle
+            L'installation est entièrement automatique. Choisissez simplement votre système d'exploitation :
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {(
-            <Alert>
-              <Upload className="h-4 w-4" />
-              <AlertDescription>
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-sm">
-                    {fileReady ? "Le fichier de téléchargement est disponible" : "Préparez le fichier de téléchargement"}
-                  </span>
-                  <div className="flex gap-2">
-                    <Button 
-                      onClick={handleUploadConnector} 
-                      disabled={uploading}
-                      size="sm"
-                      variant="outline"
-                    >
-                      {uploading ? "Préparation..." : "Préparer / Réparer"}
-                    </Button>
-                    <Button
-                      onClick={checkFileAvailability}
-                      size="sm"
-                      variant="ghost"
-                    >
-                      Rafraîchir
-                    </Button>
-                  </div>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
-
-
-          <div className="border-2 border-primary rounded-lg p-6 bg-gradient-to-br from-primary/5 to-primary/10">
-            <div className="flex items-start gap-4 mb-4">
-              <div className="p-3 bg-primary rounded-lg">
-                <Package className="h-8 w-8 text-primary-foreground" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-bold mb-2">Installateurs Standalone</h3>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Aucune installation Python requise - Fonctionne directement
-                </p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <span>Pas besoin de Python</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <span>Pharmagest, LGPI, Winpharma</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <span>Double-clic pour lancer</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <span>Sync auto toutes les 15 min</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => handleDownload('windows')}
-                  >
-                    <Monitor className="mr-2 h-4 w-4" />
-                    Windows (.exe)
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => handleDownload('mac')}
-                  >
-                    <Apple className="mr-2 h-4 w-4" />
-                    macOS (.dmg)
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => handleDownload('linux')}
-                  >
-                    <Package className="mr-2 h-4 w-4" />
-                    Linux (.AppImage)
-                  </Button>
-                </div>
-
-                <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded text-xs text-blue-900 dark:text-blue-100">
-                  <strong>Version Python disponible:</strong> Si vous préférez utiliser Python directement,{' '}
-                  <button
-                    className="text-primary underline hover:no-underline"
-                    onClick={() => {
-                      const url = 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.py?download=arthur-connector.py&cb=' + Date.now();
-                      window.open(url, '_blank', 'noopener');
-                    }}
-                  >
-                    téléchargez le script Python
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-muted rounded-lg p-4 space-y-3 text-sm">
-            <div className="flex items-start gap-2">
-              <span className="flex-shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">1</span>
-              <div>
-                <p className="font-semibold">Télécharger pour votre système</p>
-                <p className="text-muted-foreground">Choisissez Windows (.exe), macOS (.dmg) ou Linux (.AppImage)</p>
-              </div>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Button 
+              onClick={() => handleDownload('windows')}
+              className="h-auto py-6 flex flex-col gap-2"
+              size="lg"
+            >
+              <Monitor className="h-10 w-10" />
+              <span className="font-semibold text-lg">Windows</span>
+              <span className="text-xs opacity-90">Installation automatique</span>
+            </Button>
             
-            <div className="flex items-start gap-2">
-              <span className="flex-shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">2</span>
-              <div>
-                <p className="font-semibold">Lancer l'installateur</p>
-                <p className="text-muted-foreground">Double-clic sur le fichier téléchargé</p>
-              </div>
-            </div>
+            <Button 
+              onClick={() => handleDownload('mac')}
+              className="h-auto py-6 flex flex-col gap-2"
+              size="lg"
+            >
+              <Apple className="h-10 w-10" />
+              <span className="font-semibold text-lg">macOS</span>
+              <span className="text-xs opacity-90">Installation automatique</span>
+            </Button>
             
-            <div className="flex items-start gap-2">
-              <span className="flex-shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">3</span>
-              <div>
-                <p className="font-semibold">Configuration automatique</p>
-                <p className="text-muted-foreground">Suivez l'assistant et entrez les informations ci-dessous</p>
-              </div>
-            </div>
+            <Button 
+              onClick={() => handleDownload('linux')}
+              className="h-auto py-6 flex flex-col gap-2"
+              size="lg"
+            >
+              <span className="text-3xl">🐧</span>
+              <span className="font-semibold text-lg">Linux</span>
+              <span className="text-xs opacity-90">Installation automatique</span>
+            </Button>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
-            <p className="font-semibold text-blue-900 mb-2">💡 Aucune connaissance technique requise</p>
-            <p className="text-blue-800">
-              Le connecteur détecte automatiquement votre logiciel de pharmacie
-              et synchronise vos produits en temps réel.
-            </p>
-          </div>
+          <Alert>
+            <CheckCircle2 className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Installation entièrement automatique :</strong>
+              <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+                <li>Téléchargement des composants nécessaires</li>
+                <li>Configuration de l'environnement</li>
+                <li>Démarrage automatique avec Windows/macOS/Linux</li>
+                <li>Aucune configuration manuelle requise</li>
+              </ul>
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
 
       {/* Étape 2 : Configuration */}
-      <Card>
+      <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Key className="h-5 w-5" />
-            Étape 2 : Informations de configuration
+            <Settings className="h-5 w-5" />
+            Étape 2 : Informations de Configuration
           </CardTitle>
           <CardDescription>
-            Ces informations sont nécessaires pour configurer le connecteur
+            Gardez ces informations à portée de main lors de la première utilisation :
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* ID Pharmacie */}
-          <div className="space-y-2">
-            <Label>ID de votre pharmacie</Label>
-            <div className="flex gap-2">
+          <div>
+            <Label className="text-sm font-medium text-muted-foreground">ID de la Pharmacie</Label>
+            <div className="flex gap-2 mt-1">
               <Input
                 value={pharmacyId}
                 readOnly
@@ -374,116 +189,97 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => copyToClipboard(pharmacyId, "ID pharmacie")}
+                onClick={() => copyToClipboard(pharmacyId, "ID")}
               >
                 <Copy className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
-          {/* Clé API */}
-          <div className="space-y-2">
-            <Label>Clé API</Label>
-            {apiKey ? (
-              <div className="flex gap-2">
-                <Input
-                  value={apiKey}
-                  readOnly
-                  type="password"
-                  className="font-mono"
-                />
+          <div>
+            <Label className="text-sm font-medium text-muted-foreground">Clé API</Label>
+            <div className="flex gap-2 mt-1">
+              {apiKey ? (
+                <>
+                  <Input
+                    value={apiKey}
+                    readOnly
+                    type="password"
+                    className="font-mono"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => copyToClipboard(apiKey, "Clé API")}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </>
+              ) : (
                 <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => copyToClipboard(apiKey, "Clé API")}
+                  onClick={generateApiKey}
+                  disabled={generating}
+                  className="w-full"
                 >
-                  <Copy className="h-4 w-4" />
+                  {generating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Génération...
+                    </>
+                  ) : (
+                    <>
+                      <Key className="mr-2 h-4 w-4" />
+                      Générer la Clé API
+                    </>
+                  )}
                 </Button>
-              </div>
-            ) : (
-              <Button
-                onClick={generateApiKey}
-                disabled={generating || loading}
-                className="w-full"
-              >
-                {generating ? (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                    Génération...
-                  </>
-                ) : (
-                  <>
-                    <Key className="mr-2 h-4 w-4" />
-                    Générer une clé API
-                  </>
-                )}
-              </Button>
-            )}
-            <p className="text-xs text-muted-foreground">
-              ⚠️ Gardez cette clé secrète. Ne la partagez jamais.
-            </p>
+              )}
+            </div>
           </div>
 
-          {/* Instructions */}
-          <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-2">
-            <p className="font-semibold">⚙️ Configuration du connecteur</p>
-            <ol className="space-y-1 text-muted-foreground list-decimal list-inside">
-              <li>Clic droit sur l'icône Arthur (barre des tâches)</li>
-              <li>Choisir "Configurer"</li>
-              <li>Copier-coller l'ID pharmacie et la clé API</li>
-              <li>Valider</li>
-            </ol>
-          </div>
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription className="text-sm">
+              Ces informations vous seront demandées automatiquement au premier lancement du connecteur.
+              Le connecteur détectera automatiquement votre logiciel de gestion (LGPI, Pharmagest, Winpharma).
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
 
-      {/* Étape 3 : Utilisation */}
-      <Card>
+      {/* Étape 3 : Terminé */}
+      <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
-            Étape 3 : C'est terminé !
+            <CheckCircle2 className="h-5 w-5 text-green-500" />
+            Étape 3 : C'est Terminé !
           </CardTitle>
-          <CardDescription>
-            Le connecteur synchronise automatiquement vos produits
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
-            <p className="font-semibold text-green-900">✅ Synchronisation automatique activée</p>
-            <ul className="space-y-2 text-sm text-green-800">
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <span>Synchronisation toutes les 15 minutes</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <span>Détection automatique de votre logiciel de pharmacie</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <span>Mise à jour automatique des prix et stocks</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <span>Notifications en cas d'erreur</span>
-              </li>
+          <Alert>
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <AlertDescription>
+              <strong>Tout est automatique !</strong> Le connecteur Arthur fonctionne maintenant en arrière-plan.
+            </AlertDescription>
+          </Alert>
+
+          <div className="space-y-2">
+            <h4 className="font-medium">Fonctionnement automatique :</h4>
+            <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+              <li>Détection automatique de votre logiciel (LGPI, Pharmagest, Winpharma)</li>
+              <li>Synchronisation des produits et promotions toutes les 15 minutes</li>
+              <li>Démarrage automatique au lancement de votre ordinateur</li>
+              <li>Mises à jour automatiques du connecteur</li>
             </ul>
           </div>
 
-          <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-2">
-            <p className="font-semibold">💡 Actions disponibles</p>
-            <ul className="space-y-1 text-muted-foreground">
-              <li>• <strong>Synchroniser maintenant</strong> : Clic droit → Synchroniser</li>
-              <li>• <strong>Voir les logs</strong> : Clic droit → Logs</li>
-              <li>• <strong>Statut</strong> : L'icône change de couleur selon l'état</li>
-            </ul>
-          </div>
-
-          <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-900">
-            <RefreshCw className="h-4 w-4 flex-shrink-0" />
-            <span>Le connecteur tourne en arrière-plan. Vous n'avez plus rien à faire !</span>
-          </div>
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription className="text-sm">
+              Le connecteur est invisible et ne nécessite aucune action de votre part.
+              Vous pouvez continuer à utiliser votre logiciel normalement.
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
 
@@ -492,12 +288,12 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
         <CardHeader>
           <CardTitle>Besoin d'aide ?</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <p className="text-muted-foreground">
-            Le connecteur ne détecte pas votre logiciel ? Une erreur de synchronisation ?
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Notre équipe support est disponible pour vous accompagner dans l'installation et la configuration du connecteur.
           </p>
-          <Button variant="outline" className="w-full">
-            Contacter le support Arthur
+          <Button className="mt-4" variant="outline">
+            Contacter le Support
           </Button>
         </CardContent>
       </Card>
