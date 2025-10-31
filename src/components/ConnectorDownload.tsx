@@ -144,24 +144,36 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
       }
     }
 
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = url.split('/').pop() || 'arthur-connector-install';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    const instructions = {
-      windows: "Double-cliquez sur le fichier téléchargé pour lancer l'installation automatique.",
-      mac: "Ouvrez un terminal, allez dans le dossier Téléchargements et exécutez : chmod +x install-mac.sh && ./install-mac.sh",
-      linux: "Ouvrez un terminal, allez dans le dossier Téléchargements et exécutez : chmod +x install-linux.sh && ./install-linux.sh"
-    };
-    
-    toast({
-      title: "Téléchargement lancé",
-      description: instructions[platform],
-      duration: 8000,
-    });
+    try {
+      // Téléchargement binaire pour éviter l'ouverture en texte dans le navigateur
+      const resp = await fetch(url, { cache: 'no-store' });
+      if (!resp.ok) throw new Error('download_failed');
+      const blob = await resp.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      const fallbackName = platform === 'windows' ? 'arthur-connector-setup.exe' : platform === 'mac' ? 'install-mac.sh' : 'install-linux.sh';
+      a.download = url.split('/').pop() || fallbackName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+
+      const msg = {
+        windows: "Le téléchargement de l'installeur Windows a démarré. Double-cliquez pour lancer l'installation.",
+        mac: "Le téléchargement a démarré. Ouvrez le fichier téléchargé pour lancer l'installation.",
+        linux: "Le téléchargement a démarré. Ouvrez le fichier téléchargé pour lancer l'installation.",
+      };
+
+      toast({ title: 'Téléchargement lancé', description: msg[platform], duration: 8000 });
+    } catch (e) {
+      toast({
+        title: 'Erreur de téléchargement',
+        description: "Impossible de récupérer l'installateur. Merci de réessayer.",
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
