@@ -82,6 +82,31 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
     linux: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.AppImage'
   };
 
+  const handleDownload = async (platform: 'windows' | 'mac' | 'linux') => {
+    try {
+      const url = downloadLinks[platform];
+      
+      // Vérifier si le fichier existe
+      const response = await fetch(url, { method: 'HEAD' });
+      
+      if (!response.ok) {
+        toast({
+          title: "Connecteur en préparation",
+          description: "Les fichiers d'installation seront bientôt disponibles. Contactez le support pour plus d'informations.",
+        });
+        return;
+      }
+      
+      window.open(url, '_blank');
+    } catch (error) {
+      toast({
+        title: "Téléchargement indisponible",
+        description: "Le connecteur est en cours de préparation. Contactez le support Arthur.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Étape 1 : Téléchargement */}
@@ -100,7 +125,7 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
             <Button
               variant="outline"
               className="h-auto py-6 flex-col gap-3"
-              onClick={() => window.open(downloadLinks.windows, '_blank')}
+              onClick={() => handleDownload('windows')}
             >
               <Monitor className="h-8 w-8" />
               <div className="text-center">
@@ -112,7 +137,7 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
             <Button
               variant="outline"
               className="h-auto py-6 flex-col gap-3"
-              onClick={() => window.open(downloadLinks.mac, '_blank')}
+              onClick={() => handleDownload('mac')}
             >
               <Apple className="h-8 w-8" />
               <div className="text-center">
@@ -124,7 +149,7 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
             <Button
               variant="outline"
               className="h-auto py-6 flex-col gap-3"
-              onClick={() => window.open(downloadLinks.linux, '_blank')}
+              onClick={() => handleDownload('linux')}
             >
               <Package className="h-8 w-8" />
               <div className="text-center">
