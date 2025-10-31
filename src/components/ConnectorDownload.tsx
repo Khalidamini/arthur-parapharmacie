@@ -303,10 +303,7 @@ export default function ConnectorDownload({
 
           <Alert>
             <Info className="h-4 w-4" />
-            <AlertDescription className="text-sm">
-              Ces informations vous seront demandées automatiquement au premier lancement du connecteur.
-              Le connecteur détectera automatiquement votre logiciel de gestion (LGPI, Pharmagest, Winpharma).
-            </AlertDescription>
+            <AlertDescription className="text-sm">Ces informations vous seront demandées automatiquement au premier lancement du connecteur. Le connecteur détectera automatiquement votre logiciel de gestion.</AlertDescription>
           </Alert>
         </CardContent>
       </Card>
