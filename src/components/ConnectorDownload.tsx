@@ -80,7 +80,7 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
 
   const downloadLinks = {
     windows: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/install-windows.ps1?download=install-windows.ps1',
-    mac: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/install-mac.sh?download=install-mac.sh',
+    mac: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/install-mac.command?download=install-mac.command',
     linux: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/install-linux.sh?download=install-linux.sh'
   };
 
@@ -136,7 +136,7 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
 
       const a = document.createElement('a');
       a.href = blobUrl;
-      const fallbackName = platform === 'windows' ? 'install-windows.ps1' : platform === 'mac' ? 'install-mac.sh' : 'install-linux.sh';
+      const fallbackName = platform === 'windows' ? 'install-windows.ps1' : platform === 'mac' ? 'install-mac.command' : 'install-linux.sh';
       a.download = fallbackName;
       document.body.appendChild(a);
       a.click();
@@ -145,7 +145,7 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
 
       const msg = {
         windows: "Installation téléchargée ! Faites un clic droit sur 'install-windows.ps1' → Exécuter avec PowerShell.",
-        mac: "Le script a été téléchargé. Dans le Terminal : cd ~/Downloads && chmod +x install-mac.sh && ./install-mac.sh",
+        mac: "Fichier téléchargé ! Double-cliquez sur 'install-mac.command' dans vos Téléchargements.",
         linux: "Le script a été téléchargé. Dans le Terminal : cd ~/Downloads && chmod +x install-linux.sh && ./install-linux.sh",
       };
 
@@ -243,14 +243,13 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
                   <span className="font-semibold text-blue-900 dark:text-blue-100">macOS</span>
                 </div>
                 <ol className="list-decimal list-inside space-y-1 text-xs text-gray-700 dark:text-gray-300">
-                  <li>Ouvrez <strong>Terminal</strong> (Cmd+Espace → tapez "terminal")</li>
-                  <li>Copiez-collez cette commande :</li>
+                  <li>Trouvez le fichier <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">install-mac.command</code> dans vos Téléchargements</li>
+                  <li><strong>Double-cliquez</strong> sur le fichier</li>
+                  <li>Attendez la fin de l'installation (2-3 minutes)</li>
+                  <li>C'est fini ! Le connecteur démarre automatiquement</li>
                 </ol>
-                <code className="block bg-gray-100 dark:bg-gray-800 p-2 rounded mt-2 text-xs font-mono overflow-x-auto">
-                  cd ~/Downloads && chmod +x install-mac.sh && ./install-mac.sh
-                </code>
                 <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                  ⚠️ Si demandé, entrez votre mot de passe Mac (normal, c'est pour l'installation)
+                  ⚠️ Si macOS bloque l'exécution : Préférences Système → Sécurité → Autoriser
                 </p>
               </div>
 
