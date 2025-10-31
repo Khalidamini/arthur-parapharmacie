@@ -233,8 +233,8 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
                   className="w-full"
                   disabled={!fileReady}
                   onClick={() => {
-                    const url = 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.py?cb=' + Date.now();
-                    window.open(url, '_blank');
+                    const url = 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.py?download=arthur-connector.py&cb=' + Date.now();
+                    window.open(url, '_blank', 'noopener');
                   }}
                 >
                   <Download className="mr-2 h-5 w-5" />
@@ -243,15 +243,7 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
 
                 {fileReady && (
                   <div className="mt-2 text-xs text-muted-foreground text-center">
-                    Problème d'accès ? Essayez ce lien alternatif (.txt):
-                    <a
-                      className="ml-1 text-primary hover:underline"
-                      href={"https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.txt?cb=" + Date.now()}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      arthur-connector.txt
-                    </a>
+                    Astuce: si une page de code s’ouvre, faites clic droit sur ce bouton et “Enregistrer le lien sous…”.
                   </div>
                 )}
               </div>
