@@ -42,23 +42,32 @@ Deno.serve(async (req) => {
 
     console.log('Uploading connector file to storage...');
 
-    // Lire le fichier Python depuis le repository (version locale)
-    // En production, on charge le contenu directement
-    const pythonContent = await fetch(
-      'https://raw.githubusercontent.com/YOUR_REPO/main/connector-standalone/arthur-connector-standalone.py'
-    ).then(r => r.text()).catch(() => {
-      // Fallback: générer le fichier à partir du code
-      return generatePythonConnector(supabaseUrl);
-    });
+    // Générer le contenu du fichier Python
+    const pythonContent = generatePythonConnector(supabaseUrl);
+    
+    // Convertir en Blob pour l'upload
+    const blob = new Blob([pythonContent], { type: 'text/x-python' });
 
-    const { error: uploadError } = await supabase.storage
+    // Supprimer l'ancien fichier s'il existe
+    await supabase.storage
       .from('connector-updates')
-      .upload('arthur-connector.py', pythonContent, {
+      .remove(['arthur-connector.py']);
+
+    // Upload du nouveau fichier
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('connector-updates')
+      .upload('arthur-connector.py', blob, {
         contentType: 'text/x-python',
+        cacheControl: '3600',
         upsert: true
       });
 
-    if (uploadError) throw uploadError;
+    if (uploadError) {
+      console.error('Upload error:', uploadError);
+      throw uploadError;
+    }
+
+    console.log('Upload successful:', uploadData);
 
     console.log('Connector file uploaded successfully');
 
