@@ -144,9 +144,9 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
       URL.revokeObjectURL(blobUrl);
 
       const msg = {
-        windows: "Installation téléchargée ! Faites un clic droit sur 'install-windows.ps1' → Exécuter avec PowerShell.",
+        windows: "Fichier téléchargé ! Clic droit sur 'install-windows.ps1' → Exécuter avec PowerShell.",
         mac: "Fichier téléchargé ! Double-cliquez sur 'install-mac.command' dans vos Téléchargements.",
-        linux: "Le script a été téléchargé. Dans le Terminal : cd ~/Downloads && chmod +x install-linux.sh && ./install-linux.sh",
+        linux: "Fichier téléchargé ! Clic droit sur 'install-linux.sh' → Exécuter dans un terminal.",
       };
 
       toast({ title: 'Téléchargement réussi', description: msg[platform], duration: 10000 });
@@ -235,6 +235,9 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
                   <li>Attendez la fin de l'installation (2-3 minutes)</li>
                   <li>C'est fini ! Le connecteur démarre automatiquement</li>
                 </ol>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                  ⚠️ Si Windows bloque l'exécution : cliquez sur "Plus d'infos" puis "Exécuter quand même"
+                </p>
               </div>
 
               <div className="bg-white dark:bg-gray-900 rounded p-3">
@@ -259,14 +262,13 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
                   <span className="font-semibold text-blue-900 dark:text-blue-100">Linux</span>
                 </div>
                 <ol className="list-decimal list-inside space-y-1 text-xs text-gray-700 dark:text-gray-300">
-                  <li>Ouvrez votre <strong>Terminal</strong></li>
-                  <li>Copiez-collez cette commande :</li>
+                  <li>Trouvez le fichier <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">install-linux.sh</code> dans vos Téléchargements</li>
+                  <li><strong>Clic droit</strong> → <strong>"Exécuter"</strong> ou <strong>"Exécuter dans un terminal"</strong></li>
+                  <li>Attendez la fin de l'installation (2-3 minutes)</li>
+                  <li>C'est fini ! Le connecteur démarre automatiquement</li>
                 </ol>
-                <code className="block bg-gray-100 dark:bg-gray-800 p-2 rounded mt-2 text-xs font-mono overflow-x-auto">
-                  cd ~/Downloads && chmod +x install-linux.sh && ./install-linux.sh
-                </code>
                 <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                  ⚠️ Si demandé, entrez votre mot de passe sudo (normal, pour installer Python si besoin)
+                  ⚠️ Si demandé, entrez votre mot de passe (normal, pour installer Python si besoin)
                 </p>
               </div>
             </div>
