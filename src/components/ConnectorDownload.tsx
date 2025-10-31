@@ -7,33 +7,30 @@ import { Download, CheckCircle2, Copy, Monitor, Apple, Settings, Key, Info, Load
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
 interface ConnectorDownloadProps {
   pharmacyId: string;
 }
-
-export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps) {
+export default function ConnectorDownload({
+  pharmacyId
+}: ConnectorDownloadProps) {
   const [apiKey, setApiKey] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const { toast } = useToast();
-
+  const {
+    toast
+  } = useToast();
   useEffect(() => {
     loadApiKey();
   }, [pharmacyId]);
-
   const loadApiKey = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('pharmacy_api_keys')
-        .select('api_key')
-        .eq('pharmacy_id', pharmacyId)
-        .maybeSingle();
-
+      const {
+        data,
+        error
+      } = await supabase.from('pharmacy_api_keys').select('api_key').eq('pharmacy_id', pharmacyId).maybeSingle();
       if (error && error.code !== 'PGRST116') throw error;
-
       if (data) {
         setApiKey(data.api_key);
       }
@@ -43,65 +40,63 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
       setLoading(false);
     }
   };
-
   const generateApiKey = async () => {
     try {
       setGenerating(true);
-      const { data, error } = await supabase.functions.invoke('generate-pharmacy-api-key', {
-        body: { pharmacy_id: pharmacyId }
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('generate-pharmacy-api-key', {
+        body: {
+          pharmacy_id: pharmacyId
+        }
       });
-
       if (error) throw error;
-
       setApiKey(data.api_key);
       toast({
         title: "Clé API générée",
-        description: "Utilisez cette clé pour configurer le connecteur",
+        description: "Utilisez cette clé pour configurer le connecteur"
       });
     } catch (error) {
       console.error('Error generating API key:', error);
       toast({
         title: "Erreur",
         description: "Impossible de générer la clé API",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setGenerating(false);
     }
   };
-
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast({
       title: "Copié !",
-      description: `${label} copié dans le presse-papiers`,
+      description: `${label} copié dans le presse-papiers`
     });
   };
-
   const downloadLinks = {
     windows: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/install-windows.ps1?download=install-windows.ps1',
     mac: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/install-mac.command?download=install-mac.command',
     linux: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/install-linux.sh?download=install-linux.sh'
   };
-
   const uploadInstallers = async (silent = false) => {
     try {
       setUploading(true);
       if (!silent) {
         toast({
           title: "Préparation des installateurs",
-          description: "Upload des scripts en cours...",
+          description: "Upload des scripts en cours..."
         });
       }
-
-      const { error } = await supabase.functions.invoke('upload-installer-scripts');
-      
+      const {
+        error
+      } = await supabase.functions.invoke('upload-installer-scripts');
       if (error) throw error;
-
       if (!silent) {
         toast({
           title: "Installateurs prêts",
-          description: "Les scripts d'installation sont maintenant disponibles.",
+          description: "Les scripts d'installation sont maintenant disponibles."
         });
       }
     } catch (error) {
@@ -110,32 +105,30 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
         toast({
           title: "Erreur",
           description: "Impossible d'uploader les installateurs. Réessayez plus tard.",
-          variant: "destructive",
+          variant: "destructive"
         });
       }
     } finally {
       setUploading(false);
     }
   };
-
   useEffect(() => {
     // Upload automatique et idempotent des scripts (macOS/Linux)
     uploadInstallers(true).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
   const handleDownload = async (platform: 'windows' | 'mac' | 'linux') => {
     const url = downloadLinks[platform];
-
     try {
       // S'assure que les scripts sont bien disponibles (idempotent)
       await uploadInstallers(true);
       // Téléchargement binaire pour éviter l'ouverture en texte dans le navigateur
-      const resp = await fetch(url, { cache: 'no-store' });
+      const resp = await fetch(url, {
+        cache: 'no-store'
+      });
       if (!resp.ok) throw new Error('download_failed');
       const blob = await resp.blob();
       const blobUrl = URL.createObjectURL(blob);
-
       const a = document.createElement('a');
       a.href = blobUrl;
       const fallbackName = platform === 'windows' ? 'install-windows.ps1' : platform === 'mac' ? 'install-mac.command' : 'install-linux.sh';
@@ -144,25 +137,25 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(blobUrl);
-
       const msg = {
         windows: "Fichier téléchargé ! Clic droit sur 'install-windows.ps1' → Exécuter avec PowerShell.",
         mac: "Fichier téléchargé ! Double-cliquez sur 'install-mac.command' dans vos Téléchargements.",
-        linux: "Fichier téléchargé ! Clic droit sur 'install-linux.sh' → Exécuter dans un terminal.",
+        linux: "Fichier téléchargé ! Clic droit sur 'install-linux.sh' → Exécuter dans un terminal."
       };
-
-      toast({ title: 'Téléchargement réussi', description: msg[platform], duration: 10000 });
+      toast({
+        title: 'Téléchargement réussi',
+        description: msg[platform],
+        duration: 10000
+      });
     } catch (e) {
       toast({
         title: 'Erreur de téléchargement',
         description: "Impossible de récupérer l'installateur. Merci de réessayer.",
-        variant: 'destructive',
+        variant: 'destructive'
       });
     }
   };
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Étape 1 : Téléchargement et Installation */}
       <Card className="mb-6">
         <CardHeader>
@@ -176,31 +169,19 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button 
-              onClick={() => handleDownload('windows')}
-              className="h-auto py-6 flex flex-col gap-2"
-              size="lg"
-            >
+            <Button onClick={() => handleDownload('windows')} className="h-auto py-6 flex flex-col gap-2" size="lg">
               <Monitor className="h-10 w-10" />
               <span className="font-semibold text-lg">Windows</span>
               <span className="text-xs opacity-90">Installation automatique</span>
             </Button>
             
-            <Button 
-              onClick={() => handleDownload('mac')}
-              className="h-auto py-6 flex flex-col gap-2"
-              size="lg"
-            >
+            <Button onClick={() => handleDownload('mac')} className="h-auto py-6 flex flex-col gap-2" size="lg">
               <Apple className="h-10 w-10" />
               <span className="font-semibold text-lg">macOS</span>
               <span className="text-xs opacity-90">Installation automatique</span>
             </Button>
             
-            <Button 
-              onClick={() => handleDownload('linux')}
-              className="h-auto py-6 flex flex-col gap-2"
-              size="lg"
-            >
+            <Button onClick={() => handleDownload('linux')} className="h-auto py-6 flex flex-col gap-2" size="lg">
               <span className="text-3xl">🐧</span>
               <span className="font-semibold text-lg">Linux</span>
               <span className="text-xs opacity-90">Installation automatique</span>
@@ -293,16 +274,8 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
           <div>
             <Label className="text-sm font-medium text-muted-foreground">ID de la Pharmacie</Label>
             <div className="flex gap-2 mt-1">
-              <Input
-                value={pharmacyId}
-                readOnly
-                className="font-mono"
-              />
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => copyToClipboard(pharmacyId, "ID")}
-              >
+              <Input value={pharmacyId} readOnly className="font-mono" />
+              <Button variant="outline" size="icon" onClick={() => copyToClipboard(pharmacyId, "ID")}>
                 <Copy className="h-4 w-4" />
               </Button>
             </div>
@@ -311,41 +284,20 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
           <div>
             <Label className="text-sm font-medium text-muted-foreground">Clé API</Label>
             <div className="flex gap-2 mt-1">
-              {apiKey ? (
-                <>
-                  <Input
-                    value={apiKey}
-                    readOnly
-                    type="password"
-                    className="font-mono"
-                  />
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => copyToClipboard(apiKey, "Clé API")}
-                  >
+              {apiKey ? <>
+                  <Input value={apiKey} readOnly type="password" className="font-mono" />
+                  <Button variant="outline" size="icon" onClick={() => copyToClipboard(apiKey, "Clé API")}>
                     <Copy className="h-4 w-4" />
                   </Button>
-                </>
-              ) : (
-                <Button
-                  onClick={generateApiKey}
-                  disabled={generating}
-                  className="w-full"
-                >
-                  {generating ? (
-                    <>
+                </> : <Button onClick={generateApiKey} disabled={generating} className="w-full">
+                  {generating ? <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Génération...
-                    </>
-                  ) : (
-                    <>
+                    </> : <>
                       <Key className="mr-2 h-4 w-4" />
                       Générer la Clé API
-                    </>
-                  )}
-                </Button>
-              )}
+                    </>}
+                </Button>}
             </div>
           </div>
 
@@ -378,7 +330,7 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
           <div className="space-y-2">
             <h4 className="font-medium">Fonctionnement automatique :</h4>
             <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-              <li>Détection automatique de votre logiciel (LGPI, Pharmagest, Winpharma)</li>
+              <li>Détection automatique de votre logiciel de pharmacie</li>
               <li>Synchronisation des produits et promotions toutes les 15 minutes</li>
               <li>Démarrage automatique au lancement de votre ordinateur</li>
               <li>Mises à jour automatiques du connecteur</li>
@@ -409,6 +361,5 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
           </Button>
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 }
