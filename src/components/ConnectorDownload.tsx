@@ -23,20 +23,20 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
   useEffect(() => {
     loadApiKey();
     checkFileAvailability();
+
+    // Re-vérifie après 2s pour contourner le cache
+    const t = setTimeout(checkFileAvailability, 2000);
+    return () => clearTimeout(t);
   }, [pharmacyId]);
 
   const checkFileAvailability = async () => {
     try {
-      const { data, error } = await supabase.storage
-        .from('connector-updates')
-        .list();
-
-      if (!error && data) {
-        const pythonFile = data.find(file => file.name === 'arthur-connector.py');
-        setFileReady(!!pythonFile);
-      }
+      const url = 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.py?cb=' + Date.now();
+      const response = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+      setFileReady(response.ok);
     } catch (error) {
       console.error('Error checking file:', error);
+      setFileReady(false);
     }
   };
 
@@ -44,20 +44,35 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
     setUploading(true);
     try {
       const { data, error } = await supabase.functions.invoke('upload-connector-files');
-
       if (error) throw error;
 
-      setFileReady(true);
+      // Vérifier la disponibilité publique avec retries (propagation CDN)
+      const publicUrl = 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.py';
+      let available = false;
+      for (let i = 0; i < 5; i++) {
+        const resp = await fetch(`${publicUrl}?cb=${Date.now()}`, { method: 'HEAD', cache: 'no-store' });
+        if (resp.ok) { available = true; break; }
+        await new Promise(r => setTimeout(r, 800));
+      }
+
+      setFileReady(available);
       toast({
-        title: "✓ Connecteur uploadé",
-        description: "Le fichier Python est maintenant disponible au téléchargement.",
+        title: available ? '✓ Connecteur prêt' : 'Connecteur en préparation',
+        description: available
+          ? 'Le fichier Python est disponible au téléchargement.'
+          : "Le fichier a été créé mais la mise à jour peut prendre quelques secondes. Réessayez d'ici peu.",
       });
+
+      if (!available) {
+        // Lancer une vérification différée
+        setTimeout(checkFileAvailability, 1500);
+      }
     } catch (error) {
       console.error('Upload error:', error);
       toast({
-        title: "Erreur",
+        title: 'Erreur',
         description: "Impossible d'uploader le connecteur. Vérifiez vos permissions.",
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setUploading(false);
@@ -217,11 +232,28 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
                   size="lg"
                   className="w-full"
                   disabled={!fileReady}
-                  onClick={() => window.open('https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.py', '_blank')}
+                  onClick={() => {
+                    const url = 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.py?cb=' + Date.now();
+                    window.open(url, '_blank');
+                  }}
                 >
                   <Download className="mr-2 h-5 w-5" />
                   {fileReady ? "Télécharger le connecteur (Python)" : "Connecteur en préparation..."}
                 </Button>
+
+                {fileReady && (
+                  <div className="mt-2 text-xs text-muted-foreground text-center">
+                    Problème d'accès ? Essayez ce lien alternatif (.txt):
+                    <a
+                      className="ml-1 text-primary hover:underline"
+                      href={"https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.txt?cb=" + Date.now()}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      arthur-connector.txt
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           </div>
