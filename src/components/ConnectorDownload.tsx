@@ -171,12 +171,14 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {!fileReady && (
+          {(
             <Alert>
               <Upload className="h-4 w-4" />
               <AlertDescription>
                 <div className="flex items-center justify-between gap-4">
-                  <span className="text-sm">Préparez d'abord le fichier de téléchargement</span>
+                  <span className="text-sm">
+                    {fileReady ? "Le fichier de téléchargement est disponible" : "Préparez le fichier de téléchargement"}
+                  </span>
                   <div className="flex gap-2">
                     <Button 
                       onClick={handleUploadConnector} 
@@ -184,7 +186,7 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
                       size="sm"
                       variant="outline"
                     >
-                      {uploading ? "Préparation..." : "Préparer le connecteur"}
+                      {uploading ? "Préparation..." : "Préparer / Réparer"}
                     </Button>
                     <Button
                       onClick={checkFileAvailability}
@@ -198,6 +200,7 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
               </AlertDescription>
             </Alert>
           )}
+
 
           <div className="border-2 border-primary rounded-lg p-6 bg-gradient-to-br from-primary/5 to-primary/10">
             <div className="flex items-start gap-4 mb-4">
