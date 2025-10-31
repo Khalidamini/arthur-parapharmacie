@@ -30,7 +30,7 @@ Write-Host ""
 $INSTALL_DIR = "$env:LOCALAPPDATA\\ArthurConnector"
 $PYTHON_VERSION = "3.11.9"
 $PYTHON_URL = "https://www.python.org/ftp/python/$PYTHON_VERSION/python-$PYTHON_VERSION-embed-amd64.zip"
-$CONNECTOR_URL = "https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.py"
+$CONNECTOR_URL = "https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector-gui.py"
 
 # Créer le répertoire d'installation
 Write-Host "Creation du repertoire d'installation..." -ForegroundColor Yellow
@@ -76,7 +76,7 @@ Write-Host "Installation des dependances (requests, schedule)..." -ForegroundCol
 # Télécharger le connecteur Arthur
 Write-Host "Telechargement du connecteur Arthur..." -ForegroundColor Yellow
 try {
-    Invoke-WebRequest -Uri $CONNECTOR_URL -OutFile "$INSTALL_DIR\\arthur-connector.py" -UseBasicParsing
+    Invoke-WebRequest -Uri $CONNECTOR_URL -OutFile "$INSTALL_DIR\\arthur-connector-gui.py" -UseBasicParsing
     Write-Host "Connecteur telecharge avec succes" -ForegroundColor Green
 } catch {
     Write-Host "Erreur lors du telechargement du connecteur: $_" -ForegroundColor Red
@@ -89,7 +89,7 @@ Write-Host "Creation du lanceur..." -ForegroundColor Yellow
 $launcherBat = @"
 @echo off
 cd /d "%~dp0"
-python\\python.exe arthur-connector.py %*
+python\\python.exe arthur-connector-gui.py %*
 "@
 Set-Content -Path "$INSTALL_DIR\\arthur-connector.bat" -Value $launcherBat
 
@@ -158,7 +158,7 @@ set -e
 
 APP_NAME="Arthur Connector"
 INSTALL_DIR="$HOME/Library/Application Support/ArthurConnector"
-CONNECTOR_URL="https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.py"
+CONNECTOR_URL="https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector-gui.py"
 
 echo "==================================="
 echo "Installation d'Arthur Connector"
@@ -193,14 +193,14 @@ pip install requests schedule > /dev/null 2>&1
 
 # Télécharger le connecteur
 echo "Téléchargement du connecteur Arthur..."
-curl -L -o arthur-connector.py "$CONNECTOR_URL"
+curl -L -o arthur-connector-gui.py "$CONNECTOR_URL"
 
 # Créer le script de lancement
 cat > arthur-connector.command << 'EOF'
 #!/bin/bash
 cd "$HOME/Library/Application Support/ArthurConnector"
 source venv/bin/activate
-python arthur-connector.py "$@"
+python arthur-connector-gui.py "$@"
 EOF
 
 chmod +x arthur-connector.command
@@ -219,7 +219,7 @@ cat > "$PLIST_PATH" << EOF
     <key>ProgramArguments</key>
     <array>
         <string>$INSTALL_DIR/venv/bin/python</string>
-        <string>$INSTALL_DIR/arthur-connector.py</string>
+        <string>$INSTALL_DIR/arthur-connector-gui.py</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
@@ -255,7 +255,7 @@ set -e
 
 APP_NAME="Arthur Connector"
 INSTALL_DIR="$HOME/Library/Application Support/ArthurConnector"
-CONNECTOR_URL="https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.py"
+CONNECTOR_URL="https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector-gui.py"
 
 echo "==================================="
 echo "Installation d'Arthur Connector"
@@ -290,14 +290,14 @@ pip install requests schedule > /dev/null 2>&1
 
 # Télécharger le connecteur
 echo "Téléchargement du connecteur Arthur..."
-curl -L -o arthur-connector.py "$CONNECTOR_URL"
+curl -L -o arthur-connector-gui.py "$CONNECTOR_URL"
 
 # Créer le script de lancement
 cat > arthur-connector.command << 'EOF'
 #!/bin/bash
 cd "$HOME/Library/Application Support/ArthurConnector"
 source venv/bin/activate
-python arthur-connector.py "$@"
+python arthur-connector-gui.py "$@"
 EOF
 
 chmod +x arthur-connector.command
@@ -316,7 +316,7 @@ cat > "$PLIST_PATH" << EOF
     <key>ProgramArguments</key>
     <array>
         <string>$INSTALL_DIR/venv/bin/python</string>
-        <string>$INSTALL_DIR/arthur-connector.py</string>
+        <string>$INSTALL_DIR/arthur-connector-gui.py</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
@@ -371,7 +371,7 @@ set -e
 
 APP_NAME="Arthur Connector"
 INSTALL_DIR="$HOME/.local/share/arthur-connector"
-CONNECTOR_URL="https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.py"
+CONNECTOR_URL="https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector-gui.py"
 
 echo "==================================="
 echo "Installation d'Arthur Connector"
@@ -416,14 +416,14 @@ pip install requests schedule > /dev/null 2>&1
 
 # Télécharger le connecteur
 echo "Téléchargement du connecteur Arthur..."
-curl -L -o arthur-connector.py "$CONNECTOR_URL"
+curl -L -o arthur-connector-gui.py "$CONNECTOR_URL"
 
 # Créer le script de lancement
 cat > "$INSTALL_DIR/arthur-connector.sh" << 'EOF'
 #!/bin/bash
 cd "$HOME/.local/share/arthur-connector"
 source venv/bin/activate
-python arthur-connector.py "$@"
+python arthur-connector-gui.py "$@"
 EOF
 
 chmod +x "$INSTALL_DIR/arthur-connector.sh"
@@ -440,7 +440,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=$INSTALL_DIR
-ExecStart=$INSTALL_DIR/venv/bin/python $INSTALL_DIR/arthur-connector.py
+ExecStart=$INSTALL_DIR/venv/bin/python $INSTALL_DIR/arthur-connector-gui.py
 Restart=always
 RestartSec=10
 StandardOutput=append:$INSTALL_DIR/connector.log

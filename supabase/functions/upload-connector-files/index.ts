@@ -51,7 +51,8 @@ Deno.serve(async (req) => {
     // Supprimer les anciens fichiers s'ils existent
     await supabase.storage.from('connector-updates').remove([
       'arthur-connector.py',
-      'arthur-connector.txt'
+      'arthur-connector.txt',
+      'arthur-connector-gui.py'
     ]);
 
     // Upload du .py
@@ -85,13 +86,31 @@ Deno.serve(async (req) => {
     }
     console.log('Upload .txt successful:', uploadTxt);
 
-    console.log('Connector file uploaded successfully');
+    // Générer et uploader la version GUI
+    const pythonGuiContent = generatePythonConnectorGui(supabaseUrl);
+    const guiBlob = new Blob([pythonGuiContent], { type: 'text/x-python' });
+    
+    const { data: uploadGui, error: uploadErrorGui } = await supabase.storage
+      .from('connector-updates')
+      .upload('arthur-connector-gui.py', guiBlob, {
+        contentType: 'text/x-python',
+        cacheControl: '0',
+        upsert: true
+      });
+
+    if (uploadErrorGui) {
+      console.error('Upload GUI error:', uploadErrorGui);
+      throw uploadErrorGui;
+    }
+    console.log('Upload GUI successful:', uploadGui);
+
+    console.log('Connector files uploaded successfully');
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Connector file uploaded',
-        file: 'arthur-connector.py'
+        message: 'Connector files uploaded',
+        files: ['arthur-connector.py', 'arthur-connector-gui.py']
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -606,6 +625,727 @@ def main():
     else:
         connector = ArthurConnector()
         connector.run_daemon()
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except Exception as e:
+        logger.error(f"Erreur fatale: {e}")
+        print(f"\\n❌ Erreur fatale: {e}\\n")
+        sys.exit(1)
+`;
+}
+
+function generatePythonConnectorGui(supabaseUrl: string): string {
+  return `#!/usr/bin/env python3
+"""
+Arthur Pharmacy Connector - Interface Graphique v1.0
+Interface conviviale pour la synchronisation automatique
+Compatible: Pharmagest, LGPI, Winpharma, César, Alliadis, Cegid, Everest, Officine Partner
+"""
+
+import os
+import sys
+import json
+import time
+import sqlite3
+import platform
+import logging
+import tkinter as tk
+from tkinter import ttk, messagebox, scrolledtext
+import threading
+from pathlib import Path
+from typing import Optional, List, Dict
+from datetime import datetime
+
+# Configuration du logging
+LOG_DIR = Path.home() / '.arthur-connector'
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+LOG_FILE = LOG_DIR / 'arthur-connector.log'
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(LOG_FILE),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger('ArthurConnector')
+
+
+class Config:
+    """Gestionnaire de configuration sécurisé"""
+    
+    def __init__(self):
+        self.config_dir = Path.home() / '.arthur-connector'
+        self.config_file = self.config_dir / 'config.json'
+        self.config_dir.mkdir(parents=True, exist_ok=True)
+        self.load()
+    
+    def load(self):
+        """Charge la configuration"""
+        if self.config_file.exists():
+            try:
+                with open(self.config_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    self.pharmacy_id = data.get('pharmacy_id', '')
+                    self.api_key = data.get('api_key', '')
+                    self.api_url = data.get('api_url', '${supabaseUrl}/functions/v1')
+                    self.sync_interval = data.get('sync_interval', 15)
+            except Exception as e:
+                logger.error(f"Erreur chargement configuration: {e}")
+                self._init_default()
+        else:
+            self._init_default()
+    
+    def _init_default(self):
+        """Initialise la configuration par défaut"""
+        self.pharmacy_id = ''
+        self.api_key = ''
+        self.api_url = '${supabaseUrl}/functions/v1'
+        self.sync_interval = 15
+    
+    def save(self):
+        """Sauvegarde la configuration"""
+        try:
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                json.dump({
+                    'pharmacy_id': self.pharmacy_id,
+                    'api_key': self.api_key,
+                    'api_url': self.api_url,
+                    'sync_interval': self.sync_interval
+                }, f, indent=2)
+            logger.info("Configuration sauvegardée")
+        except Exception as e:
+            logger.error(f"Erreur sauvegarde configuration: {e}")
+    
+    def is_configured(self) -> bool:
+        """Vérifie si le connecteur est configuré"""
+        return bool(self.pharmacy_id and self.api_key)
+
+
+class DatabaseDetector:
+    """Détecteur intelligent de bases de données pharmacie"""
+    
+    SEARCH_PATHS = {
+        'Windows': [
+            r'C:\\\\Program Files\\\\Pharmagest',
+            r'C:\\\\Program Files (x86)\\\\Pharmagest',
+            r'C:\\\\ProgramData\\\\Pharmagest',
+            r'C:\\\\LGPI',
+            r'C:\\\\Program Files\\\\LGPI',
+            r'C:\\\\Winpharma',
+            r'C:\\\\Program Files\\\\Winpharma',
+            r'C:\\\\Pharmacie',
+            r'C:\\\\Program Files\\\\Officine Partner',
+            r'C:\\\\Program Files (x86)\\\\Officine Partner',
+            r'C:\\\\Program Files\\\\César',
+            r'C:\\\\Program Files\\\\Alliadis',
+            r'C:\\\\Program Files\\\\Cegid',
+            r'C:\\\\Program Files\\\\Everest',
+            r'C:\\\\Program Files\\\\Sanocom',
+            r'C:\\\\Program Files\\\\Opus',
+        ],
+        'Darwin': [
+            '/Applications/Pharmagest',
+            '/Applications/LGPI',
+            '/Applications/Winpharma',
+            '/Applications/Officine Partner',
+            '/Applications/César',
+            '/Applications/Alliadis',
+            '/Applications/Cegid',
+            '/Applications/Everest',
+            str(Path.home() / 'Library/Application Support/Pharmagest'),
+            str(Path.home() / 'Library/Application Support/LGPI'),
+            str(Path.home() / 'Library/Application Support/Winpharma'),
+        ],
+        'Linux': [
+            '/opt/pharmagest',
+            '/opt/lgpi',
+            '/opt/winpharma',
+            '/opt/officine-partner',
+            '/opt/cesar',
+            '/opt/alliadis',
+            '/opt/cegid',
+            '/opt/everest',
+            str(Path.home() / '.pharmagest'),
+            str(Path.home() / '.lgpi'),
+            str(Path.home() / '.winpharma'),
+        ]
+    }
+    
+    def detect(self) -> Optional[Dict]:
+        """Détecte automatiquement le logiciel de pharmacie"""
+        system = platform.system()
+        paths = self.SEARCH_PATHS.get(system, self.SEARCH_PATHS['Linux'])
+        
+        logger.info(f"Détection sur {system}...")
+        
+        for base_path in paths:
+            base_path = Path(base_path)
+            if not base_path.exists():
+                continue
+            
+            logger.info(f"Scan de {base_path}...")
+            
+            for ext in ['*.db', '*.sqlite', '*.sqlite3']:
+                for db_file in base_path.rglob(ext):
+                    if self._is_valid_pharmacy_db(db_file):
+                        software_name = self._identify_software(str(base_path))
+                        if software_name:
+                            logger.info(f"✓ {software_name} détecté: {db_file}")
+                            return {
+                                'name': software_name,
+                                'db_path': str(db_file),
+                                'detected_at': datetime.now().isoformat()
+                            }
+        
+        logger.warning("Aucun logiciel de pharmacie détecté")
+        return None
+    
+    def _is_valid_pharmacy_db(self, db_path: Path) -> bool:
+        """Vérifie si c'est une vraie base pharmacie"""
+        try:
+            conn = sqlite3.connect(str(db_path), timeout=5)
+            cursor = conn.cursor()
+            
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = [row[0].lower() for row in cursor.fetchall()]
+            
+            conn.close()
+            
+            keywords = ['produit', 'article', 'stock', 'medicament', 'prix']
+            return any(keyword in ' '.join(tables) for keyword in keywords)
+        except:
+            return False
+    
+    def _identify_software(self, path: str) -> Optional[str]:
+        """Identifie le logiciel depuis le chemin"""
+        path_lower = path.lower()
+        if 'pharmagest' in path_lower:
+            return 'Pharmagest'
+        elif 'lgpi' in path_lower:
+            return 'LGPI'
+        elif 'winpharma' in path_lower:
+            return 'Winpharma'
+        elif 'officine partner' in path_lower or 'officine-partner' in path_lower:
+            return 'Officine Partner'
+        elif 'césar' in path_lower or 'cesar' in path_lower:
+            return 'César'
+        elif 'alliadis' in path_lower:
+            return 'Alliadis'
+        elif 'cegid' in path_lower:
+            return 'Cegid'
+        elif 'everest' in path_lower:
+            return 'Everest'
+        elif 'sanocom' in path_lower:
+            return 'Sanocom'
+        elif 'opus' in path_lower:
+            return 'Opus'
+        return 'Logiciel de pharmacie'
+
+
+class ProductReader:
+    """Lecteur universel de produits pharmacie"""
+    
+    QUERY_VARIANTS = [
+        {
+            'query': """
+                SELECT 
+                    nom as name, marque as brand, prix as price,
+                    categorie as category, description, stock as stock_quantity,
+                    CASE WHEN actif = 1 THEN 1 ELSE 0 END as is_available
+                FROM produits WHERE actif = 1
+            """,
+            'name': 'schema_standard'
+        },
+        {
+            'query': """
+                SELECT 
+                    libelle as name, fabricant as brand, pvttc as price,
+                    famille as category, '' as description, qte_stock as stock_quantity,
+                    CASE WHEN qte_stock > 0 THEN 1 ELSE 0 END as is_available
+                FROM articles WHERE qte_stock >= 0
+            """,
+            'name': 'schema_articles'
+        },
+        {
+            'query': """
+                SELECT 
+                    designation as name, laboratoire as brand, prix_vente as price,
+                    type as category, '' as description, quantite as stock_quantity,
+                    1 as is_available
+                FROM produits
+            """,
+            'name': 'schema_lgpi'
+        },
+        {
+            'query': """
+                SELECT 
+                    libelle as name, marque as brand, prix as price,
+                    rayon as category, '' as description, stock as stock_quantity,
+                    1 as is_available
+                FROM articles
+            """,
+            'name': 'schema_minimal'
+        }
+    ]
+    
+    def read_products(self, db_path: str) -> List[Dict]:
+        """Lit les produits avec détection automatique du schéma"""
+        products = []
+        
+        try:
+            conn = sqlite3.connect(db_path, timeout=10)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            for variant in self.QUERY_VARIANTS:
+                try:
+                    cursor.execute(variant['query'])
+                    rows = cursor.fetchall()
+                    
+                    for row in rows:
+                        try:
+                            products.append({
+                                'name': str(row['name'] or 'Produit').strip(),
+                                'brand': str(row['brand'] or 'Non spécifié').strip(),
+                                'price': float(row['price']) if row['price'] else 0.0,
+                                'category': str(row['category'] or 'Autres').strip(),
+                                'description': str(row['description'] or '').strip()[:500],
+                                'stock_quantity': int(row['stock_quantity']) if row['stock_quantity'] else 0,
+                                'is_available': bool(row['is_available'])
+                            })
+                        except Exception as e:
+                            logger.debug(f"Ligne ignorée: {e}")
+                            continue
+                    
+                    if products:
+                        logger.info(f"✓ {len(products)} produits lus ({variant['name']})")
+                        break
+                        
+                except sqlite3.Error as e:
+                    logger.debug(f"Variante {variant['name']} non compatible: {e}")
+                    continue
+            
+            conn.close()
+            
+            if not products:
+                logger.error("Aucun produit trouvé avec les schémas disponibles")
+            
+        except Exception as e:
+            logger.error(f"Erreur lecture base: {e}")
+        
+        return products
+
+
+class ArthurAPI:
+    """Client API Arthur avec gestion d'erreurs robuste"""
+    
+    def __init__(self, config: Config):
+        self.config = config
+    
+    def sync_products(self, products: List[Dict]) -> Dict:
+        """Synchronise les produits vers Arthur"""
+        import urllib.request
+        import urllib.error
+        
+        url = f"{self.config.api_url}/sync-pharmacy-products"
+        
+        headers = {
+            'Authorization': f'Bearer {self.config.api_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        payload = {
+            'pharmacy_id': self.config.pharmacy_id,
+            'products': products
+        }
+        
+        try:
+            data = json.dumps(payload).encode('utf-8')
+            req = urllib.request.Request(url, data=data, headers=headers, method='POST')
+            
+            with urllib.request.urlopen(req, timeout=60) as response:
+                result = json.loads(response.read().decode('utf-8'))
+                return result
+                
+        except urllib.error.HTTPError as e:
+            error_msg = e.read().decode('utf-8')
+            logger.error(f"Erreur HTTP {e.code}: {error_msg}")
+            raise Exception(f"Erreur API: {e.code}")
+        except urllib.error.URLError as e:
+            logger.error(f"Erreur réseau: {e.reason}")
+            raise Exception("Erreur de connexion à Arthur")
+        except Exception as e:
+            logger.error(f"Erreur inattendue: {e}")
+            raise
+
+
+class ArthurConnectorGUI:
+    """Interface graphique pour Arthur Connector"""
+    
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.title("Arthur Pharmacy Connector")
+        self.root.geometry("700x600")
+        self.root.resizable(False, False)
+        
+        # Style moderne
+        self.setup_style()
+        
+        # Variables
+        self.config = Config()
+        self.detector = DatabaseDetector()
+        self.reader = ProductReader()
+        self.detected_software = None
+        self.sync_running = False
+        self.auto_sync_active = False
+        
+        # Interface
+        self.create_ui()
+        self.load_config()
+        
+    def setup_style(self):
+        """Configure le style moderne"""
+        style = ttk.Style()
+        style.theme_use('clam')
+        
+        bg_color = "#f5f5f5"
+        accent_color = "#4a90e2"
+        success_color = "#27ae60"
+        error_color = "#e74c3c"
+        
+        self.root.configure(bg=bg_color)
+        
+        style.configure('Title.TLabel', 
+                       font=('Helvetica', 16, 'bold'),
+                       background=bg_color,
+                       foreground='#2c3e50')
+        
+        style.configure('Subtitle.TLabel',
+                       font=('Helvetica', 10),
+                       background=bg_color,
+                       foreground='#7f8c8d')
+        
+        style.configure('Info.TLabel',
+                       font=('Helvetica', 9),
+                       background=bg_color,
+                       foreground='#34495e')
+        
+        style.configure('Success.TLabel',
+                       font=('Helvetica', 9, 'bold'),
+                       background=bg_color,
+                       foreground=success_color)
+        
+        style.configure('Error.TLabel',
+                       font=('Helvetica', 9, 'bold'),
+                       background=bg_color,
+                       foreground=error_color)
+        
+        style.configure('Primary.TButton',
+                       font=('Helvetica', 10, 'bold'),
+                       background=accent_color)
+        
+    def create_ui(self):
+        """Crée l'interface utilisateur"""
+        
+        # En-tête
+        header_frame = tk.Frame(self.root, bg='#4a90e2', height=100)
+        header_frame.pack(fill='x')
+        header_frame.pack_propagate(False)
+        
+        title_label = tk.Label(
+            header_frame,
+            text="Arthur Pharmacy Connector",
+            font=('Helvetica', 20, 'bold'),
+            bg='#4a90e2',
+            fg='white'
+        )
+        title_label.pack(pady=10)
+        
+        subtitle_label = tk.Label(
+            header_frame,
+            text="Synchronisation automatique de votre catalogue pharmacie",
+            font=('Helvetica', 10),
+            bg='#4a90e2',
+            fg='white'
+        )
+        subtitle_label.pack()
+        
+        # Zone principale
+        main_frame = ttk.Frame(self.root, padding="20")
+        main_frame.pack(fill='both', expand=True)
+        
+        # Section Configuration
+        config_frame = ttk.LabelFrame(main_frame, text="Configuration", padding="10")
+        config_frame.pack(fill='x', pady=(0, 10))
+        
+        ttk.Label(config_frame, text="ID Pharmacie:").grid(row=0, column=0, sticky='w', pady=5)
+        self.pharmacy_id_entry = ttk.Entry(config_frame, width=40)
+        self.pharmacy_id_entry.grid(row=0, column=1, pady=5, padx=(10, 0))
+        
+        ttk.Label(config_frame, text="Clé API:").grid(row=1, column=0, sticky='w', pady=5)
+        self.api_key_entry = ttk.Entry(config_frame, width=40, show="*")
+        self.api_key_entry.grid(row=1, column=1, pady=5, padx=(10, 0))
+        
+        save_btn = ttk.Button(
+            config_frame,
+            text="💾 Sauvegarder",
+            command=self.save_config,
+            style='Primary.TButton'
+        )
+        save_btn.grid(row=2, column=1, pady=10, sticky='e')
+        
+        # Section Statut
+        status_frame = ttk.LabelFrame(main_frame, text="Statut", padding="10")
+        status_frame.pack(fill='x', pady=(0, 10))
+        
+        ttk.Label(status_frame, text="Logiciel détecté:").grid(row=0, column=0, sticky='w', pady=5)
+        self.software_label = ttk.Label(status_frame, text="Non détecté", style='Info.TLabel')
+        self.software_label.grid(row=0, column=1, sticky='w', pady=5, padx=(10, 0))
+        
+        detect_btn = ttk.Button(
+            status_frame,
+            text="🔍 Détecter",
+            command=self.detect_software
+        )
+        detect_btn.grid(row=0, column=2, pady=5, padx=(10, 0))
+        
+        ttk.Label(status_frame, text="Dernière sync:").grid(row=1, column=0, sticky='w', pady=5)
+        self.last_sync_label = ttk.Label(status_frame, text="Jamais", style='Info.TLabel')
+        self.last_sync_label.grid(row=1, column=1, sticky='w', pady=5, padx=(10, 0))
+        
+        # Section Actions
+        actions_frame = ttk.LabelFrame(main_frame, text="Actions", padding="10")
+        actions_frame.pack(fill='x', pady=(0, 10))
+        
+        button_frame = ttk.Frame(actions_frame)
+        button_frame.pack(fill='x')
+        
+        self.sync_btn = ttk.Button(
+            button_frame,
+            text="🔄 Synchroniser maintenant",
+            command=self.manual_sync,
+            style='Primary.TButton'
+        )
+        self.sync_btn.pack(side='left', padx=(0, 10))
+        
+        self.auto_sync_btn = ttk.Button(
+            button_frame,
+            text="▶️ Démarrer sync automatique",
+            command=self.toggle_auto_sync
+        )
+        self.auto_sync_btn.pack(side='left')
+        
+        # Section Logs
+        log_frame = ttk.LabelFrame(main_frame, text="Journal d'activité", padding="10")
+        log_frame.pack(fill='both', expand=True)
+        
+        self.log_text = scrolledtext.ScrolledText(
+            log_frame,
+            height=12,
+            font=('Courier', 9),
+            bg='#2c3e50',
+            fg='#ecf0f1',
+            insertbackground='white'
+        )
+        self.log_text.pack(fill='both', expand=True)
+        
+        # Pied de page
+        footer_frame = tk.Frame(self.root, bg='#ecf0f1', height=30)
+        footer_frame.pack(fill='x', side='bottom')
+        footer_frame.pack_propagate(False)
+        
+        footer_label = tk.Label(
+            footer_frame,
+            text="Compatible: Pharmagest • LGPI • Winpharma • César • Alliadis • Cegid • Everest • Officine Partner • Sanocom • Opus",
+            font=('Helvetica', 8),
+            bg='#ecf0f1',
+            fg='#7f8c8d'
+        )
+        footer_label.pack(pady=8)
+        
+    def load_config(self):
+        """Charge la configuration existante"""
+        if self.config.pharmacy_id:
+            self.pharmacy_id_entry.insert(0, self.config.pharmacy_id)
+        if self.config.api_key:
+            self.api_key_entry.insert(0, self.config.api_key)
+            
+        self.log("✓ Configuration chargée")
+        
+    def save_config(self):
+        """Sauvegarde la configuration"""
+        pharmacy_id = self.pharmacy_id_entry.get().strip()
+        api_key = self.api_key_entry.get().strip()
+        
+        if not pharmacy_id or not api_key:
+            messagebox.showwarning(
+                "Configuration incomplète",
+                "Veuillez renseigner l'ID Pharmacie et la Clé API"
+            )
+            return
+        
+        self.config.pharmacy_id = pharmacy_id
+        self.config.api_key = api_key
+        self.config.save()
+        
+        self.log("✓ Configuration sauvegardée")
+        messagebox.showinfo("Succès", "Configuration sauvegardée avec succès!")
+        
+    def detect_software(self):
+        """Détecte le logiciel de pharmacie"""
+        self.log("🔍 Détection du logiciel de pharmacie...")
+        
+        def detect():
+            self.detected_software = self.detector.detect()
+            
+            if self.detected_software:
+                software_name = self.detected_software['name']
+                self.software_label.config(
+                    text=f"✓ {software_name}",
+                    style='Success.TLabel'
+                )
+                self.log(f"✓ {software_name} détecté!")
+            else:
+                self.software_label.config(
+                    text="❌ Non détecté",
+                    style='Error.TLabel'
+                )
+                self.log("❌ Aucun logiciel détecté")
+                messagebox.showwarning(
+                    "Détection échouée",
+                    "Aucun logiciel de pharmacie détecté.\\n"
+                    "Vérifiez que votre logiciel est installé."
+                )
+        
+        threading.Thread(target=detect, daemon=True).start()
+        
+    def manual_sync(self):
+        """Synchronisation manuelle"""
+        if not self.config.is_configured():
+            messagebox.showwarning(
+                "Configuration requise",
+                "Veuillez configurer l'ID Pharmacie et la Clé API"
+            )
+            return
+        
+        if self.sync_running:
+            messagebox.showinfo("Sync en cours", "Une synchronisation est déjà en cours")
+            return
+        
+        self.sync_btn.config(state='disabled', text="⏳ Sync en cours...")
+        
+        def sync():
+            self.sync_running = True
+            try:
+                if not self.detected_software:
+                    self.log("🔍 Détection du logiciel...")
+                    self.detected_software = self.detector.detect()
+                    
+                    if not self.detected_software:
+                        self.log("❌ Aucun logiciel détecté")
+                        messagebox.showerror(
+                            "Erreur",
+                            "Aucun logiciel de pharmacie détecté"
+                        )
+                        return
+                
+                self.log("📦 Lecture du catalogue...")
+                products = self.reader.read_products(
+                    self.detected_software['db_path']
+                )
+                
+                if not products:
+                    self.log("⚠️ Aucun produit trouvé")
+                    messagebox.showwarning(
+                        "Attention",
+                        "Aucun produit trouvé dans la base de données"
+                    )
+                    return
+                
+                self.log(f"✓ {len(products)} produits trouvés")
+                
+                self.log("☁️ Envoi vers Arthur...")
+                api = ArthurAPI(self.config)
+                result = api.sync_products(products)
+                
+                now = datetime.now()
+                self.last_sync_label.config(
+                    text=now.strftime("%d/%m/%Y à %H:%M:%S")
+                )
+                
+                self.log("✓ Synchronisation réussie!")
+                if result.get('results'):
+                    res = result['results']
+                    self.log(f"  • Créés: {res.get('created', 0)}")
+                    self.log(f"  • Mis à jour: {res.get('updated', 0)}")
+                
+                messagebox.showinfo(
+                    "Succès",
+                    f"Synchronisation réussie!\\n\\n"
+                    f"Produits synchronisés: {len(products)}"
+                )
+                
+            except Exception as e:
+                self.log(f"❌ Erreur: {str(e)}")
+                messagebox.showerror(
+                    "Erreur de synchronisation",
+                    f"Une erreur est survenue:\\n{str(e)}"
+                )
+            finally:
+                self.sync_running = False
+                self.sync_btn.config(state='normal', text="🔄 Synchroniser maintenant")
+        
+        threading.Thread(target=sync, daemon=True).start()
+        
+    def toggle_auto_sync(self):
+        """Active/désactive la sync automatique"""
+        if self.auto_sync_active:
+            self.auto_sync_active = False
+            self.auto_sync_btn.config(text="▶️ Démarrer sync automatique")
+            self.log("⏸️ Synchronisation automatique arrêtée")
+        else:
+            if not self.config.is_configured():
+                messagebox.showwarning(
+                    "Configuration requise",
+                    "Veuillez configurer l'ID Pharmacie et la Clé API"
+                )
+                return
+            
+            self.auto_sync_active = True
+            self.auto_sync_btn.config(text="⏸️ Arrêter sync automatique")
+            self.log("▶️ Synchronisation automatique démarrée (toutes les 15 min)")
+            
+            def auto_sync_loop():
+                while self.auto_sync_active:
+                    if not self.sync_running:
+                        self.manual_sync()
+                    time.sleep(15 * 60)
+            
+            threading.Thread(target=auto_sync_loop, daemon=True).start()
+    
+    def log(self, message: str):
+        """Ajoute un message au journal"""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        self.log_text.insert('end', f"[{timestamp}] {message}\\n")
+        self.log_text.see('end')
+        self.root.update()
+        
+    def run(self):
+        """Lance l'application"""
+        self.log("=== Arthur Pharmacy Connector v1.0 ===")
+        self.log("✓ Interface graphique démarrée")
+        self.root.mainloop()
+
+
+def main():
+    """Point d'entrée principal"""
+    app = ArthurConnectorGUI()
+    app.run()
 
 
 if __name__ == '__main__':
