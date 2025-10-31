@@ -185,14 +185,23 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
               <AlertDescription>
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-sm">Préparez d'abord le fichier de téléchargement</span>
-                  <Button 
-                    onClick={handleUploadConnector} 
-                    disabled={uploading}
-                    size="sm"
-                    variant="outline"
-                  >
-                    {uploading ? "Préparation..." : "Préparer le connecteur"}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleUploadConnector} 
+                      disabled={uploading}
+                      size="sm"
+                      variant="outline"
+                    >
+                      {uploading ? "Préparation..." : "Préparer le connecteur"}
+                    </Button>
+                    <Button
+                      onClick={checkFileAvailability}
+                      size="sm"
+                      variant="ghost"
+                    >
+                      Rafraîchir
+                    </Button>
+                  </div>
                 </div>
               </AlertDescription>
             </Alert>
@@ -204,15 +213,15 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
                 <Package className="h-8 w-8 text-primary-foreground" />
               </div>
               <div className="flex-1">
-                <h3 className="text-xl font-bold mb-2">Connecteur Universel</h3>
+                <h3 className="text-xl font-bold mb-2">Installateurs Standalone</h3>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Solution légère et professionnelle - Un seul fichier Python
+                  Aucune installation Python requise - Fonctionne directement
                 </p>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4 text-sm">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <span>Windows, Mac, Linux</span>
+                    <span>Pas besoin de Python</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
@@ -220,7 +229,7 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <span>Installation en 2 minutes</span>
+                    <span>Double-clic pour lancer</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
@@ -228,24 +237,45 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
                   </div>
                 </div>
 
-                <Button 
-                  size="lg"
-                  className="w-full"
-                  disabled={!fileReady}
-                  onClick={() => {
-                    const url = 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.py?download=arthur-connector.py&cb=' + Date.now();
-                    window.open(url, '_blank', 'noopener');
-                  }}
-                >
-                  <Download className="mr-2 h-5 w-5" />
-                  {fileReady ? "Télécharger le connecteur (Python)" : "Connecteur en préparation..."}
-                </Button>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => handleDownload('windows')}
+                  >
+                    <Monitor className="mr-2 h-4 w-4" />
+                    Windows (.exe)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => handleDownload('mac')}
+                  >
+                    <Apple className="mr-2 h-4 w-4" />
+                    macOS (.dmg)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => handleDownload('linux')}
+                  >
+                    <Package className="mr-2 h-4 w-4" />
+                    Linux (.AppImage)
+                  </Button>
+                </div>
 
-                {fileReady && (
-                  <div className="mt-2 text-xs text-muted-foreground text-center">
-                    Astuce: si une page de code s’ouvre, faites clic droit sur ce bouton et “Enregistrer le lien sous…”.
-                  </div>
-                )}
+                <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded text-xs text-blue-900 dark:text-blue-100">
+                  <strong>Version Python disponible:</strong> Si vous préférez utiliser Python directement,{' '}
+                  <button
+                    className="text-primary underline hover:no-underline"
+                    onClick={() => {
+                      const url = 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.py?download=arthur-connector.py&cb=' + Date.now();
+                      window.open(url, '_blank', 'noopener');
+                    }}
+                  >
+                    téléchargez le script Python
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -254,24 +284,24 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
             <div className="flex items-start gap-2">
               <span className="flex-shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">1</span>
               <div>
-                <p className="font-semibold">Installer Python</p>
-                <p className="text-muted-foreground">Si pas déjà installé - <a href="https://www.python.org/downloads/" target="_blank" rel="noopener" className="text-primary hover:underline">python.org/downloads</a></p>
+                <p className="font-semibold">Télécharger pour votre système</p>
+                <p className="text-muted-foreground">Choisissez Windows (.exe), macOS (.dmg) ou Linux (.AppImage)</p>
               </div>
             </div>
             
             <div className="flex items-start gap-2">
               <span className="flex-shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">2</span>
               <div>
-                <p className="font-semibold">Enregistrer le fichier</p>
-                <p className="text-muted-foreground">Sur le bureau ou dans Documents</p>
+                <p className="font-semibold">Lancer l'installateur</p>
+                <p className="text-muted-foreground">Double-clic sur le fichier téléchargé</p>
               </div>
             </div>
             
             <div className="flex items-start gap-2">
               <span className="flex-shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">3</span>
               <div>
-                <p className="font-semibold">Lancer la configuration</p>
-                <p className="text-muted-foreground">Double-clic sur le fichier puis entrer les informations ci-dessous</p>
+                <p className="font-semibold">Configuration automatique</p>
+                <p className="text-muted-foreground">Suivez l'assistant et entrez les informations ci-dessous</p>
               </div>
             </div>
           </div>
