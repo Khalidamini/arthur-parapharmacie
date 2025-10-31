@@ -48,26 +48,42 @@ Deno.serve(async (req) => {
     // Convertir en Blob pour l'upload
     const blob = new Blob([pythonContent], { type: 'text/x-python' });
 
-    // Supprimer l'ancien fichier s'il existe
-    await supabase.storage
-      .from('connector-updates')
-      .remove(['arthur-connector.py']);
+    // Supprimer les anciens fichiers s'ils existent
+    await supabase.storage.from('connector-updates').remove([
+      'arthur-connector.py',
+      'arthur-connector.txt'
+    ]);
 
-    // Upload du nouveau fichier
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    // Upload du .py
+    const { data: uploadPy, error: uploadErrorPy } = await supabase.storage
       .from('connector-updates')
       .upload('arthur-connector.py', blob, {
         contentType: 'text/x-python',
-        cacheControl: '3600',
+        cacheControl: '0',
         upsert: true
       });
 
-    if (uploadError) {
-      console.error('Upload error:', uploadError);
-      throw uploadError;
+    if (uploadErrorPy) {
+      console.error('Upload .py error:', uploadErrorPy);
+      throw uploadErrorPy;
     }
+    console.log('Upload .py successful:', uploadPy);
 
-    console.log('Upload successful:', uploadData);
+    // Upload d'une copie .txt (contourne certains proxies/CDN)
+    const txtBlob = new Blob([pythonContent], { type: 'text/plain' });
+    const { data: uploadTxt, error: uploadErrorTxt } = await supabase.storage
+      .from('connector-updates')
+      .upload('arthur-connector.txt', txtBlob, {
+        contentType: 'text/plain; charset=utf-8',
+        cacheControl: '0',
+        upsert: true
+      });
+
+    if (uploadErrorTxt) {
+      console.error('Upload .txt error:', uploadErrorTxt);
+      throw uploadErrorTxt;
+    }
+    console.log('Upload .txt successful:', uploadTxt);
 
     console.log('Connector file uploaded successfully');
 
