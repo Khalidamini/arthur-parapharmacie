@@ -79,41 +79,71 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
   };
 
   const downloadLinks = {
-    windows: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector-setup.exe',
-    mac: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/install-mac.sh',
-    linux: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/install-linux.sh'
+    windows: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector-setup.exe?download=arthur-connector-setup.exe',
+    mac: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/install-mac.sh?download=install-mac.sh',
+    linux: 'https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/install-linux.sh?download=install-linux.sh'
   };
 
-  const uploadInstallers = async () => {
+  const uploadInstallers = async (silent = false) => {
     try {
       setUploading(true);
-      toast({
-        title: "Préparation des installateurs",
-        description: "Upload des scripts en cours...",
-      });
+      if (!silent) {
+        toast({
+          title: "Préparation des installateurs",
+          description: "Upload des scripts en cours...",
+        });
+      }
 
       const { error } = await supabase.functions.invoke('upload-installer-scripts');
       
       if (error) throw error;
 
-      toast({
-        title: "Installateurs prêts",
-        description: "Les scripts d'installation sont maintenant disponibles.",
-      });
+      if (!silent) {
+        toast({
+          title: "Installateurs prêts",
+          description: "Les scripts d'installation sont maintenant disponibles.",
+        });
+      }
     } catch (error) {
       console.error('Upload error:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible d'uploader les installateurs. Réessayez plus tard.",
-        variant: "destructive",
-      });
+      if (!silent) {
+        toast({
+          title: "Erreur",
+          description: "Impossible d'uploader les installateurs. Réessayez plus tard.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setUploading(false);
     }
   };
 
-  const handleDownload = (platform: 'windows' | 'mac' | 'linux') => {
+  useEffect(() => {
+    // Upload automatique et idempotent des scripts (macOS/Linux)
+    uploadInstallers(true).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleDownload = async (platform: 'windows' | 'mac' | 'linux') => {
     const url = downloadLinks[platform];
+
+    // Vérifie la dispo de l'EXE Windows pour éviter un 404
+    if (platform === 'windows') {
+      try {
+        const head = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+        if (!head.ok) {
+          toast({
+            title: "Bientôt disponible",
+            description: "L'installateur Windows sera publié sous peu. Utilisez macOS/Linux si nécessaire.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } catch {
+        // ignore et on tente quand même
+      }
+    }
+
     const link = document.createElement('a');
     link.href = url;
     link.download = url.split('/').pop() || 'arthur-connector-install';
@@ -180,33 +210,6 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
             </Button>
           </div>
 
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              <div className="space-y-3">
-                <p className="font-semibold">⚠️ Première utilisation : Préparer les installateurs</p>
-                <p className="text-sm">Les scripts d'installation doivent être uploadés une première fois :</p>
-                <Button 
-                  onClick={uploadInstallers}
-                  disabled={uploading}
-                  size="sm"
-                  className="w-full"
-                >
-                  {uploading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Upload en cours...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="mr-2 h-4 w-4" />
-                      Uploader les installateurs
-                    </>
-                  )}
-                </Button>
-              </div>
-            </AlertDescription>
-          </Alert>
 
           <Alert>
             <CheckCircle2 className="h-4 w-4" />
