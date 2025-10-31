@@ -254,6 +254,38 @@ export type Database = {
         }
         Relationships: []
       }
+      pharmacy_api_keys: {
+        Row: {
+          api_key: string
+          created_at: string
+          id: string
+          pharmacy_id: string
+          updated_at: string
+        }
+        Insert: {
+          api_key: string
+          created_at?: string
+          id?: string
+          pharmacy_id: string
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string
+          created_at?: string
+          id?: string
+          pharmacy_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pharmacy_api_keys_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: true
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pharmacy_products: {
         Row: {
           created_at: string | null
