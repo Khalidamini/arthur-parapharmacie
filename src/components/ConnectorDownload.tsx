@@ -117,54 +117,112 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
             Étape 1 : Télécharger le connecteur
           </CardTitle>
           <CardDescription>
-            Choisissez la version pour votre système d'exploitation
+            Deux versions disponibles selon vos préférences
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button
-              variant="outline"
-              className="h-auto py-6 flex-col gap-3"
-              onClick={() => handleDownload('windows')}
-            >
-              <Monitor className="h-8 w-8" />
-              <div className="text-center">
-                <div className="font-semibold">Windows</div>
-                <div className="text-xs text-muted-foreground">Windows 10/11</div>
+        <CardContent className="space-y-6">
+          {/* Version Python Simple - RECOMMANDÉE */}
+          <div className="border-2 border-primary rounded-lg p-4 bg-primary/5">
+            <div className="flex items-start gap-3 mb-3">
+              <CheckCircle2 className="h-5 w-5 text-primary mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg">Version Simple (Recommandée)</h3>
+                <p className="text-sm text-muted-foreground">
+                  Script Python léger, aucune installation lourde
+                </p>
               </div>
-            </Button>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex gap-2 text-sm">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span>Fonctionne sur Windows, Mac et Linux</span>
+              </div>
+              <div className="flex gap-2 text-sm">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span>Installation en 2 minutes</span>
+              </div>
+              <div className="flex gap-2 text-sm">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span>Synchronisation automatique toutes les 15 min</span>
+              </div>
+              
+              <Button 
+                className="w-full mt-3"
+                onClick={() => window.open('https://github.com/votre-org/arthur-connector-simple/archive/refs/heads/main.zip', '_blank')}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Télécharger la version simple
+              </Button>
+              
+              <div className="bg-muted/50 rounded p-3 text-xs space-y-1">
+                <p className="font-semibold">Installation rapide :</p>
+                <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                  <li>Installer Python (si pas déjà installé)</li>
+                  <li>Extraire le fichier ZIP</li>
+                  <li>Lancer: <code className="bg-background px-1 rounded">python arthur-connector.py --configure</code></li>
+                </ol>
+              </div>
+            </div>
+          </div>
 
-            <Button
-              variant="outline"
-              className="h-auto py-6 flex-col gap-3"
-              onClick={() => handleDownload('mac')}
-            >
-              <Apple className="h-8 w-8" />
-              <div className="text-center">
-                <div className="font-semibold">macOS</div>
-                <div className="text-xs text-muted-foreground">macOS 11+</div>
+          {/* Version Application - EN PRÉPARATION */}
+          <div className="border rounded-lg p-4 opacity-60">
+            <div className="flex items-start gap-3 mb-3">
+              <Package className="h-5 w-5 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold">Version Application</h3>
+                <p className="text-sm text-muted-foreground">
+                  Application standalone avec interface graphique
+                </p>
               </div>
-            </Button>
+            </div>
 
-            <Button
-              variant="outline"
-              className="h-auto py-6 flex-col gap-3"
-              onClick={() => handleDownload('linux')}
-            >
-              <Package className="h-8 w-8" />
-              <div className="text-center">
-                <div className="font-semibold">Linux</div>
-                <div className="text-xs text-muted-foreground">Ubuntu/Debian</div>
-              </div>
-            </Button>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Button
+                variant="outline"
+                disabled
+                className="h-auto py-4 flex-col gap-2"
+              >
+                <Monitor className="h-6 w-6" />
+                <div className="text-center">
+                  <div className="font-semibold text-sm">Windows</div>
+                  <div className="text-xs text-muted-foreground">Bientôt disponible</div>
+                </div>
+              </Button>
+
+              <Button
+                variant="outline"
+                disabled
+                className="h-auto py-4 flex-col gap-2"
+              >
+                <Apple className="h-6 w-6" />
+                <div className="text-center">
+                  <div className="font-semibold text-sm">macOS</div>
+                  <div className="text-xs text-muted-foreground">Bientôt disponible</div>
+                </div>
+              </Button>
+
+              <Button
+                variant="outline"
+                disabled
+                className="h-auto py-4 flex-col gap-2"
+              >
+                <Package className="h-6 w-6" />
+                <div className="text-center">
+                  <div className="font-semibold text-sm">Linux</div>
+                  <div className="text-xs text-muted-foreground">Bientôt disponible</div>
+                </div>
+              </Button>
+            </div>
           </div>
 
           <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-2">
-            <p className="font-semibold">📦 Installation</p>
+            <p className="font-semibold">📦 Après téléchargement</p>
             <ul className="space-y-1 text-muted-foreground">
-              <li>• Double-cliquez sur le fichier téléchargé</li>
-              <li>• Suivez l'assistant d'installation</li>
-              <li>• Le connecteur se lancera automatiquement</li>
+              <li>• Extraire le fichier ZIP</li>
+              <li>• Ouvrir le dossier dans un terminal</li>
+              <li>• Suivre les instructions du README.md</li>
             </ul>
           </div>
         </CardContent>
