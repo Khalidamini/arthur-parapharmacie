@@ -218,6 +218,60 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
               </ul>
             </AlertDescription>
           </Alert>
+
+          {/* Instructions détaillées par plateforme */}
+          <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-4 space-y-3 text-sm">
+            <h4 className="font-semibold text-blue-900 dark:text-blue-100">📝 Après le téléchargement :</h4>
+            
+            <div className="space-y-3">
+              <div className="bg-white dark:bg-gray-900 rounded p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Monitor className="h-4 w-4 text-blue-600" />
+                  <span className="font-semibold text-blue-900 dark:text-blue-100">Windows</span>
+                </div>
+                <ol className="list-decimal list-inside space-y-1 text-xs text-gray-700 dark:text-gray-300">
+                  <li>Trouvez le fichier <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">install-windows.ps1</code> dans vos Téléchargements</li>
+                  <li><strong>Clic droit</strong> sur le fichier → <strong>"Exécuter avec PowerShell"</strong></li>
+                  <li>Attendez la fin de l'installation (2-3 minutes)</li>
+                  <li>C'est fini ! Le connecteur démarre automatiquement</li>
+                </ol>
+              </div>
+
+              <div className="bg-white dark:bg-gray-900 rounded p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Apple className="h-4 w-4 text-blue-600" />
+                  <span className="font-semibold text-blue-900 dark:text-blue-100">macOS</span>
+                </div>
+                <ol className="list-decimal list-inside space-y-1 text-xs text-gray-700 dark:text-gray-300">
+                  <li>Ouvrez <strong>Terminal</strong> (Cmd+Espace → tapez "terminal")</li>
+                  <li>Copiez-collez cette commande :</li>
+                </ol>
+                <code className="block bg-gray-100 dark:bg-gray-800 p-2 rounded mt-2 text-xs font-mono overflow-x-auto">
+                  cd ~/Downloads && chmod +x install-mac.sh && ./install-mac.sh
+                </code>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                  ⚠️ Si demandé, entrez votre mot de passe Mac (normal, c'est pour l'installation)
+                </p>
+              </div>
+
+              <div className="bg-white dark:bg-gray-900 rounded p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-base">🐧</span>
+                  <span className="font-semibold text-blue-900 dark:text-blue-100">Linux</span>
+                </div>
+                <ol className="list-decimal list-inside space-y-1 text-xs text-gray-700 dark:text-gray-300">
+                  <li>Ouvrez votre <strong>Terminal</strong></li>
+                  <li>Copiez-collez cette commande :</li>
+                </ol>
+                <code className="block bg-gray-100 dark:bg-gray-800 p-2 rounded mt-2 text-xs font-mono overflow-x-auto">
+                  cd ~/Downloads && chmod +x install-linux.sh && ./install-linux.sh
+                </code>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                  ⚠️ Si demandé, entrez votre mot de passe sudo (normal, pour installer Python si besoin)
+                </p>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
