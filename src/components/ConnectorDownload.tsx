@@ -3,9 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Download, CheckCircle2, Copy, Monitor, Apple, Package, RefreshCw, Key } from "lucide-react";
+import { Download, CheckCircle2, Copy, Monitor, Apple, Package, RefreshCw, Key, Upload } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ConnectorDownloadProps {
   pharmacyId: string;
@@ -15,11 +16,53 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
   const [apiKey, setApiKey] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [fileReady, setFileReady] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     loadApiKey();
+    checkFileAvailability();
   }, [pharmacyId]);
+
+  const checkFileAvailability = async () => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('connector-updates')
+        .list();
+
+      if (!error && data) {
+        const pythonFile = data.find(file => file.name === 'arthur-connector.py');
+        setFileReady(!!pythonFile);
+      }
+    } catch (error) {
+      console.error('Error checking file:', error);
+    }
+  };
+
+  const handleUploadConnector = async () => {
+    setUploading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('upload-connector-files');
+
+      if (error) throw error;
+
+      setFileReady(true);
+      toast({
+        title: "✓ Connecteur uploadé",
+        description: "Le fichier Python est maintenant disponible au téléchargement.",
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'uploader le connecteur. Vérifiez vos permissions.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const loadApiKey = async () => {
     try {
@@ -121,6 +164,25 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {!fileReady && (
+            <Alert>
+              <Upload className="h-4 w-4" />
+              <AlertDescription>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-sm">Préparez d'abord le fichier de téléchargement</span>
+                  <Button 
+                    onClick={handleUploadConnector} 
+                    disabled={uploading}
+                    size="sm"
+                    variant="outline"
+                  >
+                    {uploading ? "Préparation..." : "Préparer le connecteur"}
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="border-2 border-primary rounded-lg p-6 bg-gradient-to-br from-primary/5 to-primary/10">
             <div className="flex items-start gap-4 mb-4">
               <div className="p-3 bg-primary rounded-lg">
@@ -154,10 +216,11 @@ export default function ConnectorDownload({ pharmacyId }: ConnectorDownloadProps
                 <Button 
                   size="lg"
                   className="w-full"
+                  disabled={!fileReady}
                   onClick={() => window.open('https://gtjmebionytcomoldgjl.supabase.co/storage/v1/object/public/connector-updates/arthur-connector.py', '_blank')}
                 >
                   <Download className="mr-2 h-5 w-5" />
-                  Télécharger le connecteur (Python)
+                  {fileReady ? "Télécharger le connecteur (Python)" : "Connecteur en préparation..."}
                 </Button>
               </div>
             </div>
