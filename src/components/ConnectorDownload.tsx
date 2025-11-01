@@ -189,7 +189,7 @@ class ArthurConnectorGUI:
         footer = tk.Frame(self.root, bg='#ecf0f1', height=25)
         footer.pack(fill='x', side='bottom')
         footer.pack_propagate(False)
-        tk.Label(footer, text="Compatible: Pharmagest • LGPI • Winpharma • César • Alliadis", font=('Helvetica',7), bg='#ecf0f1', fg='#7f8c8d').pack(pady=6)
+        tk.Label(footer, text="Compatible: 40+ logiciels EU • France • Belgique • Suisse • Espagne • Italie • Allemagne • UK", font=('Helvetica',7), bg='#ecf0f1', fg='#7f8c8d').pack(pady=6)
     
     def log(self, msg):
         ts = datetime.now().strftime("%H:%M:%S")
@@ -225,20 +225,101 @@ class ArthurConnectorGUI:
         threading.Thread(target=detect, daemon=True).start()
     
     def detect_pharmacy_db(self):
+        # Tous les logiciels européens supportés
         patterns = {
-            'Pharmagest': ['Pharmagest**/data.db', '**/Pharmagest/data.db'],
-            'LGPI': ['LGPI**/pharmacie.db', '**/LGPI/pharmacie.db'],
-            'Winpharma': ['Winpharma**/catalog.db', '**/Winpharma/catalog.db']
+            # France
+            'LGPI Global Services': ['LGPI**/**.db', '**/LGPI/**/*.db', '**/lgpi/**/*.db'],
+            'WinPharma': ['WinPharma**/**.db', '**/WinPharma/**/*.db', '**/winpharma/**/*.db'],
+            'Smart RX': ['SmartRX**/**.db', '**/SmartRX/**/*.db', '**/smartrx/**/*.db'],
+            'Pharmaland': ['Pharmaland**/**.db', '**/Pharmaland/**/*.db'],
+            'iPharma': ['iPharma**/**.db', '**/iPharma/**/*.db'],
+            'Pharmavie Gestion': ['Pharmavie**/**.db', '**/Pharmavie/**/*.db'],
+            'ActiPharm': ['ActiPharm**/**.db', 'MSI2000**/**.db', '**/ActiPharm/**/*.db', '**/MSI2000/**/*.db'],
+            'VisioPharm': ['VisioPharm**/**.db', '**/VisioPharm/**/*.db'],
+            'PharmaVitale': ['PharmaVitale**/**.db', '**/PharmaVitale/**/*.db'],
+            'Opus Pharma': ['Opus**/**.db', '**/Opus/**/*.db'],
+            'Vega Santé': ['Vega**/**.db', '**/Vega/**/*.db'],
+            'Pharmagest': ['Pharmagest**/**.db', '**/Pharmagest/**/*.db'],
+            
+            # Belgique/Luxembourg
+            'Pharmony One': ['Pharmony**/**.db', '**/Pharmony/**/*.db'],
+            'Officinal': ['Officinal**/**.db', '**/Officinal/**/*.db'],
+            'CareConnect Pharmacy': ['CareConnect**/**.db', '**/CareConnect/**/*.db'],
+            'Propharma': ['Propharma**/**.db', '**/Propharma/**/*.db'],
+            'Offix': ['Offix**/**.db', '**/Offix/**/*.db'],
+            
+            # Suisse
+            'Ofac OffiCenter': ['OffiCenter**/**.db', 'Ofac**/**.db', '**/OffiCenter/**/*.db', '**/Ofac/**/*.db'],
+            'Pharmasoft': ['Pharmasoft**/**.db', '**/Pharmasoft/**/*.db'],
+            'TopPharm Connect': ['TopPharm**/**.db', '**/TopPharm/**/*.db'],
+            'Pharmanet': ['Pharmanet**/**.db', '**/Pharmanet/**/*.db'],
+            
+            # Espagne
+            'Farmatic': ['Farmatic**/**.db', '**/Farmatic/**/*.db'],
+            'Nixfarma': ['Nixfarma**/**.db', '**/Nixfarma/**/*.db'],
+            'Unycop Win': ['Unycop**/**.db', '**/Unycop/**/*.db'],
+            'Gestifarma': ['Gestifarma**/**.db', '**/Gestifarma/**/*.db'],
+            
+            # Italie
+            'Wingesfar': ['Wingesfar**/**.db', '**/Wingesfar/**/*.db'],
+            'Farma3Tech': ['Farma3Tech**/**.db', '**/Farma3Tech/**/*.db'],
+            'Pharmaservice': ['Pharmaservice**/**.db', '**/Pharmaservice/**/*.db'],
+            'Farmacia Manager': ['FarmaciaManager**/**.db', '**/FarmaciaManager/**/*.db'],
+            
+            # Allemagne
+            'Awinta ONE': ['Awinta**/**.db', '**/Awinta/**/*.db'],
+            'Pharmatechnik IXOS': ['IXOS**/**.db', 'Pharmatechnik**/**.db', '**/IXOS/**/*.db'],
+            'Lauer-Fischer WINAPO': ['WINAPO**/**.db', 'Lauer**/**.db', '**/WINAPO/**/*.db'],
+            'ADG S3000': ['ADG**/**.db', 'S3000**/**.db', '**/ADG/**/*.db'],
+            
+            # Royaume-Uni
+            'Pharmacy Manager': ['PharmacyManager**/**.db', '**/PharmacyManager/**/*.db'],
+            'Titan PMR': ['Titan**/**.db', '**/Titan/**/*.db'],
+            'RxWeb': ['RxWeb**/**.db', '**/RxWeb/**/*.db'],
+            'ProScript Connect': ['ProScript**/**.db', '**/ProScript/**/*.db']
         }
-        base_paths = [pathlib.Path.home(), pathlib.Path('/'), pathlib.Path('C:/') if platform.system()=='Windows' else pathlib.Path('/opt')]
         
+        # Chemins de base selon l'OS
+        if platform.system() == 'Windows':
+            base_paths = [
+                pathlib.Path('C:/Program Files'),
+                pathlib.Path('C:/Program Files (x86)'),
+                pathlib.Path('C:/ProgramData'),
+                pathlib.Path('C:/')
+            ]
+        elif platform.system() == 'Darwin':  # macOS
+            base_paths = [
+                pathlib.Path('/Applications'),
+                pathlib.Path.home() / 'Library/Application Support',
+                pathlib.Path.home()
+            ]
+        else:  # Linux
+            base_paths = [
+                pathlib.Path('/opt'),
+                pathlib.Path('/usr/local'),
+                pathlib.Path.home()
+            ]
+        
+        # Recherche avec limite de profondeur pour éviter les scans trop longs
         for name, pats in patterns.items():
             for base in base_paths:
+                if not base.exists():
+                    continue
                 try:
                     for pattern in pats:
-                        for p in base.glob(pattern):
-                            if p.is_file():
-                                return {'name':name, 'db_path':str(p)}
+                        for p in base.rglob(pattern):
+                            if p.is_file() and p.suffix == '.db':
+                                # Vérifier que c'est bien une base SQLite
+                                try:
+                                    conn = sqlite3.connect(str(p))
+                                    cursor = conn.cursor()
+                                    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' LIMIT 1")
+                                    if cursor.fetchone():
+                                        conn.close()
+                                        return {'name': name, 'db_path': str(p)}
+                                    conn.close()
+                                except:
+                                    pass
                 except:
                     pass
         return None
