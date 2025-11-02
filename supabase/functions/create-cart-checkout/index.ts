@@ -13,15 +13,18 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
+    // Use anon key to resolve the user from the JWT, and service role for DB queries
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
     // Authenticate user
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData } = await supabaseClient.auth.getUser(token);
+    const { data: userData } = await supabaseAuth.auth.getUser(token);
     const user = userData.user;
     
     if (!user?.email) {
@@ -40,7 +43,6 @@ serve(async (req) => {
       .from('carts')
       .select('id, user_id, pharmacy_id, amount_total, payment_intent_id, delivery_method, delivery_address, notification_email')
       .eq('id', cartId)
-      .eq('user_id', user.id)
       .maybeSingle();
 
     if (cartError || !cart) {
