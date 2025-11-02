@@ -97,9 +97,14 @@ export type Database = {
       carts: {
         Row: {
           amount_total: number | null
+          colissimo_label_url: string | null
+          colissimo_tracking_number: string | null
           completed_at: string | null
           created_at: string
+          delivery_address: Json | null
+          delivery_method: string | null
           id: string
+          notification_email: string | null
           notification_sent_at: string | null
           payment_intent_id: string | null
           payment_status: string | null
@@ -112,9 +117,14 @@ export type Database = {
         }
         Insert: {
           amount_total?: number | null
+          colissimo_label_url?: string | null
+          colissimo_tracking_number?: string | null
           completed_at?: string | null
           created_at?: string
+          delivery_address?: Json | null
+          delivery_method?: string | null
           id?: string
+          notification_email?: string | null
           notification_sent_at?: string | null
           payment_intent_id?: string | null
           payment_status?: string | null
@@ -127,9 +137,14 @@ export type Database = {
         }
         Update: {
           amount_total?: number | null
+          colissimo_label_url?: string | null
+          colissimo_tracking_number?: string | null
           completed_at?: string | null
           created_at?: string
+          delivery_address?: Json | null
+          delivery_method?: string | null
           id?: string
+          notification_email?: string | null
           notification_sent_at?: string | null
           payment_intent_id?: string | null
           payment_status?: string | null
