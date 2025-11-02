@@ -4,12 +4,7 @@ import { useCart } from '@/contexts/CartContext';
 
 const Footer = () => {
   const location = useLocation();
-  const { activeCarts } = useCart();
-  
-  // Ne compter que les items dans les paniers actifs
-  const totalItems = activeCarts.reduce((sum, cart) =>
-    sum + cart.items.reduce((s, item) => s + item.quantity, 0), 0
-  );
+  const { totalItems } = useCart();
   
   const links = [
     { 

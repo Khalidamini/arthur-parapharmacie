@@ -132,6 +132,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
       setActiveCarts(carts.filter(c => c.status === 'active'));
       setCartHistory(carts.filter(c => c.status !== 'active'));
+
+      // Auto-sélectionner la pharmacie référente si aucune n'est définie
+      if (!selectedPharmacyId) {
+        const firstPharmacyCart = carts.find(c => c.pharmacyId);
+        if (firstPharmacyCart?.pharmacyId) {
+          setSelectedPharmacyId(firstPharmacyCart.pharmacyId);
+        }
+      }
     } catch (error) {
       console.error('Error loading carts:', error);
     }
