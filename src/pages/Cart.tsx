@@ -17,7 +17,7 @@ export default function Cart() {
 
   useEffect(() => {
     loadCarts();
-  }, []);
+  }, [selectedPharmacyId]);
 
   const filteredActiveCarts = selectedPharmacyId 
     ? activeCarts.filter(cart => cart.pharmacyId === selectedPharmacyId)
