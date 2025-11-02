@@ -167,10 +167,16 @@ export default function Checkout() {
       if (error) throw error;
 
       if (data?.url) {
-        // Redirect to Stripe Checkout
-        window.location.href = data.url;
+        // Ouvrir Stripe dans un nouvel onglet (meilleure compatibilité en preview)
+        const newWin = window.open(data.url, '_blank', 'noopener,noreferrer');
+        if (!newWin) {
+          // Fallback si le pop-up est bloqué
+          window.location.href = data.url;
+        }
+        setProcessingPayment(false);
+        return;
       } else {
-        throw new Error('No checkout URL received');
+        throw new Error(data?.message || 'Aucune URL de paiement reçue');
       }
     } catch (error) {
       console.error('Payment error:', error);
