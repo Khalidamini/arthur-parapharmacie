@@ -51,6 +51,8 @@ export default function Checkout() {
   }
 
   const cartTotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const deliveryFee = deliveryMethod === 'delivery' ? 6.90 : 0;
+  const totalWithDelivery = cartTotal + deliveryFee;
   const arthurItems = cart.items.filter(item => item.source === 'arthur');
   const shopItems = cart.items.filter(item => item.source === 'shop');
   const promoItems = cart.items.filter(item => item.source === 'promotion');
@@ -174,9 +176,12 @@ export default function Checkout() {
                   <RadioGroupItem value="delivery" id="delivery" />
                   <Label htmlFor="delivery" className="flex items-center gap-2 cursor-pointer flex-1">
                     <Truck className="h-4 w-4" />
-                    <div>
+                    <div className="flex-1">
                       <div className="font-medium">Livraison à domicile</div>
                       <div className="text-xs text-muted-foreground">Via Shipy (La Poste, Chronopost...)</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold text-primary">6,90 €</div>
                     </div>
                   </Label>
                 </div>
@@ -263,9 +268,18 @@ export default function Checkout() {
                   <span>{promoItems.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2)} €</span>
                 </div>
               )}
+              {deliveryMethod === 'delivery' && (
+                <div className="flex justify-between text-sm pt-2">
+                  <span className="flex items-center gap-1">
+                    <Truck className="h-3 w-3" />
+                    Frais de livraison
+                  </span>
+                  <span className="font-medium text-primary">{deliveryFee.toFixed(2)} €</span>
+                </div>
+              )}
               <div className="flex justify-between font-bold text-lg pt-2 border-t">
                 <span>Total</span>
-                <span className="text-primary">{cartTotal.toFixed(2)} €</span>
+                <span className="text-primary">{totalWithDelivery.toFixed(2)} €</span>
               </div>
             </div>
 
@@ -282,7 +296,7 @@ export default function Checkout() {
               ) : (
                 <>
                   <CreditCard className="mr-2 h-4 w-4" />
-                  Payer {cartTotal.toFixed(2)} €
+                  Payer {totalWithDelivery.toFixed(2)} €
                 </>
               )}
             </Button>
