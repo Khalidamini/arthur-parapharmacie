@@ -5,8 +5,12 @@ const FloatingChatButton = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Ne pas afficher le bouton si on est déjà sur la page chat
-  if (location.pathname === '/chat') {
+  // Ne pas afficher le bouton si on est déjà sur la page chat ou paiement
+  if (
+    location.pathname === '/chat' ||
+    location.pathname.startsWith('/checkout') ||
+    location.pathname.startsWith('/payment')
+  ) {
     return null;
   }
   return <Button onClick={() => navigate('/chat')} size="icon" className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all z-50 bg-gradient-primary py-0 my-[12px]">

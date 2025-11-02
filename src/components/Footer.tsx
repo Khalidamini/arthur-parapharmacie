@@ -5,7 +5,7 @@ import { useCart } from '@/contexts/CartContext';
 const Footer = () => {
   const location = useLocation();
   const { totalItems } = useCart();
-  
+  if (location.pathname.startsWith('/checkout')) return null;
   const links = [
     { 
       to: '/', 
