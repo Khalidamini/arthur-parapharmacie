@@ -1,12 +1,33 @@
 import { Link, useLocation } from 'react-router-dom';
 import { ShoppingBag, ShoppingCart, User, MapPin, Home } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Footer = () => {
   const location = useLocation();
   const { totalItems } = useCart();
+  const [isPharmacist, setIsPharmacist] = useState(false);
+
+  useEffect(() => {
+    const checkPharmacistRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: roles } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        setIsPharmacist(!!roles);
+      }
+    };
+    checkPharmacistRole();
+  }, []);
+
   if (location.pathname.startsWith('/checkout')) return null;
-  const links = [
+  if (location.pathname.startsWith('/pharmacy')) return null;
+  const allLinks = [
     { 
       to: '/', 
       icon: Home, 
@@ -24,7 +45,8 @@ const Footer = () => {
       icon: ShoppingCart, 
       label: 'Mon panier',
       badge: totalItems,
-      isActive: location.pathname === '/cart'
+      isActive: location.pathname === '/cart',
+      hideForPharmacist: true
     },
     { 
       to: '/recommendations?tab=account', 
@@ -34,10 +56,12 @@ const Footer = () => {
     },
   ];
 
+  const links = allLinks.filter(link => !(isPharmacist && link.hideForPharmacist));
+
   return (
     <footer className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-lg">
       <div className="container max-w-3xl mx-auto">
-        <div className="grid grid-cols-4 gap-0.5">
+        <div className={`grid gap-0.5 ${isPharmacist ? 'grid-cols-3' : 'grid-cols-4'}`}>
           {links.map((link) => {
             const Icon = link.icon;
             return (
