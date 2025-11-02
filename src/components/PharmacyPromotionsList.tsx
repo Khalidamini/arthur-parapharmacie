@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Loader2, Calendar } from "lucide-react";
+import { Trash2, Loader2, Calendar, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -14,6 +14,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Promotion {
   id: string;
@@ -36,6 +47,9 @@ export default function PharmacyPromotionsList({ pharmacyId }: PharmacyPromotion
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [promotionToDelete, setPromotionToDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [promotionToEdit, setPromotionToEdit] = useState<Promotion | null>(null);
+  const [updating, setUpdating] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -120,6 +134,49 @@ export default function PharmacyPromotionsList({ pharmacyId }: PharmacyPromotion
       setDeleting(false);
       setDeleteDialogOpen(false);
       setPromotionToDelete(null);
+    }
+  };
+
+  const openEditDialog = (promotion: Promotion) => {
+    setPromotionToEdit(promotion);
+    setEditDialogOpen(true);
+  };
+
+  const updatePromotion = async () => {
+    if (!promotionToEdit) return;
+
+    try {
+      setUpdating(true);
+      const { error } = await supabase
+        .from('promotions')
+        .update({
+          title: promotionToEdit.title,
+          description: promotionToEdit.description,
+          discount_percentage: promotionToEdit.discount_percentage,
+          original_price: promotionToEdit.original_price,
+          valid_until: promotionToEdit.valid_until,
+        })
+        .eq('id', promotionToEdit.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Promotion modifiée",
+        description: "La promotion a été modifiée avec succès",
+      });
+
+      loadPromotions();
+    } catch (error) {
+      console.error('Error updating promotion:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier la promotion",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdating(false);
+      setEditDialogOpen(false);
+      setPromotionToEdit(null);
     }
   };
 
@@ -215,15 +272,26 @@ export default function PharmacyPromotionsList({ pharmacyId }: PharmacyPromotion
                   </span>
                 </div>
               )}
-              <Button
-                variant="destructive"
-                size="sm"
-                className="w-full"
-                onClick={() => openDeleteDialog(promotion.id)}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Supprimer
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => openEditDialog(promotion)}
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Modifier
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => openDeleteDialog(promotion.id)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Supprimer
+                </Button>
+              </div>
             </div>
           );
         })}
@@ -253,6 +321,108 @@ export default function PharmacyPromotionsList({ pharmacyId }: PharmacyPromotion
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Modifier la promotion</DialogTitle>
+            <DialogDescription>
+              Modifiez les informations de votre promotion
+            </DialogDescription>
+          </DialogHeader>
+          {promotionToEdit && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="title">Titre</Label>
+                <Input
+                  id="title"
+                  value={promotionToEdit.title}
+                  onChange={(e) =>
+                    setPromotionToEdit({ ...promotionToEdit, title: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={promotionToEdit.description || ''}
+                  onChange={(e) =>
+                    setPromotionToEdit({ ...promotionToEdit, description: e.target.value })
+                  }
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="discount">Réduction (%)</Label>
+                  <Input
+                    id="discount"
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={promotionToEdit.discount_percentage || ''}
+                    onChange={(e) =>
+                      setPromotionToEdit({
+                        ...promotionToEdit,
+                        discount_percentage: parseInt(e.target.value) || null,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="original_price">Prix original (€)</Label>
+                  <Input
+                    id="original_price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={promotionToEdit.original_price || ''}
+                    onChange={(e) =>
+                      setPromotionToEdit({
+                        ...promotionToEdit,
+                        original_price: parseFloat(e.target.value) || null,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="valid_until">Valable jusqu'au</Label>
+                <Input
+                  id="valid_until"
+                  type="date"
+                  value={
+                    promotionToEdit.valid_until
+                      ? promotionToEdit.valid_until.split('T')[0]
+                      : ''
+                  }
+                  onChange={(e) =>
+                    setPromotionToEdit({
+                      ...promotionToEdit,
+                      valid_until: e.target.value || null,
+                    })
+                  }
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)} disabled={updating}>
+              Annuler
+            </Button>
+            <Button onClick={updatePromotion} disabled={updating}>
+              {updating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Enregistrement...
+                </>
+              ) : (
+                'Enregistrer'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
