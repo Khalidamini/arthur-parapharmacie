@@ -110,7 +110,7 @@ export default function Checkout() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="min-h-screen bg-background p-4 pb-32">
       <div className="max-w-3xl mx-auto">
         <Button variant="ghost" onClick={() => navigate('/cart')} className="mb-4">
           <ArrowLeft className="mr-2 h-4 w-4" />
