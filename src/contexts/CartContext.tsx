@@ -298,10 +298,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const totalItems = activeCarts.reduce((sum, cart) =>
+  // Filtrer les paniers par pharmacie sélectionnée
+  const filteredCarts = selectedPharmacyId 
+    ? activeCarts.filter(cart => cart.pharmacyId === selectedPharmacyId)
+    : activeCarts;
+
+  const totalItems = filteredCarts.reduce((sum, cart) =>
     sum + cart.items.reduce((s, item) => s + item.quantity, 0), 0
   );
-  const totalPrice = activeCarts.reduce((sum, cart) =>
+  const totalPrice = filteredCarts.reduce((sum, cart) =>
     sum + cart.items.reduce((s, item) => s + item.price * item.quantity, 0), 0
   );
 
