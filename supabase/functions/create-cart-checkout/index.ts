@@ -38,10 +38,10 @@ serve(async (req) => {
     // Get cart details
     const { data: cart, error: cartError } = await supabaseClient
       .from('carts')
-      .select('*')
+      .select('id, user_id, pharmacy_id, amount_total, payment_intent_id, delivery_method, delivery_address, notification_email')
       .eq('id', cartId)
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (cartError || !cart) {
       console.error('Cart error:', cartError);
@@ -71,9 +71,13 @@ serve(async (req) => {
     }
 
     // Calculate total
-    const totalAmount = items.reduce((sum, item) => 
+    const cartItemsTotal = items.reduce((sum, item) => 
       sum + (Number(item.price) * item.quantity), 0
     );
+    
+    // Add delivery fee if delivery method is selected
+    const deliveryFee = cart.delivery_method === 'delivery' ? 6.90 : 0;
+    const totalAmount = cartItemsTotal + deliveryFee;
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -104,6 +108,22 @@ serve(async (req) => {
       },
       quantity: item.quantity,
     }));
+
+    // Add delivery fee as a line item if applicable
+    if (deliveryFee > 0) {
+      lineItems.push({
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: 'Frais de livraison',
+            description: 'Livraison à domicile via Shipy',
+            images: [],
+          },
+          unit_amount: Math.round(deliveryFee * 100),
+        },
+        quantity: 1,
+      });
+    }
 
     // Create checkout session
     const sessionConfig: any = {
