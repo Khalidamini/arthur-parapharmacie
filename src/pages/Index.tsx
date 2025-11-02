@@ -17,55 +17,63 @@ interface Promotion {
 const Index = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState<string | null>(null);
   const [currentPharmacy, setCurrentPharmacy] = useState<string | null>(null);
   const [currentPharmacyId, setCurrentPharmacyId] = useState<string | null>(null);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   useEffect(() => {
     const checkAuth = async () => {
-      const {
-        data: {
-          user
-        }
-      } = await supabase.auth.getUser();
-      setUser(user);
-      if (user) {
-        // Récupérer le nom d'utilisateur
-        const { data: profileData } = await (supabase as any).from('profiles').select('username').eq('id', user.id).single();
-        if (profileData?.username) {
-          setUsername(profileData.username);
-        }
-        
-        // Vérifier s'il y a une affiliation en attente
-        const pendingAffiliation = localStorage.getItem('pending_pharmacy_affiliation');
-        if (pendingAffiliation) {
-          const {
-            pharmacy_id,
-            affiliation_type
-          } = JSON.parse(pendingAffiliation);
-          try {
-            await (supabase as any).from('user_pharmacy_affiliation').insert({
-              user_id: user.id,
+      try {
+        setLoading(true);
+        const {
+          data: {
+            user
+          }
+        } = await supabase.auth.getUser();
+        setUser(user);
+        if (user) {
+          // Récupérer le nom d'utilisateur
+          const { data: profileData } = await (supabase as any).from('profiles').select('username').eq('id', user.id).single();
+          if (profileData?.username) {
+            setUsername(profileData.username);
+          }
+          
+          // Vérifier s'il y a une affiliation en attente
+          const pendingAffiliation = localStorage.getItem('pending_pharmacy_affiliation');
+          if (pendingAffiliation) {
+            const {
               pharmacy_id,
               affiliation_type
-            });
-            localStorage.removeItem('pending_pharmacy_affiliation');
-          } catch (error) {
-            console.error('Error creating pending affiliation:', error);
+            } = JSON.parse(pendingAffiliation);
+            try {
+              await (supabase as any).from('user_pharmacy_affiliation').insert({
+                user_id: user.id,
+                pharmacy_id,
+                affiliation_type
+              });
+              localStorage.removeItem('pending_pharmacy_affiliation');
+            } catch (error) {
+              console.error('Error creating pending affiliation:', error);
+            }
+          }
+
+          // Charger la pharmacie référente
+          const {
+            data
+          } = await (supabase as any).from('user_pharmacy_affiliation').select('pharmacy_id, pharmacies(name)').eq('user_id', user.id).order('updated_at', {
+            ascending: false
+          }).limit(1).maybeSingle();
+          if (data) {
+            setCurrentPharmacy(data.pharmacies?.name || null);
+            setCurrentPharmacyId(data.pharmacy_id);
+            await loadPromotions(data.pharmacy_id);
           }
         }
-
-        // Charger la pharmacie référente
-        const {
-          data
-        } = await (supabase as any).from('user_pharmacy_affiliation').select('pharmacy_id, pharmacies(name)').eq('user_id', user.id).order('updated_at', {
-          ascending: false
-        }).limit(1).maybeSingle();
-        if (data) {
-          setCurrentPharmacy(data.pharmacies?.name || null);
-          setCurrentPharmacyId(data.pharmacy_id);
-          loadPromotions(data.pharmacy_id);
-        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setLoading(false);
       }
     };
     checkAuth();
@@ -119,6 +127,23 @@ const Index = () => {
   const handleSelectPromotion = (promotion: Promotion) => {
     console.log('Promotion sélectionnée:', promotion);
   };
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <div className="inline-flex h-16 w-16 items-center justify-center animate-pulse">
+            <img 
+              src="/icon-192.png" 
+              alt="Arthur Logo" 
+              className="h-16 w-16 rounded-full"
+            />
+          </div>
+          <p className="text-muted-foreground">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <UserLayout user={user}>
       {/* Hero Section */}
