@@ -203,20 +203,16 @@ const PharmacyOrders = () => {
 
   const handleNotifyCustomer = async (cartId: string) => {
     try {
-      const { error } = await supabase
-        .from('carts')
-        .update({
-          ready_for_pickup: true,
-          notification_sent_at: new Date().toISOString(),
-          pickup_message: 'Votre commande est prête à être récupérée en pharmacie.'
-        })
-        .eq('id', cartId);
+      // Call edge function to send email notification
+      const { error } = await supabase.functions.invoke('notify-customer-order-ready', {
+        body: { cartId }
+      });
 
       if (error) throw error;
 
       toast({
         title: "Notification envoyée",
-        description: "Le client a été notifié que sa commande est prête.",
+        description: "Le client a été notifié par email que sa commande est prête.",
       });
 
       // Recharger les données

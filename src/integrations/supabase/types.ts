@@ -97,8 +97,6 @@ export type Database = {
       carts: {
         Row: {
           amount_total: number | null
-          colissimo_label_url: string | null
-          colissimo_tracking_number: string | null
           completed_at: string | null
           created_at: string
           delivery_address: Json | null
@@ -111,14 +109,14 @@ export type Database = {
           pharmacy_id: string | null
           pickup_message: string | null
           ready_for_pickup: boolean | null
+          shipping_label_url: string | null
+          shipping_tracking_number: string | null
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
           amount_total?: number | null
-          colissimo_label_url?: string | null
-          colissimo_tracking_number?: string | null
           completed_at?: string | null
           created_at?: string
           delivery_address?: Json | null
@@ -131,14 +129,14 @@ export type Database = {
           pharmacy_id?: string | null
           pickup_message?: string | null
           ready_for_pickup?: boolean | null
+          shipping_label_url?: string | null
+          shipping_tracking_number?: string | null
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           amount_total?: number | null
-          colissimo_label_url?: string | null
-          colissimo_tracking_number?: string | null
           completed_at?: string | null
           created_at?: string
           delivery_address?: Json | null
@@ -151,6 +149,8 @@ export type Database = {
           pharmacy_id?: string | null
           pickup_message?: string | null
           ready_for_pickup?: boolean | null
+          shipping_label_url?: string | null
+          shipping_tracking_number?: string | null
           status?: string
           updated_at?: string
           user_id?: string

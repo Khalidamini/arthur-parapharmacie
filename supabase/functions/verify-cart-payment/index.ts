@@ -48,6 +48,17 @@ serve(async (req) => {
         })
         .eq('id', cartId);
 
+      // Notify pharmacy about new paid order
+      try {
+        await supabaseClient.functions.invoke('notify-pharmacy-new-order', {
+          body: { cartId }
+        });
+        console.log('Pharmacy notified successfully');
+      } catch (notifyError) {
+        console.error('Failed to notify pharmacy:', notifyError);
+        // Don't fail the whole request if notification fails
+      }
+
       return new Response(
         JSON.stringify({ success: true, cartId }),
         {

@@ -4,7 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Building2, CreditCard, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ArrowLeft, Building2, CreditCard, Loader2, Package, Truck } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -15,6 +18,16 @@ export default function Checkout() {
   const { activeCarts, loadCarts } = useCart();
   const [loading, setLoading] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup');
+  const [notificationEmail, setNotificationEmail] = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState({
+    name: '',
+    street: '',
+    city: '',
+    postal_code: '',
+    country: 'France',
+    phone: '',
+  });
   
   const cart = activeCarts.find(c => c.id === cartId);
 
@@ -44,7 +57,31 @@ export default function Checkout() {
 
   const handlePayment = async () => {
     try {
+      // Validate delivery address if delivery is selected
+      if (deliveryMethod === 'delivery') {
+        if (!deliveryAddress.name || !deliveryAddress.street || !deliveryAddress.city || !deliveryAddress.postal_code) {
+          toast({
+            title: "Adresse incomplète",
+            description: "Veuillez renseigner tous les champs de l'adresse de livraison.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
       setProcessingPayment(true);
+
+      // Update cart with delivery info
+      const { error: updateError } = await supabase
+        .from('carts')
+        .update({
+          delivery_method: deliveryMethod,
+          delivery_address: deliveryMethod === 'delivery' ? deliveryAddress : null,
+          notification_email: notificationEmail || null,
+        })
+        .eq('id', cart.id);
+
+      if (updateError) throw updateError;
       
       // Create checkout session
       const { data, error } = await supabase.functions.invoke('create-cart-checkout', {
@@ -119,6 +156,85 @@ export default function Checkout() {
 
             <Separator className="my-4" />
 
+            {/* Delivery method selection */}
+            <div className="space-y-4 mb-4">
+              <Label className="text-base font-semibold">Mode de récupération</Label>
+              <RadioGroup value={deliveryMethod} onValueChange={(v: 'pickup' | 'delivery') => setDeliveryMethod(v)}>
+                <div className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-accent" onClick={() => setDeliveryMethod('pickup')}>
+                  <RadioGroupItem value="pickup" id="pickup" />
+                  <Label htmlFor="pickup" className="flex items-center gap-2 cursor-pointer flex-1">
+                    <Package className="h-4 w-4" />
+                    <div>
+                      <div className="font-medium">Retrait en pharmacie</div>
+                      <div className="text-xs text-muted-foreground">Gratuit</div>
+                    </div>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-accent" onClick={() => setDeliveryMethod('delivery')}>
+                  <RadioGroupItem value="delivery" id="delivery" />
+                  <Label htmlFor="delivery" className="flex items-center gap-2 cursor-pointer flex-1">
+                    <Truck className="h-4 w-4" />
+                    <div>
+                      <div className="font-medium">Livraison à domicile</div>
+                      <div className="text-xs text-muted-foreground">Via Shipy (La Poste, Chronopost...)</div>
+                    </div>
+                  </Label>
+                </div>
+              </RadioGroup>
+
+              {deliveryMethod === 'delivery' && (
+                <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+                  <h4 className="font-semibold text-sm">Adresse de livraison</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input
+                      placeholder="Nom complet"
+                      value={deliveryAddress.name}
+                      onChange={(e) => setDeliveryAddress({...deliveryAddress, name: e.target.value})}
+                      className="col-span-2"
+                    />
+                    <Input
+                      placeholder="Rue et numéro"
+                      value={deliveryAddress.street}
+                      onChange={(e) => setDeliveryAddress({...deliveryAddress, street: e.target.value})}
+                      className="col-span-2"
+                    />
+                    <Input
+                      placeholder="Code postal"
+                      value={deliveryAddress.postal_code}
+                      onChange={(e) => setDeliveryAddress({...deliveryAddress, postal_code: e.target.value})}
+                    />
+                    <Input
+                      placeholder="Ville"
+                      value={deliveryAddress.city}
+                      onChange={(e) => setDeliveryAddress({...deliveryAddress, city: e.target.value})}
+                    />
+                    <Input
+                      placeholder="Téléphone"
+                      value={deliveryAddress.phone}
+                      onChange={(e) => setDeliveryAddress({...deliveryAddress, phone: e.target.value})}
+                      className="col-span-2"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm">Email de notification (optionnel)</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="votre@email.com"
+                  value={notificationEmail}
+                  onChange={(e) => setNotificationEmail(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Recevez une notification quand votre commande est {deliveryMethod === 'delivery' ? 'expédiée' : 'prête à être retirée'}
+                </p>
+              </div>
+            </div>
+
+            <Separator className="my-4" />
+
             <div className="space-y-2">
               {arthurItems.length > 0 && (
                 <div className="flex justify-between text-sm">
@@ -172,7 +288,7 @@ export default function Checkout() {
             </Button>
 
             <p className="text-xs text-muted-foreground text-center mt-4">
-              Paiement sécurisé par Stripe. Vous pourrez retirer votre commande à la pharmacie après paiement.
+              Paiement sécurisé par Stripe. {deliveryMethod === 'delivery' ? 'Votre commande sera expédiée après paiement.' : 'Vous pourrez retirer votre commande à la pharmacie après paiement.'}
             </p>
           </CardContent>
         </Card>
