@@ -15,8 +15,9 @@ import { toast } from "@/hooks/use-toast";
 export default function Checkout() {
   const { cartId } = useParams();
   const navigate = useNavigate();
-  const { activeCarts, loadCarts } = useCart();
-  const [loading, setLoading] = useState(false);
+  const { loadCarts } = useCart();
+  const [loading, setLoading] = useState(true);
+  const [cart, setCart] = useState<any>(null);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup');
   const [notificationEmail, setNotificationEmail] = useState('');
@@ -28,12 +29,85 @@ export default function Checkout() {
     country: 'France',
     phone: '',
   });
-  
-  const cart = activeCarts.find(c => c.id === cartId);
 
   useEffect(() => {
-    loadCarts();
+    loadCartData();
   }, [cartId]);
+
+  const loadCartData = async () => {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/cart');
+        return;
+      }
+
+      // Load cart directly from database
+      const { data: cartData, error: cartError } = await supabase
+        .from('carts')
+        .select('id, pharmacy_id, status, created_at, updated_at, pharmacies(name)')
+        .eq('id', cartId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (cartError || !cartData) {
+        toast({
+          title: "Erreur",
+          description: "Panier introuvable",
+          variant: "destructive",
+        });
+        navigate('/cart');
+        return;
+      }
+
+      // Load cart items
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('cart_items')
+        .select('*')
+        .eq('cart_id', cartId);
+
+      if (itemsError) throw itemsError;
+
+      const cartWithItems = {
+        id: cartData.id,
+        pharmacyId: cartData.pharmacy_id,
+        pharmacyName: (cartData.pharmacies as any)?.name,
+        status: cartData.status,
+        createdAt: cartData.created_at,
+        updatedAt: cartData.updated_at,
+        items: (itemsData || []).map(item => ({
+          id: item.id,
+          name: item.product_name,
+          brand: item.brand,
+          price: Number(item.price),
+          imageUrl: item.image_url || '',
+          quantity: item.quantity,
+          source: item.source,
+          reason: item.reason || undefined,
+        })),
+      };
+
+      setCart(cartWithItems);
+    } catch (error) {
+      console.error('Error loading cart:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger le panier",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background p-4 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!cart) {
     return (
