@@ -21,14 +21,12 @@ export default function Cart() {
 
   const filteredActiveCarts = selectedPharmacyId 
     ? activeCarts.filter(cart => cart.pharmacyId === selectedPharmacyId)
-    : activeCarts;
+    : [];
   const filteredHistory = selectedPharmacyId
     ? cartHistory.filter(cart => cart.pharmacyId === selectedPharmacyId).sort((a, b) => 
         new Date(b.completedAt || b.updatedAt).getTime() - new Date(a.completedAt || a.updatedAt).getTime()
       )
-    : cartHistory.sort((a, b) => 
-        new Date(b.completedAt || b.updatedAt).getTime() - new Date(a.completedAt || a.updatedAt).getTime()
-      );
+    : [];
 
   const renderCartItems = (cart: any) => (
     <div className="space-y-3">
@@ -230,7 +228,19 @@ export default function Cart() {
           </TabsList>
 
           <TabsContent value="active">
-            {filteredActiveCarts.length === 0 ? (
+            {!selectedPharmacyId ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Building2 className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-lg text-muted-foreground mb-4">
+                    Veuillez d'abord sélectionner une pharmacie
+                  </p>
+                  <Button onClick={() => navigate('/pharmacies')}>
+                    Choisir une pharmacie
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : filteredActiveCarts.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
                   <ShoppingBag className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
