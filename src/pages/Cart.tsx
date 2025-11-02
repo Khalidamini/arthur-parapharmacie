@@ -228,19 +228,7 @@ export default function Cart() {
           </TabsList>
 
           <TabsContent value="active">
-            {!selectedPharmacyId ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <Building2 className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-lg text-muted-foreground mb-4">
-                    Veuillez d'abord sélectionner une pharmacie
-                  </p>
-                  <Button onClick={() => navigate('/pharmacies')}>
-                    Choisir une pharmacie
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : filteredActiveCarts.length === 0 ? (
+            {filteredActiveCarts.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
                   <ShoppingBag className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
