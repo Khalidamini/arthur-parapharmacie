@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingBag, ShoppingCart, User, MapPin, Home } from 'lucide-react';
+import { ShoppingBag, ShoppingCart, User, Home, Package } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,6 +49,12 @@ const Footer = () => {
       hideForPharmacist: true
     },
     { 
+      to: '/my-orders', 
+      icon: Package, 
+      label: 'Mes commandes',
+      isActive: location.pathname === '/my-orders'
+    },
+    { 
       to: '/recommendations?tab=account', 
       icon: User, 
       label: 'Mon compte',
@@ -61,7 +67,7 @@ const Footer = () => {
   return (
     <footer className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-lg">
       <div className="container max-w-3xl mx-auto">
-        <div className={`grid gap-0.5 ${isPharmacist ? 'grid-cols-3' : 'grid-cols-4'}`}>
+        <div className={`grid gap-0.5 ${isPharmacist ? 'grid-cols-4' : 'grid-cols-5'}`}>
           {links.map((link) => {
             const Icon = link.icon;
             return (

@@ -26,6 +26,7 @@ import PharmacyUpdatePassword from "./pages/PharmacyUpdatePassword";
 import PharmacyConnectorDownload from "./pages/PharmacyConnectorDownload";
 import Checkout from "./pages/Checkout";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import MyOrders from "./pages/MyOrders";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,7 @@ const App = () => (
             <Route path="/admin/pharmacies" element={<AdminPharmacies />} />
             <Route path="/checkout/:cartId" element={<Checkout />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
+            <Route path="/my-orders" element={<MyOrders />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

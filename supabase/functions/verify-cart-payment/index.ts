@@ -59,6 +59,17 @@ serve(async (req) => {
         // Don't fail the whole request if notification fails
       }
 
+      // Notify customer about order confirmation
+      try {
+        await supabaseClient.functions.invoke('notify-customer-order-confirmation', {
+          body: { cartId }
+        });
+        console.log('Customer notified successfully');
+      } catch (notifyError) {
+        console.error('Failed to notify customer:', notifyError);
+        // Don't fail the whole request if notification fails
+      }
+
       return new Response(
         JSON.stringify({ success: true, cartId }),
         {
