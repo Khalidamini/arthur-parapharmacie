@@ -109,7 +109,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Arthur Pharmacie <notifications@arthur-pharmacie.fr>',
+        from: 'Arthur Pharmacie <onboarding@resend.dev>',
         to: [customerEmail],
         subject: emailSubject,
         html: emailHtml,
