@@ -34,11 +34,13 @@ const Index = () => {
         setUser(user);
         if (user) {
           // Récupérer le nom d'utilisateur
-          const { data: profileData } = await (supabase as any).from('profiles').select('username').eq('id', user.id).single();
+          const {
+            data: profileData
+          } = await (supabase as any).from('profiles').select('username').eq('id', user.id).single();
           if (profileData?.username) {
             setUsername(profileData.username);
           }
-          
+
           // Vérifier s'il y a une affiliation en attente
           const pendingAffiliation = localStorage.getItem('pending_pharmacy_affiliation');
           if (pendingAffiliation) {
@@ -85,12 +87,14 @@ const Index = () => {
       setUser(session?.user ?? null);
       if (session?.user) {
         // Récupérer le nom d'utilisateur
-        (supabase as any).from('profiles').select('username').eq('id', session.user.id).single().then(({ data: profileData }: any) => {
+        (supabase as any).from('profiles').select('username').eq('id', session.user.id).single().then(({
+          data: profileData
+        }: any) => {
           if (profileData?.username) {
             setUsername(profileData.username);
           }
         });
-        
+
         // Recharger la pharmacie après connexion
         (supabase as any).from('user_pharmacy_affiliation').select('pharmacy_id, pharmacies(name)').eq('user_id', session.user.id).order('updated_at', {
           ascending: false
@@ -128,34 +132,22 @@ const Index = () => {
     console.log('Promotion sélectionnée:', promotion);
   };
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+    return <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="inline-flex h-16 w-16 items-center justify-center animate-pulse">
-            <img 
-              src="/icon-192.png" 
-              alt="Arthur Logo" 
-              className="h-16 w-16 rounded-full"
-            />
+            <img src="/icon-192.png" alt="Arthur Logo" className="h-16 w-16 rounded-full" />
           </div>
           <p className="text-muted-foreground">Chargement...</p>
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <UserLayout user={user}>
+  return <UserLayout user={user}>
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-primary opacity-5"></div>
         <div className="max-w-3xl mx-auto px-4 py-24 text-center relative">
           <div className="inline-flex h-20 w-20 items-center justify-center mb-6 animate-in zoom-in duration-500">
-            <img 
-              src="/icon-192.png" 
-              alt="Arthur Logo" 
-              className="h-20 w-20 rounded-full shadow-xl"
-            />
+            <img src="/icon-192.png" alt="Arthur Logo" className="h-20 w-20 rounded-full shadow-xl" />
           </div>
           <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
             Bonjour{username ? ` ${username}` : ''}, je suis{' '}
@@ -178,14 +170,14 @@ const Index = () => {
             <Button onClick={() => navigate('/chat')} className="w-full h-20 sm:h-24 bg-gradient-primary border-2 border-primary hover:opacity-90 transition-all group">
               <div className="flex flex-col items-center gap-1 sm:gap-2">
                 <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground group-hover:scale-110 transition-transform" />
-                <span className="font-medium text-xs sm:text-sm text-primary-foreground">Chat</span>
+                <span className="font-medium text-xs sm:text-sm text-primary-foreground">Chatter </span>
               </div>
             </Button>
             
             <Button onClick={() => navigate('/scan-qr')} variant="outline" className="w-full h-20 sm:h-24 border-2 hover:border-primary/50 transition-all group">
               <div className="flex flex-col items-center gap-1 sm:gap-2">
                 <QrCode className="h-5 w-5 sm:h-6 sm:w-6 text-primary group-hover:scale-110 transition-transform" />
-                <span className="font-medium text-xs sm:text-sm text-center leading-tight">Scanner pharmacie</span>
+                <span className="font-medium text-xs sm:text-sm text-center leading-tight">Scanner une pharmacie</span>
               </div>
             </Button>
             
@@ -199,7 +191,7 @@ const Index = () => {
             <Button onClick={() => navigate('/pharmacies')} variant="outline" className="w-full h-20 sm:h-24 border-2 hover:border-primary/50 transition-all group">
               <div className="flex flex-col items-center gap-1 sm:gap-2">
                 <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-primary group-hover:scale-110 transition-transform" />
-                <span className="font-medium text-xs sm:text-sm text-center leading-tight">Choix liste pharmacie</span>
+                <span className="font-medium text-xs sm:text-sm text-center leading-tight">Choisir  pharmacie</span>
               </div>
             </Button>
           </div>
@@ -242,13 +234,9 @@ const Index = () => {
       </section>
 
       {/* Slider de promotions juste au-dessus du footer */}
-      {currentPharmacyId && promotions.length > 0 && (
-        <div className="max-w-3xl mx-auto px-3 sm:px-4 pb-6">
+      {currentPharmacyId && promotions.length > 0 && <div className="max-w-3xl mx-auto px-3 sm:px-4 pb-6">
           <PromotionSlider promotions={promotions} onSelectPromotion={handleSelectPromotion} />
-        </div>
-      )}
-    </UserLayout>
-  );
+        </div>}
+    </UserLayout>;
 };
-
 export default Index;
