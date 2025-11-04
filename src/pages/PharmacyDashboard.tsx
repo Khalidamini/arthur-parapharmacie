@@ -10,6 +10,8 @@ import PharmacyLayout from '@/layouts/PharmacyLayout';
 import PharmacyProductsList from '@/components/PharmacyProductsList';
 import PharmacyPromotionsList from '@/components/PharmacyPromotionsList';
 import ConnectorDownload from '@/components/ConnectorDownload';
+import PharmacyInfoEdit from '@/components/PharmacyInfoEdit';
+import PharmacyTeamManagement from '@/components/PharmacyTeamManagement';
 
 const PharmacyDashboard = () => {
   const navigate = useNavigate();
@@ -126,44 +128,13 @@ const PharmacyDashboard = () => {
 
           {/* Informations de la pharmacie */}
           <TabsContent value="info">
-            <Card>
-              <CardHeader>
-                <CardTitle>Informations de l'établissement</CardTitle>
-                <CardDescription>
-                  Gérez les informations de votre pharmacie
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {pharmacyData ? (
-                  <>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Nom</p>
-                        <p className="font-medium">{pharmacyData.name}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Téléphone</p>
-                        <p className="font-medium">{pharmacyData.phone || 'Non renseigné'}</p>
-                      </div>
-                      <div className="col-span-2">
-                        <p className="text-sm text-muted-foreground">Adresse</p>
-                        <p className="font-medium">{pharmacyData.address}</p>
-                        <p className="font-medium">{pharmacyData.postal_code} {pharmacyData.city}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Code QR</p>
-                        <p className="font-mono font-medium">{pharmacyData.qr_code}</p>
-                      </div>
-                    </div>
-                    <Button className="mt-4">
-                      Modifier les informations
-                    </Button>
-                  </>
-                ) : (
-                  <p className="text-muted-foreground">Chargement...</p>
-                )}
-              </CardContent>
-            </Card>
+            {pharmacyData && pharmacyId && (
+              <PharmacyInfoEdit 
+                pharmacyData={pharmacyData} 
+                pharmacyId={pharmacyId}
+                onUpdate={(updatedData) => setPharmacyData(updatedData)}
+              />
+            )}
           </TabsContent>
 
           {/* Gestion des produits */}
@@ -207,34 +178,12 @@ const PharmacyDashboard = () => {
 
           {/* Gestion de l'équipe */}
           <TabsContent value="team">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gestion de l'équipe</CardTitle>
-                <CardDescription>
-                  Gérez les utilisateurs et leurs permissions
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="border rounded-lg p-4 bg-muted/50">
-                    <h4 className="font-semibold mb-2">Rôles disponibles :</h4>
-                    <ul className="space-y-2 text-sm">
-                      <li>• <strong>Propriétaire</strong> : Accès complet à toutes les fonctionnalités</li>
-                      <li>• <strong>Administrateur</strong> : Gestion complète sauf suppression de la pharmacie</li>
-                      <li>• <strong>Gestionnaire de produits</strong> : Gestion du catalogue et des stocks</li>
-                      <li>• <strong>Gestionnaire de promotions</strong> : Création et modification des promotions</li>
-                      <li>• <strong>Visualisation</strong> : Accès en lecture seule</li>
-                    </ul>
-                  </div>
-                  {(userRole === 'owner' || userRole === 'admin') && (
-                    <Button>
-                      <Users className="mr-2 h-4 w-4" />
-                      Inviter un membre
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            {pharmacyId && (
+              <PharmacyTeamManagement 
+                pharmacyId={pharmacyId} 
+                userRole={userRole}
+              />
+            )}
           </TabsContent>
         </Tabs>
       </div>
