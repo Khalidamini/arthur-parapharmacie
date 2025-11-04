@@ -170,7 +170,7 @@ const Index = () => {
             <Button onClick={() => navigate('/chat')} className="w-full h-20 sm:h-24 bg-gradient-primary border-2 border-primary hover:opacity-90 transition-all group">
               <div className="flex flex-col items-center gap-1 sm:gap-2">
                 <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground group-hover:scale-110 transition-transform" />
-                <span className="font-medium text-xs sm:text-sm text-primary-foreground">Chatter </span>
+                <span className="font-medium text-xs sm:text-sm text-primary-foreground">Chatter  </span>
               </div>
             </Button>
             
