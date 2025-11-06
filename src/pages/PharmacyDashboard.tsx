@@ -42,7 +42,8 @@ const PharmacyDashboard = () => {
         .from('user_roles')
         .select('role, pharmacy_id')
         .eq('user_id', user.id)
-        .maybeSingle();
+        .limit(1)
+        .single();
 
       if (rolesError) {
         console.error('Error fetching roles:', rolesError);
