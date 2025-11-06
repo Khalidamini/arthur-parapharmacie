@@ -37,6 +37,16 @@ serve(async (req) => {
       throw new Error("Cart not found");
     }
 
+    // Get cart items
+    const { data: items, error: itemsError } = await supabaseClient
+      .from('cart_items')
+      .select('*')
+      .eq('cart_id', cartId);
+
+    if (itemsError) {
+      throw new Error("Cart items not found");
+    }
+
     // Get user profile
     const { data: profile } = await supabaseClient
       .from('profiles')
@@ -53,53 +63,94 @@ serve(async (req) => {
     const customerName = profile?.username || 'Client';
     const isDelivery = cart.delivery_method === 'delivery';
 
-    let emailHtml = '';
-    let emailSubject = '';
+    // Prepare items list
+    const itemsList = items?.map(item => 
+      `<li>${item.product_name} (${item.brand}) x${item.quantity} - ${Number(item.price).toFixed(2)}€</li>`
+    ).join('') || '';
 
-    if (isDelivery) {
-      emailSubject = 'Votre commande a été expédiée';
-      emailHtml = `
-        <h2>Votre commande est en route !</h2>
-        <p>Bonjour ${customerName},</p>
-        <p>Votre commande auprès de <strong>${cart.pharmacy.name}</strong> a été expédiée.</p>
-        
-        ${cart.shipping_tracking_number ? `
-          <p><strong>Numéro de suivi:</strong> ${cart.shipping_tracking_number}</p>
-          <p>Vous pouvez suivre votre colis en temps réel.</p>
-        ` : ''}
-        
-        ${cart.shipping_label_url ? `
-          <p><a href="${cart.shipping_label_url}">Télécharger le bon de livraison</a></p>
-        ` : ''}
-        
-        <p>Adresse de livraison:</p>
-        <p>
-          ${cart.delivery_address?.street}<br>
-          ${cart.delivery_address?.postal_code} ${cart.delivery_address?.city}<br>
-          ${cart.delivery_address?.country || 'France'}
-        </p>
-        
-        <p>Vous recevrez un email lorsque votre colis sera livré.</p>
-        <p>Merci pour votre confiance !</p>
-      `;
-    } else {
-      emailSubject = 'Votre commande est prête';
-      emailHtml = `
-        <h2>Votre commande est prête à être retirée !</h2>
-        <p>Bonjour ${customerName},</p>
-        <p>Votre commande auprès de <strong>${cart.pharmacy.name}</strong> est maintenant prête.</p>
-        <p>Vous pouvez venir la récupérer à l'adresse suivante:</p>
-        <p>
-          <strong>${cart.pharmacy.name}</strong><br>
-          ${cart.pharmacy.address}<br>
-          ${cart.pharmacy.city}<br>
-          ${cart.pharmacy.phone ? `Tél: ${cart.pharmacy.phone}` : ''}
-        </p>
-        ${cart.pickup_message ? `<p><strong>Message de la pharmacie:</strong> ${cart.pickup_message}</p>` : ''}
-        <p>Merci de vous munir d'une pièce d'identité lors du retrait.</p>
-        <p>À bientôt !</p>
-      `;
-    }
+    const subject = isDelivery 
+      ? 'Votre colis a été expédié'
+      : 'Votre commande est prête';
+
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
+            .container { max-width: 600px; margin: 0 auto; background-color: white; padding: 40px; border-radius: 8px; }
+            h1 { color: #333; font-size: 24px; margin-bottom: 20px; }
+            h2 { color: #333; font-size: 20px; margin-top: 30px; margin-bottom: 15px; }
+            p { color: #666; line-height: 1.6; margin-bottom: 15px; }
+            .highlight-box { background-color: #e8f5e9; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #4caf50; }
+            .info-box { background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; }
+            .tracking { background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #ffc107; }
+            ul { list-style: none; padding: 0; margin: 15px 0; }
+            li { padding: 8px 0; border-bottom: 1px solid #eee; color: #666; }
+            li:last-child { border-bottom: none; }
+            .footer { color: #999; font-size: 12px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
+            strong { color: #333; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>${isDelivery ? '🚚' : '✅'} ${subject}</h1>
+            <p>Bonjour ${customerName},</p>
+            
+            ${!isDelivery ? `
+              <div class="highlight-box">
+                <p style="margin: 0; font-size: 16px;"><strong>Bonne nouvelle ! Votre commande est prête à être retirée.</strong></p>
+              </div>
+              
+              <h2>📍 Où retirer votre commande ?</h2>
+              <div class="info-box">
+                <p>
+                  <strong>${cart.pharmacy.name}</strong><br>
+                  ${cart.pharmacy.address}<br>
+                  ${cart.pharmacy.city}<br>
+                  ${cart.pharmacy.phone ? `Tél: ${cart.pharmacy.phone}` : ''}
+                </p>
+              </div>
+              
+              ${cart.pickup_message ? `
+                <h2>💬 Message de la pharmacie</h2>
+                <div class="info-box">
+                  <p>${cart.pickup_message}</p>
+                </div>
+              ` : ''}
+            ` : `
+              <div class="highlight-box">
+                <p style="margin: 0; font-size: 16px;"><strong>Votre colis a été expédié !</strong></p>
+              </div>
+              
+              ${cart.shipping_tracking_number ? `
+                <div class="tracking">
+                  <p><strong>Numéro de suivi :</strong></p>
+                  <p style="font-family: monospace; font-size: 16px; color: #333; margin: 10px 0;">${cart.shipping_tracking_number}</p>
+                </div>
+              ` : ''}
+              
+              <h2>📦 Informations de livraison</h2>
+              <div class="info-box">
+                <p>
+                  ${cart.delivery_address?.street}<br>
+                  ${cart.delivery_address?.postal_code} ${cart.delivery_address?.city}<br>
+                  ${cart.delivery_address?.country || 'France'}
+                </p>
+              </div>
+            `}
+            
+            <h2>Votre commande</h2>
+            <ul>
+              ${itemsList}
+            </ul>
+            
+            <p class="footer">Merci pour votre confiance !<br>L'équipe Arthur Pharmacie</p>
+          </div>
+        </body>
+      </html>
+    `;
 
     // Send email using Resend
     const resendResponse = await fetch('https://api.resend.com/emails', {
@@ -111,7 +162,7 @@ serve(async (req) => {
       body: JSON.stringify({
         from: 'Arthur Pharmacie <onboarding@resend.dev>',
         to: [customerEmail],
-        subject: emailSubject,
+        subject: subject,
         html: emailHtml,
       }),
     });

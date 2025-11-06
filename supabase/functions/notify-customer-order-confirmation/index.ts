@@ -73,38 +73,65 @@ serve(async (req) => {
     ) || 0;
 
     const emailHtml = `
-      <h2>Confirmation de votre commande</h2>
-      <p>Bonjour ${customerName},</p>
-      <p>Merci pour votre commande auprès de <strong>${cart.pharmacy.name}</strong> !</p>
-      
-      <h3>Résumé de votre commande :</h3>
-      <ul style="list-style: none; padding: 0;">
-        ${itemsList}
-      </ul>
-      
-      <p><strong>Montant total :</strong> ${totalAmount.toFixed(2)}€</p>
-      <p><strong>Mode de récupération :</strong> ${isDelivery ? 'Livraison à domicile' : 'Retrait en pharmacie'}</p>
-      
-      ${!isDelivery ? `
-        <h3>Adresse de retrait :</h3>
-        <p>
-          <strong>${cart.pharmacy.name}</strong><br>
-          ${cart.pharmacy.address}<br>
-          ${cart.pharmacy.city}<br>
-          ${cart.pharmacy.phone ? `Tél: ${cart.pharmacy.phone}` : ''}
-        </p>
-        <p>Vous recevrez une notification par email lorsque votre commande sera prête à être retirée.</p>
-      ` : `
-        <h3>Adresse de livraison :</h3>
-        <p>
-          ${cart.delivery_address?.street}<br>
-          ${cart.delivery_address?.postal_code} ${cart.delivery_address?.city}<br>
-          ${cart.delivery_address?.country || 'France'}
-        </p>
-        <p>Vous recevrez un email avec les informations de suivi dès que votre colis sera expédié.</p>
-      `}
-      
-      <p>Merci pour votre confiance !</p>
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
+            .container { max-width: 600px; margin: 0 auto; background-color: white; padding: 40px; border-radius: 8px; }
+            h1 { color: #333; font-size: 24px; margin-bottom: 20px; }
+            h2 { color: #333; font-size: 20px; margin-top: 30px; margin-bottom: 15px; }
+            p { color: #666; line-height: 1.6; margin-bottom: 15px; }
+            .info-box { background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; }
+            .total { font-size: 18px; font-weight: bold; color: #333; margin-top: 20px; }
+            ul { list-style: none; padding: 0; margin: 15px 0; }
+            li { padding: 8px 0; border-bottom: 1px solid #eee; color: #666; }
+            li:last-child { border-bottom: none; }
+            .footer { color: #999; font-size: 12px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
+            strong { color: #333; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>✅ Confirmation de votre commande</h1>
+            <p>Bonjour ${customerName},</p>
+            <p>Merci pour votre commande auprès de <strong>${cart.pharmacy.name}</strong> !</p>
+            
+            <h2>Résumé de votre commande</h2>
+            <ul>
+              ${itemsList}
+            </ul>
+            
+            <p class="total">Montant total : ${totalAmount.toFixed(2)}€</p>
+            
+            <div class="info-box">
+              <p><strong>Mode de récupération :</strong> ${isDelivery ? 'Livraison à domicile' : 'Retrait en pharmacie'}</p>
+              
+              ${!isDelivery ? `
+                <h3 style="margin-top: 20px;">📍 Adresse de retrait</h3>
+                <p>
+                  <strong>${cart.pharmacy.name}</strong><br>
+                  ${cart.pharmacy.address}<br>
+                  ${cart.pharmacy.city}<br>
+                  ${cart.pharmacy.phone ? `Tél: ${cart.pharmacy.phone}` : ''}
+                </p>
+                <p style="color: #2754C5;">Vous recevrez une notification par email lorsque votre commande sera prête à être retirée.</p>
+              ` : `
+                <h3 style="margin-top: 20px;">🚚 Adresse de livraison</h3>
+                <p>
+                  ${cart.delivery_address?.street}<br>
+                  ${cart.delivery_address?.postal_code} ${cart.delivery_address?.city}<br>
+                  ${cart.delivery_address?.country || 'France'}
+                </p>
+                <p style="color: #2754C5;">Vous recevrez un email avec les informations de suivi dès que votre colis sera expédié.</p>
+              `}
+            </div>
+            
+            <p class="footer">Merci pour votre confiance !<br>L'équipe Arthur Pharmacie</p>
+          </div>
+        </body>
+      </html>
     `;
 
     // Send email using Resend

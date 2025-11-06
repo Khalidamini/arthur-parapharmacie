@@ -118,11 +118,11 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
       // Add user role
       const { error: roleError } = await supabase
         .from('user_roles')
-        .insert({
+        .insert([{
           user_id: profile.id,
           pharmacy_id: pharmacyId,
-          role: inviteForm.role,
-        });
+          role: inviteForm.role as any,
+        }]);
 
       if (roleError) throw roleError;
 
