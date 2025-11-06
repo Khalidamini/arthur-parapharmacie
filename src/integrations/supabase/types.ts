@@ -301,6 +301,53 @@ export type Database = {
           },
         ]
       }
+      pharmacy_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          pharmacy_id: string
+          role: Database["public"]["Enums"]["pharmacy_role"]
+          status: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          pharmacy_id: string
+          role: Database["public"]["Enums"]["pharmacy_role"]
+          status?: string
+          token: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          pharmacy_id?: string
+          role?: Database["public"]["Enums"]["pharmacy_role"]
+          status?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pharmacy_invitations_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pharmacy_products: {
         Row: {
           created_at: string | null

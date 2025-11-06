@@ -27,6 +27,7 @@ import PharmacyConnectorDownload from "./pages/PharmacyConnectorDownload";
 import Checkout from "./pages/Checkout";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import MyOrders from "./pages/MyOrders";
+import PharmacyInvitation from "./pages/PharmacyInvitation";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/pharmacy-reset-password" element={<PharmacyResetPassword />} />
             <Route path="/pharmacy-update-password" element={<PharmacyUpdatePassword />} />
             <Route path="/pharmacy-dashboard" element={<PharmacyDashboard />} />
+            <Route path="/pharmacy-invitation" element={<PharmacyInvitation />} />
             <Route path="/pharmacy-orders" element={<PharmacyOrders />} />
             <Route path="/pharmacy-connector-download" element={<PharmacyConnectorDownload />} />
             <Route path="/admin/pharmacies" element={<AdminPharmacies />} />

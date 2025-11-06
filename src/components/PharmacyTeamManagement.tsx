@@ -80,55 +80,19 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
   const handleInvite = async () => {
     setInviting(true);
     try {
-      // First, check if user exists in profiles
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', inviteForm.email)
-        .maybeSingle();
+      const { error } = await supabase.functions.invoke('send-pharmacy-invitation', {
+        body: {
+          email: inviteForm.email,
+          role: inviteForm.role,
+          pharmacyId: pharmacyId,
+        },
+      });
 
-      if (profileError) throw profileError;
-
-      if (!profile) {
-        toast({
-          title: "Utilisateur introuvable",
-          description: "Aucun utilisateur avec cet email n'existe dans le système. L'utilisateur doit d'abord créer un compte.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Check if already a member
-      const { data: existingRole } = await supabase
-        .from('user_roles')
-        .select('id')
-        .eq('user_id', profile.id)
-        .eq('pharmacy_id', pharmacyId)
-        .maybeSingle();
-
-      if (existingRole) {
-        toast({
-          title: "Membre déjà existant",
-          description: "Cet utilisateur fait déjà partie de votre équipe.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Add user role
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert([{
-          user_id: profile.id,
-          pharmacy_id: pharmacyId,
-          role: inviteForm.role as any,
-        }]);
-
-      if (roleError) throw roleError;
+      if (error) throw error;
 
       toast({
-        title: "Membre invité",
-        description: "Le membre a été ajouté à votre équipe avec succès.",
+        title: "Invitation envoyée",
+        description: "Une invitation a été envoyée par email. Si l'utilisateur a déjà un compte, il a été ajouté directement.",
       });
 
       setInviteDialogOpen(false);
@@ -138,7 +102,7 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
       console.error('Error inviting member:', error);
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors de l'invitation.",
+        description: error.message || "Une erreur est survenue lors de l'invitation.",
         variant: "destructive",
       });
     } finally {
@@ -282,7 +246,7 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
           <DialogHeader>
             <DialogTitle>Inviter un membre</DialogTitle>
             <DialogDescription>
-              Ajoutez un nouveau membre à votre équipe. L'utilisateur doit déjà avoir un compte.
+              Ajoutez un nouveau membre à votre équipe. Si l'utilisateur n'a pas encore de compte, il recevra une invitation par email.
             </DialogDescription>
           </DialogHeader>
 
