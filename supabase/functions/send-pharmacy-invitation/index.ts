@@ -153,7 +153,10 @@ const handler = async (req: Request): Promise<Response> => {
     if (inviteError) throw inviteError;
 
     // Send invitation email
-    const invitationUrl = `${Deno.env.get("SUPABASE_URL")?.replace("supabase.co", "lovable.app") || ""}/pharmacy-invitation?token=${invitationToken}`;
+    // Extract project ID from SUPABASE_URL (format: https://PROJECT_ID.supabase.co)
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const projectId = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "";
+    const invitationUrl = `https://${projectId}.lovable.app/pharmacy-invitation?token=${invitationToken}`;
 
     await resend.emails.send({
       from: "Arthur <onboarding@resend.dev>",
