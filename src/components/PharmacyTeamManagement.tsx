@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, UserPlus, Trash2 } from "lucide-react";
+import { Users, UserPlus, Trash2, Edit } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
@@ -39,7 +39,11 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
   const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [editRoleDialogOpen, setEditRoleDialogOpen] = useState(false);
   const [inviting, setInviting] = useState(false);
+  const [updatingRole, setUpdatingRole] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [newRole, setNewRole] = useState<'admin' | 'owner' | 'product_manager' | 'promotion_manager' | 'viewer'>('viewer');
   const [inviteForm, setInviteForm] = useState({
     email: '',
     role: 'viewer',
@@ -236,6 +240,44 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
     }
   };
 
+  const handleOpenEditRole = (member: TeamMember) => {
+    setSelectedMember(member);
+    setNewRole(member.role as 'admin' | 'owner' | 'product_manager' | 'promotion_manager' | 'viewer');
+    setEditRoleDialogOpen(true);
+  };
+
+  const handleUpdateRole = async () => {
+    if (!selectedMember || !newRole) return;
+
+    setUpdatingRole(true);
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ role: newRole })
+        .eq('id', selectedMember.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Rôle modifié",
+        description: "Le rôle du membre a été modifié avec succès.",
+      });
+
+      setEditRoleDialogOpen(false);
+      setSelectedMember(null);
+      loadTeamMembers();
+    } catch (error: any) {
+      console.error('Error updating role:', error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la modification.",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingRole(false);
+    }
+  };
+
   return (
     <>
       <Card>
@@ -302,13 +344,22 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
                     {(userRole === 'owner' || userRole === 'admin') && (
                       <TableCell className="text-right">
                         {member.role !== 'owner' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveMember(member.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenEditRole(member)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveMember(member.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         )}
                       </TableCell>
                     )}
@@ -426,6 +477,46 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
             </Button>
             <Button onClick={handleInvite} disabled={inviting || !inviteForm.email}>
               {inviting ? "Invitation..." : "Inviter"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editRoleDialogOpen} onOpenChange={setEditRoleDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier le rôle</DialogTitle>
+            <DialogDescription>
+              Modifiez le rôle de {selectedMember?.email}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="role">Nouveau rôle</Label>
+              <Select
+                value={newRole}
+                onValueChange={(value) => setNewRole(value as 'admin' | 'owner' | 'product_manager' | 'promotion_manager' | 'viewer')}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Administrateur</SelectItem>
+                  <SelectItem value="product_manager">Gestionnaire de produits</SelectItem>
+                  <SelectItem value="promotion_manager">Gestionnaire de promotions</SelectItem>
+                  <SelectItem value="viewer">Visualisation</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditRoleDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button onClick={handleUpdateRole} disabled={updatingRole || !newRole}>
+              {updatingRole ? "Modification..." : "Modifier"}
             </Button>
           </DialogFooter>
         </DialogContent>
