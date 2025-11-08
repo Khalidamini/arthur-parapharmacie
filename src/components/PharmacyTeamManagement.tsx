@@ -100,6 +100,7 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
           email: inviteForm.email,
           role: inviteForm.role,
           pharmacyId: pharmacyId,
+          baseUrl: window.location.origin,
         },
       });
 
@@ -221,6 +222,7 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
           email: invitation.email,
           role: invitation.role,
           pharmacyId: pharmacyId,
+          baseUrl: window.location.origin,
         },
       });
 

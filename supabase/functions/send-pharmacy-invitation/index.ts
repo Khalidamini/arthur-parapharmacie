@@ -13,6 +13,7 @@ interface InvitationRequest {
   email: string;
   role: string;
   pharmacyId: string;
+  baseUrl?: string; // optional frontend base URL
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -39,7 +40,7 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Unauthorized");
     }
 
-    const { email, role, pharmacyId }: InvitationRequest = await req.json();
+    const { email, role, pharmacyId, baseUrl }: InvitationRequest = await req.json();
 
     console.log("Processing invitation for:", email, "role:", role);
 
@@ -153,10 +154,14 @@ const handler = async (req: Request): Promise<Response> => {
     if (inviteError) throw inviteError;
 
     // Send invitation email
-    // Extract project ID from SUPABASE_URL (format: https://PROJECT_ID.supabase.co)
+    // Prefer explicit baseUrl from frontend, else infer from headers, else fallback to production domain
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const projectId = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "";
-    const invitationUrl = `https://${projectId}.lovable.app/pharmacy-invitation?token=${invitationToken}`;
+    const headerOrigin = req.headers.get("origin") || "";
+    const headerReferer = req.headers.get("referer") || "";
+    const refererOrigin = (headerReferer.match(/^https?:\/\/[^/]+/) || [""])[0];
+    const chosenBase = (baseUrl && /^https?:\/\//.test(baseUrl) ? baseUrl : (headerOrigin || refererOrigin || (projectId ? `https://${projectId}.lovable.app` : ""))).replace(/\/$/, "");
+    const invitationUrl = `${chosenBase}/pharmacy-invitation?token=${invitationToken}`;
 
     await resend.emails.send({
       from: "Arthur <onboarding@resend.dev>",
