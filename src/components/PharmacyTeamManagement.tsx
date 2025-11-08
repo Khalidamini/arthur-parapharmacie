@@ -19,6 +19,15 @@ interface TeamMember {
   created_at: string;
 }
 
+interface PendingInvitation {
+  id: string;
+  email: string;
+  role: string;
+  created_at: string;
+  expires_at: string;
+  status: string;
+}
+
 interface PharmacyTeamManagementProps {
   pharmacyId: string;
   userRole: string | null;
@@ -27,6 +36,7 @@ interface PharmacyTeamManagementProps {
 const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagementProps) => {
   const { toast } = useToast();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviting, setInviting] = useState(false);
@@ -37,6 +47,7 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
 
   useEffect(() => {
     loadTeamMembers();
+    loadPendingInvitations();
   }, [pharmacyId]);
 
   const loadTeamMembers = async () => {
@@ -98,6 +109,7 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
       setInviteDialogOpen(false);
       setInviteForm({ email: '', role: 'viewer' });
       loadTeamMembers();
+      loadPendingInvitations();
     } catch (error: any) {
       console.error('Error inviting member:', error);
       toast({
@@ -155,6 +167,73 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
       viewer: 'Visualisation',
     };
     return labels[role] || role;
+  };
+
+  const loadPendingInvitations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('pharmacy_invitations')
+        .select('*')
+        .eq('pharmacy_id', pharmacyId)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPendingInvitations(data || []);
+    } catch (error: any) {
+      console.error('Error loading invitations:', error);
+    }
+  };
+
+  const handleCancelInvitation = async (invitationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('pharmacy_invitations')
+        .update({ status: 'cancelled' })
+        .eq('id', invitationId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Invitation annulée",
+        description: "L'invitation a été annulée avec succès.",
+      });
+
+      loadPendingInvitations();
+    } catch (error: any) {
+      console.error('Error cancelling invitation:', error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de l'annulation.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleResendInvitation = async (invitation: PendingInvitation) => {
+    try {
+      const { error } = await supabase.functions.invoke('send-pharmacy-invitation', {
+        body: {
+          email: invitation.email,
+          role: invitation.role,
+          pharmacyId: pharmacyId,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Invitation renvoyée",
+        description: "L'invitation a été renvoyée par email.",
+      });
+    } catch (error: any) {
+      console.error('Error resending invitation:', error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors du renvoi.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -240,6 +319,66 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
           )}
         </CardContent>
       </Card>
+
+      {(userRole === 'owner' || userRole === 'admin') && pendingInvitations.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Invitations en attente</CardTitle>
+            <CardDescription>
+              Gérez les invitations qui n'ont pas encore été acceptées
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Rôle</TableHead>
+                  <TableHead>Envoyée le</TableHead>
+                  <TableHead>Expire le</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pendingInvitations.map((invitation) => (
+                  <TableRow key={invitation.id}>
+                    <TableCell className="font-medium">{invitation.email}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {getRoleLabel(invitation.role)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(invitation.created_at).toLocaleDateString('fr-FR')}
+                    </TableCell>
+                    <TableCell>
+                      {new Date(invitation.expires_at).toLocaleDateString('fr-FR')}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleResendInvitation(invitation)}
+                        >
+                          Renvoyer
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCancelInvitation(invitation.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
         <DialogContent>
