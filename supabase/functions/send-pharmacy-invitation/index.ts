@@ -120,8 +120,12 @@ const handler = async (req: Request): Promise<Response> => {
     const chosenBase = (baseUrl && /^https?:\/\//.test(baseUrl) ? baseUrl : (headerOrigin || refererOrigin || (projectId ? `https://${projectId}.lovable.app` : ""))).replace(/\/$/, "");
     const invitationUrl = `${chosenBase}/pharmacy-invitation?token=${invitationToken}`;
 
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "";
+    if (!fromEmail) {
+      throw new Error("Email sender not configured. Set RESEND_FROM_EMAIL to a verified sender (see resend.com/domains).");
+    }
     const emailResult = await resend.emails.send({
-      from: "Arthur <onboarding@resend.dev>",
+      from: `Arthur <${fromEmail}>`,
       to: [emailTrimmed],
       subject: `Invitation à rejoindre ${pharmacy.name}`,
       html: `
