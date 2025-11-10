@@ -124,39 +124,74 @@ const PharmacyInvitation = () => {
 
     setSubmitting(true);
     try {
-      // Create user account
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/pharmacy-dashboard`,
-        },
-      });
+      // Check if user already exists
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', formData.email)
+        .maybeSingle();
 
-      if (signUpError) throw signUpError;
+      let userId: string;
 
-      if (!authData.user) {
-        throw new Error("Failed to create user account");
+      if (existingProfile) {
+        // User exists, try to sign in
+        const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+
+        if (signInError) {
+          throw new Error("Mot de passe incorrect. Si vous avez oublié votre mot de passe, veuillez le réinitialiser.");
+        }
+
+        if (!authData.user) {
+          throw new Error("Erreur de connexion");
+        }
+
+        userId = authData.user.id;
+
+        toast({
+          title: "Connexion réussie",
+          description: "Ajout à l'équipe en cours...",
+        });
+      } else {
+        // New user, create account
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/pharmacy-dashboard`,
+          },
+        });
+
+        if (signUpError) throw signUpError;
+
+        if (!authData.user) {
+          throw new Error("Échec de la création du compte");
+        }
+
+        userId = authData.user.id;
+
+        toast({
+          title: "Compte créé",
+          description: "Ajout à l'équipe en cours...",
+        });
       }
 
-      toast({
-        title: "Compte créé",
-        description: "Votre compte a été créé avec succès. Vous allez être redirigé...",
-      });
-
-      // Wait a moment for the user to be fully created
+      // Wait a moment for auth to settle
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Process the invitation
       const { error: processError } = await supabase.functions.invoke('process-pharmacy-invitation', {
         body: {
-          token: invitation.token,
-          userId: authData.user.id,
+          token: invitation?.token,
+          userId: userId,
         },
       });
 
       if (processError) {
         console.error('Error processing invitation:', processError);
+        throw new Error(processError.message || "Erreur lors du traitement de l'invitation");
       }
 
       navigate('/pharmacy-dashboard');
@@ -164,7 +199,7 @@ const PharmacyInvitation = () => {
       console.error('Error accepting invitation:', error);
       toast({
         title: "Erreur",
-        description: error.message || "Une erreur est survenue lors de la création du compte.",
+        description: error.message || "Une erreur est survenue.",
         variant: "destructive",
       });
     } finally {
@@ -207,7 +242,8 @@ const PharmacyInvitation = () => {
           </div>
           <CardTitle className="text-2xl">Invitation à rejoindre une pharmacie</CardTitle>
           <CardDescription>
-            Vous avez été invité à rejoindre <strong>{invitation.pharmacy_name}</strong> en tant que <strong>{getRoleLabel(invitation.role)}</strong>
+            Vous avez été invité à rejoindre <strong>{invitation.pharmacy_name}</strong> en tant que <strong>{getRoleLabel(invitation.role)}</strong>.
+            {formData.email && <span className="block mt-2 text-sm">Si vous avez déjà un compte, connectez-vous avec votre mot de passe existant.</span>}
           </CardDescription>
         </CardHeader>
         <CardContent>

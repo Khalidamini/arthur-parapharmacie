@@ -67,7 +67,7 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Pharmacy not found");
     }
 
-    // Check if user already exists
+    // Check if user already exists and is already a member
     const { data: existingProfile } = await supabaseClient
       .from("profiles")
       .select("id")
@@ -75,7 +75,6 @@ const handler = async (req: Request): Promise<Response> => {
       .maybeSingle();
 
     if (existingProfile) {
-      // User exists, check if already a member
       const { data: existingRole } = await supabaseClient
         .from("user_roles")
         .select("id")
@@ -86,59 +85,9 @@ const handler = async (req: Request): Promise<Response> => {
       if (existingRole) {
         throw new Error("User is already a member of this pharmacy");
       }
-
-      // Add user role directly
-      const { error: addRoleError } = await supabaseClient
-        .from("user_roles")
-        .insert({
-          user_id: existingProfile.id,
-          pharmacy_id: pharmacyId,
-          role: role,
-        });
-
-      if (addRoleError) throw addRoleError;
-
-      // Send notification email
-      await resend.emails.send({
-        from: "Arthur <onboarding@resend.dev>",
-        to: [email],
-        subject: `Vous avez été ajouté à ${pharmacy.name}`,
-        html: `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-                .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
-                .button { background: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0; }
-              </style>
-            </head>
-            <body>
-              <div class="container">
-                <div class="header">
-                  <h1>🎉 Bienvenue dans l'équipe !</h1>
-                </div>
-                <div class="content">
-                  <p>Bonjour,</p>
-                  <p>Vous avez été ajouté comme membre de l'équipe de <strong>${pharmacy.name}</strong> avec le rôle de <strong>${role}</strong>.</p>
-                  <p>Vous pouvez maintenant vous connecter à votre compte pour accéder au tableau de bord de la pharmacie.</p>
-                  <p>Cordialement,<br>L'équipe Arthur</p>
-                </div>
-              </div>
-            </body>
-          </html>
-        `,
-      });
-
-      return new Response(
-        JSON.stringify({ success: true, message: "Member added successfully" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
     }
 
-    // User doesn't exist, create invitation
+    // Create invitation for both new and existing users
     const invitationToken = crypto.randomUUID();
 
     const { error: inviteError } = await supabaseClient
@@ -163,7 +112,7 @@ const handler = async (req: Request): Promise<Response> => {
     const chosenBase = (baseUrl && /^https?:\/\//.test(baseUrl) ? baseUrl : (headerOrigin || refererOrigin || (projectId ? `https://${projectId}.lovable.app` : ""))).replace(/\/$/, "");
     const invitationUrl = `${chosenBase}/pharmacy-invitation?token=${invitationToken}`;
 
-    await resend.emails.send({
+    const emailResult = await resend.emails.send({
       from: "Arthur <onboarding@resend.dev>",
       to: [email],
       subject: `Invitation à rejoindre ${pharmacy.name}`,
@@ -187,7 +136,7 @@ const handler = async (req: Request): Promise<Response> => {
               <div class="content">
                 <p>Bonjour,</p>
                 <p>Vous avez été invité à rejoindre l'équipe de <strong>${pharmacy.name}</strong> en tant que <strong>${role}</strong>.</p>
-                <p>Pour accepter cette invitation, veuillez créer votre compte en cliquant sur le bouton ci-dessous :</p>
+                <p>Pour accepter cette invitation, ${existingProfile ? 'connectez-vous avec votre compte existant' : 'créez votre compte'} en cliquant sur le bouton ci-dessous :</p>
                 <center>
                   <a href="${invitationUrl}" class="button">Accepter l'invitation</a>
                 </center>
@@ -199,6 +148,11 @@ const handler = async (req: Request): Promise<Response> => {
         </html>
       `,
     });
+
+    if (emailResult.error) {
+      console.error("Error sending email:", emailResult.error);
+      throw new Error(`Failed to send invitation email: ${emailResult.error.message}`);
+    }
 
     console.log("Invitation sent successfully to:", email);
 
