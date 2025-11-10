@@ -42,7 +42,15 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { email, role, pharmacyId, baseUrl }: InvitationRequest = await req.json();
 
-    console.log("Processing invitation for:", email, "role:", role);
+    // Basic email validation + ASCII-only guard (Resend doesn't accept non-ASCII)
+    const emailTrimmed = (email || '').trim();
+    const asciiOnly = /^[\x00-\x7F]+$/.test(emailTrimmed);
+    const basicEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailTrimmed || emailTrimmed.length > 255 || !basicEmail.test(emailTrimmed) || !asciiOnly) {
+      throw new Error("Adresse e-mail invalide. Utilisez une adresse sans accents (ex: prive@gmail.com).");
+    }
+
+    console.log("Processing invitation for:", emailTrimmed, "role:", role);
 
     // Verify user has permission to invite
     const { data: userRole, error: roleError } = await supabaseClient
@@ -95,7 +103,7 @@ const handler = async (req: Request): Promise<Response> => {
       .insert({
         pharmacy_id: pharmacyId,
         invited_by: user.id,
-        email: email,
+        email: emailTrimmed,
         role: role,
         token: invitationToken,
       });
@@ -114,7 +122,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailResult = await resend.emails.send({
       from: "Arthur <onboarding@resend.dev>",
-      to: [email],
+      to: [emailTrimmed],
       subject: `Invitation à rejoindre ${pharmacy.name}`,
       html: `
         <!DOCTYPE html>
@@ -154,7 +162,7 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error(`Failed to send invitation email: ${emailResult.error.message}`);
     }
 
-    console.log("Invitation sent successfully to:", email);
+    console.log("Invitation sent successfully to:", emailTrimmed);
 
     return new Response(
       JSON.stringify({ success: true, message: "Invitation sent successfully" }),

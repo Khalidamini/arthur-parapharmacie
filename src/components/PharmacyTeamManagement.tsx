@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Users, UserPlus, Trash2, Edit } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { z } from "zod";
 
 interface TeamMember {
   id: string;
@@ -93,11 +94,28 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
   };
 
   const handleInvite = async () => {
+    // Client-side validation to avoid invalid addresses (accents, bad format)
+    try {
+      const emailSchema = z
+        .string()
+        .trim()
+        .min(1, { message: "Email requis" })
+        .max(255, { message: "Email trop long" })
+        .email({ message: "Adresse e-mail invalide" })
+        .refine((v) => /^[\x00-\x7F]+$/.test(v), {
+          message: "Adresse e-mail invalide: accents non supportés (ex: prive@gmail.com)",
+        });
+      emailSchema.parse(inviteForm.email);
+    } catch (e: any) {
+      toast({ title: "Email invalide", description: e?.errors?.[0]?.message || "Vérifiez l'adresse e-mail.", variant: "destructive" });
+      return;
+    }
+
     setInviting(true);
     try {
       const { error } = await supabase.functions.invoke('send-pharmacy-invitation', {
         body: {
-          email: inviteForm.email,
+          email: inviteForm.email.trim(),
           role: inviteForm.role,
           pharmacyId: pharmacyId,
           baseUrl: window.location.origin,
@@ -108,7 +126,7 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
 
       toast({
         title: "Invitation envoyée",
-        description: "Une invitation a été envoyée par email. Si l'utilisateur a déjà un compte, il a été ajouté directement.",
+        description: "Une invitation a été envoyée par email.",
       });
 
       setInviteDialogOpen(false);
