@@ -122,13 +122,19 @@ const handler = async (req: Request): Promise<Response> => {
 
     const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "";
     if (!fromEmail) {
-      throw new Error("Email sender not configured. Set RESEND_FROM_EMAIL to a verified sender (see resend.com/domains).");
+      console.warn("RESEND_FROM_EMAIL missing. Skipping email send and returning invitation link.");
+      return new Response(
+        JSON.stringify({ success: true, delivery: "link", invitationUrl }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
-    const emailResult = await resend.emails.send({
-      from: `Arthur <${fromEmail}>`,
-      to: [emailTrimmed],
-      subject: `Invitation à rejoindre ${pharmacy.name}`,
-      html: `
+
+    try {
+      const emailResult = await resend.emails.send({
+        from: `Arthur <${fromEmail}>`,
+        to: [emailTrimmed],
+        subject: `Invitation à rejoindre ${pharmacy.name}`,
+        html: `
         <!DOCTYPE html>
         <html>
           <head>
@@ -159,11 +165,23 @@ const handler = async (req: Request): Promise<Response> => {
           </body>
         </html>
       `,
-    });
+      });
 
-    if (emailResult.error) {
-      console.error("Error sending email:", emailResult.error);
-      throw new Error(`Failed to send invitation email: ${emailResult.error.message}`);
+      if (emailResult.error) {
+        console.error("Error sending email:", emailResult.error);
+        // Fallback: return shareable link instead of failing
+        return new Response(
+          JSON.stringify({ success: true, delivery: "link", invitationUrl, note: "email_failed" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } catch (e) {
+      console.error("Resend exception:", e);
+      // Fallback: return link
+      return new Response(
+        JSON.stringify({ success: true, delivery: "link", invitationUrl, note: "email_exception" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     console.log("Invitation sent successfully to:", emailTrimmed);

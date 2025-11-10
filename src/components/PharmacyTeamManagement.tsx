@@ -113,7 +113,7 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
 
     setInviting(true);
     try {
-      const { error } = await supabase.functions.invoke('send-pharmacy-invitation', {
+      const { data, error } = await supabase.functions.invoke('send-pharmacy-invitation', {
         body: {
           email: inviteForm.email.trim(),
           role: inviteForm.role,
@@ -124,10 +124,20 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
 
       if (error) throw error;
 
-      toast({
-        title: "Invitation envoyée",
-        description: "Une invitation a été envoyée par email.",
-      });
+      const delivery = (data as any)?.delivery;
+      const invitationUrl = (data as any)?.invitationUrl;
+      if (delivery === 'link' && invitationUrl) {
+        try { await navigator.clipboard.writeText(invitationUrl); } catch {}
+        toast({
+          title: "Invitation prête",
+          description: "Lien copié. Envoyez-le au membre depuis votre messagerie.",
+        });
+      } else {
+        toast({
+          title: "Invitation envoyée",
+          description: "Une invitation a été envoyée par email.",
+        });
+      }
 
       setInviteDialogOpen(false);
       setInviteForm({ email: '', role: 'viewer' });
@@ -235,7 +245,7 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
 
   const handleResendInvitation = async (invitation: PendingInvitation) => {
     try {
-      const { error } = await supabase.functions.invoke('send-pharmacy-invitation', {
+      const { data, error } = await supabase.functions.invoke('send-pharmacy-invitation', {
         body: {
           email: invitation.email,
           role: invitation.role,
@@ -246,10 +256,20 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
 
       if (error) throw error;
 
-      toast({
-        title: "Invitation renvoyée",
-        description: "L'invitation a été renvoyée par email.",
-      });
+      const delivery = (data as any)?.delivery;
+      const invitationUrl = (data as any)?.invitationUrl;
+      if (delivery === 'link' && invitationUrl) {
+        try { await navigator.clipboard.writeText(invitationUrl); } catch {}
+        toast({
+          title: "Invitation prête",
+          description: "Lien copié. Envoyez-le au membre depuis votre messagerie.",
+        });
+      } else {
+        toast({
+          title: "Invitation renvoyée",
+          description: "L'invitation a été renvoyée par email.",
+        });
+      }
     } catch (error: any) {
       console.error('Error resending invitation:', error);
       toast({
