@@ -44,10 +44,10 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
   const [inviting, setInviting] = useState(false);
   const [updatingRole, setUpdatingRole] = useState(false);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
-  const [newRole, setNewRole] = useState<'admin' | 'owner' | 'product_manager' | 'promotion_manager' | 'viewer'>('viewer');
+  const [newRole, setNewRole] = useState<'admin' | 'owner' | 'promotion_manager'>('admin');
   const [inviteForm, setInviteForm] = useState({
     email: '',
-    role: 'viewer',
+    role: 'admin',
   });
 
   useEffect(() => {
@@ -94,7 +94,7 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
   };
 
   const handleInvite = async () => {
-    // Client-side validation to avoid invalid addresses (accents, bad format)
+    // Validation email
     try {
       const emailSchema = z
         .string()
@@ -103,7 +103,7 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
         .max(255, { message: "Email trop long" })
         .email({ message: "Adresse e-mail invalide" })
         .refine((v) => /^[\x00-\x7F]+$/.test(v), {
-          message: "Adresse e-mail invalide: accents non supportés (ex: prive@gmail.com)",
+          message: "Adresse e-mail invalide: accents non supportés",
         });
       emailSchema.parse(inviteForm.email);
     } catch (e: any) {
@@ -113,34 +113,34 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
 
     setInviting(true);
     try {
-      const { data, error } = await supabase.functions.invoke('send-pharmacy-invitation', {
+      const { data, error } = await supabase.functions.invoke('create-team-invitation', {
         body: {
           email: inviteForm.email.trim(),
           role: inviteForm.role,
           pharmacyId: pharmacyId,
-          baseUrl: window.location.origin,
         },
       });
 
       if (error) throw error;
 
-      const delivery = (data as any)?.delivery;
-      const invitationUrl = (data as any)?.invitationUrl;
-      if (delivery === 'link' && invitationUrl) {
-        try { await navigator.clipboard.writeText(invitationUrl); } catch {}
-        toast({
-          title: "Invitation prête",
-          description: "Lien copié. Envoyez-le au membre depuis votre messagerie.",
-        });
-      } else {
-        toast({
-          title: "Invitation envoyée",
-          description: "Une invitation a été envoyée par email.",
-        });
+      const invitationMessage = (data as any)?.invitationMessage;
+      if (invitationMessage) {
+        try { 
+          await navigator.clipboard.writeText(invitationMessage); 
+          toast({
+            title: "Invitation créée",
+            description: "Message d'invitation copié ! Envoyez-le au membre par email ou autre moyen.",
+          });
+        } catch {
+          toast({
+            title: "Invitation créée",
+            description: "Copiez le message d'invitation pour l'envoyer au membre.",
+          });
+        }
       }
 
       setInviteDialogOpen(false);
-      setInviteForm({ email: '', role: 'viewer' });
+      setInviteForm({ email: '', role: 'admin' });
       loadTeamMembers();
       loadPendingInvitations();
     } catch (error: any) {
@@ -195,9 +195,7 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
     const labels: Record<string, string> = {
       owner: 'Propriétaire',
       admin: 'Administrateur',
-      product_manager: 'Gestionnaire de produits',
       promotion_manager: 'Gestionnaire de promotions',
-      viewer: 'Visualisation',
     };
     return labels[role] || role;
   };
@@ -245,30 +243,30 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
 
   const handleResendInvitation = async (invitation: PendingInvitation) => {
     try {
-      const { data, error } = await supabase.functions.invoke('send-pharmacy-invitation', {
+      const { data, error } = await supabase.functions.invoke('create-team-invitation', {
         body: {
           email: invitation.email,
           role: invitation.role,
           pharmacyId: pharmacyId,
-          baseUrl: window.location.origin,
         },
       });
 
       if (error) throw error;
 
-      const delivery = (data as any)?.delivery;
-      const invitationUrl = (data as any)?.invitationUrl;
-      if (delivery === 'link' && invitationUrl) {
-        try { await navigator.clipboard.writeText(invitationUrl); } catch {}
-        toast({
-          title: "Invitation prête",
-          description: "Lien copié. Envoyez-le au membre depuis votre messagerie.",
-        });
-      } else {
-        toast({
-          title: "Invitation renvoyée",
-          description: "L'invitation a été renvoyée par email.",
-        });
+      const invitationMessage = (data as any)?.invitationMessage;
+      if (invitationMessage) {
+        try { 
+          await navigator.clipboard.writeText(invitationMessage); 
+          toast({
+            title: "Invitation renouvelée",
+            description: "Message d'invitation copié ! Envoyez-le au membre.",
+          });
+        } catch {
+          toast({
+            title: "Invitation renouvelée",
+            description: "Copiez le message pour l'envoyer au membre.",
+          });
+        }
       }
     } catch (error: any) {
       console.error('Error resending invitation:', error);
@@ -282,7 +280,7 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
 
   const handleOpenEditRole = (member: TeamMember) => {
     setSelectedMember(member);
-    setNewRole(member.role as 'admin' | 'owner' | 'product_manager' | 'promotion_manager' | 'viewer');
+    setNewRole(member.role as 'admin' | 'owner' | 'promotion_manager');
     setEditRoleDialogOpen(true);
   };
 
@@ -342,10 +340,8 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
             <h4 className="font-semibold mb-2">Rôles disponibles :</h4>
             <ul className="space-y-2 text-sm">
               <li>• <strong>Propriétaire</strong> : Accès complet à toutes les fonctionnalités</li>
-              <li>• <strong>Administrateur</strong> : Gestion complète sauf suppression de la pharmacie</li>
-              <li>• <strong>Gestionnaire de produits</strong> : Gestion du catalogue et des stocks</li>
-              <li>• <strong>Gestionnaire de promotions</strong> : Création et modification des promotions</li>
-              <li>• <strong>Visualisation</strong> : Accès en lecture seule</li>
+              <li>• <strong>Administrateur</strong> : Gestion complète de la pharmacie</li>
+              <li>• <strong>Gestionnaire de promotions</strong> : Création et modification des promotions uniquement</li>
             </ul>
           </div>
 
@@ -476,7 +472,7 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
           <DialogHeader>
             <DialogTitle>Inviter un membre</DialogTitle>
             <DialogDescription>
-              Ajoutez un nouveau membre à votre équipe. Si l'utilisateur n'a pas encore de compte, il recevra une invitation par email.
+              Créez une invitation. Un message sera copié pour que vous l'envoyiez au membre par email ou autre moyen.
             </DialogDescription>
           </DialogHeader>
 
@@ -502,10 +498,9 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="owner">Propriétaire</SelectItem>
                   <SelectItem value="admin">Administrateur</SelectItem>
-                  <SelectItem value="product_manager">Gestionnaire de produits</SelectItem>
                   <SelectItem value="promotion_manager">Gestionnaire de promotions</SelectItem>
-                  <SelectItem value="viewer">Visualisation</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -536,16 +531,15 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
               <Label htmlFor="role">Nouveau rôle</Label>
               <Select
                 value={newRole}
-                onValueChange={(value) => setNewRole(value as 'admin' | 'owner' | 'product_manager' | 'promotion_manager' | 'viewer')}
+                onValueChange={(value) => setNewRole(value as 'admin' | 'owner' | 'promotion_manager')}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="owner">Propriétaire</SelectItem>
                   <SelectItem value="admin">Administrateur</SelectItem>
-                  <SelectItem value="product_manager">Gestionnaire de produits</SelectItem>
                   <SelectItem value="promotion_manager">Gestionnaire de promotions</SelectItem>
-                  <SelectItem value="viewer">Visualisation</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -60,6 +60,13 @@ const PharmacyLogin = () => {
       if (error) throw error;
 
       if (data.user) {
+        // Après connexion, vérifier et attribuer les invitations en attente
+        try {
+          await supabase.functions.invoke('claim-team-invitations');
+        } catch (claimError) {
+          console.error('Error claiming invitations:', claimError);
+        }
+
         // Vérifier si l'utilisateur a un rôle de pharmacien
         const { data: roles, error: rolesError } = await supabase
           .from('user_roles')

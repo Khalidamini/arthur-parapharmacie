@@ -204,6 +204,9 @@ export default function AdminPharmacies() {
             <h1 className="text-3xl font-bold">Administration des pharmacies</h1>
             <p className="text-muted-foreground">Gérez les demandes d'inscription des pharmacies</p>
           </div>
+          <Button variant="outline" onClick={() => navigate("/admin/permissions")} className="ml-auto">
+            Gérer les permissions
+          </Button>
         </div>
 
         <div className="grid gap-4">

@@ -19,6 +19,7 @@ import PharmacyRegister from "./pages/PharmacyRegister";
 import PharmacyDashboard from "./pages/PharmacyDashboard";
 import PharmacyRegistrationPending from "./pages/PharmacyRegistrationPending";
 import AdminPharmacies from "./pages/AdminPharmacies";
+import AdminPermissions from "./pages/AdminPermissions";
 import PharmacyLogin from "./pages/PharmacyLogin";
 import PharmacyOrders from "./pages/PharmacyOrders";
 import PharmacyResetPassword from "./pages/PharmacyResetPassword";
@@ -27,7 +28,6 @@ import PharmacyConnectorDownload from "./pages/PharmacyConnectorDownload";
 import Checkout from "./pages/Checkout";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import MyOrders from "./pages/MyOrders";
-import PharmacyInvitation from "./pages/PharmacyInvitation";
 
 const queryClient = new QueryClient();
 
@@ -55,10 +55,10 @@ const App = () => (
             <Route path="/pharmacy-reset-password" element={<PharmacyResetPassword />} />
             <Route path="/pharmacy-update-password" element={<PharmacyUpdatePassword />} />
             <Route path="/pharmacy-dashboard" element={<PharmacyDashboard />} />
-            <Route path="/pharmacy-invitation" element={<PharmacyInvitation />} />
             <Route path="/pharmacy-orders" element={<PharmacyOrders />} />
             <Route path="/pharmacy-connector-download" element={<PharmacyConnectorDownload />} />
             <Route path="/admin/pharmacies" element={<AdminPharmacies />} />
+            <Route path="/admin/permissions" element={<AdminPermissions />} />
             <Route path="/checkout/:cartId" element={<Checkout />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="/my-orders" element={<MyOrders />} />
