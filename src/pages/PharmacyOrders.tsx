@@ -64,6 +64,33 @@ const PharmacyOrders = () => {
   useEffect(() => {
     checkAuthAndLoadData();
   }, []);
+
+  // Realtime subscription for new orders
+  useEffect(() => {
+    if (!pharmacyId) return;
+
+    const channel = supabase
+      .channel('pharmacy-orders-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'carts',
+          filter: `pharmacy_id=eq.${pharmacyId}`
+        },
+        (payload) => {
+          console.log('Realtime cart change:', payload);
+          // Reload carts when any change happens
+          loadCarts(pharmacyId);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [pharmacyId]);
   useEffect(() => {
     filterAndSortCarts();
   }, [carts, statusFilter, searchQuery, sortBy]);
