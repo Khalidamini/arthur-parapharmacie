@@ -211,6 +211,15 @@ const PharmacyOrders = () => {
       });
       if (error) throw error;
       
+      // Mise à jour immédiate de l'état local pour refléter l'étape 1
+      setCarts(prevCarts => 
+        prevCarts.map(c => 
+          c.id === cartId 
+            ? { ...c, preparation_notified_at: new Date().toISOString() }
+            : c
+        )
+      );
+      
       toast({
         title: "Notification envoyée",
         description: "Le client a été notifié que sa commande est en préparation."
