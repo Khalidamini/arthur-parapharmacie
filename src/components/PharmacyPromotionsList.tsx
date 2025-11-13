@@ -86,16 +86,12 @@ export default function PharmacyPromotionsList({ pharmacyId }: PharmacyPromotion
         .from('promotions')
         .select(`
           *,
-          products!product_id (
+          products (
             id,
             name
-          ),
-          pharmacy_products!inner (
-            is_available
           )
         `)
         .eq('pharmacy_id', pharmacyId)
-        .eq('pharmacy_products.is_available', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
