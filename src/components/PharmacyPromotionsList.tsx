@@ -112,6 +112,10 @@ export default function PharmacyPromotionsList({ pharmacyId }: PharmacyPromotion
 
     try {
       setDeleting(true);
+      
+      // Récupérer les infos de la promotion avant de la supprimer
+      const promotion = promotions.find(p => p.id === promotionToDelete);
+      
       const { error } = await supabase
         .from('promotions')
         .delete()
@@ -124,10 +128,15 @@ export default function PharmacyPromotionsList({ pharmacyId }: PharmacyPromotion
         description: "La promotion a été supprimée avec succès",
       });
 
-      // Log l'activité
+      // Log l'activité avec les détails de la promotion
       await logActivity({
         pharmacyId,
         actionType: 'promotion_deleted',
+        actionDetails: { 
+          title: promotion?.title || 'Promotion sans titre',
+          discount_percentage: promotion?.discount_percentage,
+          original_price: promotion?.original_price
+        },
         entityType: 'promotion',
         entityId: promotionToDelete,
       });
