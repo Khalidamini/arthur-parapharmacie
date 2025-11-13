@@ -250,6 +250,19 @@ const PharmacyOrders = () => {
       });
       if (error) throw error;
       
+      // Mise à jour immédiate de l'état local pour refléter l'étape 2
+      setCarts(prevCarts => 
+        prevCarts.map(c => 
+          c.id === cartId 
+            ? { 
+                ...c, 
+                notification_sent_at: new Date().toISOString(),
+                ready_for_pickup: true 
+              }
+            : c
+        )
+      );
+      
       toast({
         title: "Notification envoyée",
         description: "Le client a été notifié que sa commande est prête."
@@ -300,6 +313,15 @@ const PharmacyOrders = () => {
         ready_for_pickup: false
       }).eq('id', cartId);
       if (error) throw error;
+      
+      // Mise à jour immédiate de l'état local pour refléter l'étape 3
+      setCarts(prevCarts => 
+        prevCarts.map(c => 
+          c.id === cartId 
+            ? { ...c, status: 'completed', ready_for_pickup: false }
+            : c
+        )
+      );
       
       toast({
         title: "Commande marquée comme retirée",
