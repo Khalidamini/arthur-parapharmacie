@@ -230,6 +230,7 @@ export type Database = {
           latitude: number
           longitude: number
           name: string
+          notification_email: string | null
           opening_hours: Json | null
           phone: string | null
           postal_code: string
@@ -245,6 +246,7 @@ export type Database = {
           latitude: number
           longitude: number
           name: string
+          notification_email?: string | null
           opening_hours?: Json | null
           phone?: string | null
           postal_code: string
@@ -260,6 +262,7 @@ export type Database = {
           latitude?: number
           longitude?: number
           name?: string
+          notification_email?: string | null
           opening_hours?: Json | null
           phone?: string | null
           postal_code?: string
