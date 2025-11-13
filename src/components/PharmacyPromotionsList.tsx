@@ -84,8 +84,18 @@ export default function PharmacyPromotionsList({ pharmacyId }: PharmacyPromotion
     try {
       const { data, error } = await supabase
         .from('promotions')
-        .select('*')
+        .select(`
+          *,
+          products!product_id (
+            id,
+            name
+          ),
+          pharmacy_products!inner (
+            is_available
+          )
+        `)
         .eq('pharmacy_id', pharmacyId)
+        .eq('pharmacy_products.is_available', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
