@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
-
+import { Resend } from 'https://esm.sh/resend@4.0.0';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -20,6 +20,27 @@ const generateTemporaryPassword = (): string => {
   }
   return password;
 };
+
+const resend = new Resend(Deno.env.get('RESEND_API_KEY') ?? '');
+
+const getFrontendUrl = (req: Request) => {
+  return req.headers.get('origin') || Deno.env.get('SITE_URL') || (Deno.env.get('SUPABASE_URL')?.replace('/rest/v1','')) || '';
+};
+
+async function generateUniqueQr(supabaseClient: any): Promise<string> {
+  const rand = () => String(Math.floor(Math.random() * 100000000)).padStart(8, '0');
+  let code = rand();
+  for (let i = 0; i < 5; i++) {
+    const { data } = await supabaseClient
+      .from('profiles')
+      .select('id')
+      .eq('qr_code_number', code)
+      .maybeSingle();
+    if (!data) return code;
+    code = rand();
+  }
+  return rand();
+}
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === 'OPTIONS') {
@@ -109,48 +130,79 @@ const handler = async (req: Request): Promise<Response> => {
     // Générer un mot de passe provisoire
     const temporaryPassword = generateTemporaryPassword();
 
-    // Créer le compte utilisateur
-    const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email: email,
+    // Créer ou récupérer le compte utilisateur
+    let newUserId: string | null = null;
+    let userAlreadyExists = false;
+    const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      email,
       password: temporaryPassword,
       email_confirm: true,
     });
 
     if (createError) {
-      console.error('Erreur création utilisateur:', createError);
-      return new Response(
-        JSON.stringify({ error: createError.message }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
+      // Si l'utilisateur existe déjà, on rattache simplement le rôle
+      // et on n'impose pas de mot de passe provisoire
+      // (on évite aussi d'envoyer un mot de passe invalide)
+      // code retourné: 422 email_exists
+      if ((createError as any).code === 'email_exists' || (createError as any).message?.includes('already been registered')) {
+        userAlreadyExists = true;
+        const { data: users } = await supabaseAdmin.auth.admin.listUsers();
+        const found = users?.users.find(u => u.email === email);
+        if (!found) {
+          return new Response(
+            JSON.stringify({ error: 'Utilisateur déjà existant mais introuvable' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
+          );
+        }
+        newUserId = found.id;
+      } else {
+        console.error('Erreur création utilisateur:', createError);
+        return new Response(
+          JSON.stringify({ error: (createError as any).message }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        );
+      }
+    } else {
+      newUserId = created!.user.id;
     }
 
-    // Créer le profil
-    const { error: profileError } = await supabaseAdmin
+    // Créer le profil si inexistant (avec QR obligatoire)
+    const { data: existingProfile } = await supabaseAdmin
       .from('profiles')
-      .insert({
-        id: newUser.user.id,
-        email: email,
-      });
-
-    if (profileError) {
-      console.error('Erreur création profil:', profileError);
+      .select('id')
+      .eq('id', newUserId)
+      .maybeSingle();
+    if (!existingProfile) {
+      try {
+        const qr = await generateUniqueQr(supabaseAdmin);
+        const { error: profileError } = await supabaseAdmin
+          .from('profiles')
+          .insert({ id: newUserId, email, qr_code_number: qr });
+        if (profileError) {
+          console.error('Erreur création profil:', profileError);
+        }
+      } catch (e) {
+        console.error('Erreur génération QR:', e);
+      }
     }
 
-    // Créer le rôle avec flag must_change_password
+    // Attribuer le rôle
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
-      .insert({
-        user_id: newUser.user.id,
+      .upsert({
+        user_id: newUserId,
         pharmacy_id: pharmacyId,
-        role: role,
-        must_change_password: true,
-        temporary_password_set_at: new Date().toISOString(),
-      });
+        role,
+        must_change_password: !userAlreadyExists,
+        temporary_password_set_at: !userAlreadyExists ? new Date().toISOString() : null,
+      }, { onConflict: 'user_id,pharmacy_id' });
 
     if (roleError) {
       console.error('Erreur création rôle:', roleError);
-      // Supprimer l'utilisateur si le rôle n'a pas pu être créé
-      await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
+      // Supprimer l'utilisateur si on vient de le créer
+      if (!userAlreadyExists && newUserId) {
+        await supabaseAdmin.auth.admin.deleteUser(newUserId);
+      }
       return new Response(
         JSON.stringify({ error: 'Impossible de créer le rôle' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
@@ -164,36 +216,39 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('id', pharmacyId)
       .single();
 
-    // Envoyer l'email d'invitation via l'edge function send-email
-    const emailContent = `
+    // Envoyer l'email d'invitation directement avec Resend
+    const loginUrl = `${getFrontendUrl(req)}/pharmacy-login`;
+    const emailHtml = `
       <h2>Invitation à rejoindre ${pharmacy?.name || 'la pharmacie'}</h2>
       <p>Vous avez été invité(e) à rejoindre l'équipe en tant que <strong>${role}</strong>.</p>
-      <p><strong>Vos identifiants de connexion :</strong></p>
-      <ul>
-        <li>Email : ${email}</li>
-        <li>Mot de passe provisoire : ${temporaryPassword}</li>
-      </ul>
-      <p>⚠️ Vous devrez changer ce mot de passe lors de votre première connexion.</p>
-      <p>Connectez-vous sur : ${Deno.env.get('SUPABASE_URL')?.replace('/rest/v1', '')}/pharmacy-login</p>
+      ${userAlreadyExists ? `
+        <p>Votre compte existe déjà. Connectez-vous avec votre mot de passe actuel.</p>
+      ` : `
+        <p><strong>Vos identifiants de connexion :</strong></p>
+        <ul>
+          <li>Email : ${email}</li>
+          <li>Mot de passe provisoire : ${temporaryPassword}</li>
+        </ul>
+        <p>⚠️ Vous devrez changer ce mot de passe lors de votre première connexion.</p>
+      `}
+      <p>Se connecter : <a href="${loginUrl}">${loginUrl}</a></p>
     `;
 
-    const { error: emailError } = await supabaseAdmin.functions.invoke('send-email', {
-      body: {
-        to: email,
-        subject: `Invitation à rejoindre ${pharmacy?.name || 'la pharmacie'}`,
-        html: emailContent,
-      }
+    const { error: sendErr } = await resend.emails.send({
+      from: 'Arthur <onboarding@resend.dev>',
+      to: [email],
+      subject: `Invitation à rejoindre ${pharmacy?.name || 'la pharmacie'}`,
+      html: emailHtml,
     });
-
-    if (emailError) {
-      console.error('Erreur envoi email:', emailError);
+    if (sendErr) {
+      console.error('Erreur envoi email:', sendErr);
     }
 
     return new Response(
       JSON.stringify({ 
         success: true,
         message: `Invitation envoyée à ${email}`,
-        temporaryPassword: temporaryPassword // Pour copier dans le clipboard
+        temporaryPassword: userAlreadyExists ? null : temporaryPassword
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
