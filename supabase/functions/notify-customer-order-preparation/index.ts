@@ -150,7 +150,7 @@ serve(async (req) => {
     const recipientDomain = (customerEmail.split('@')[1] || '').toLowerCase();
     const devDomains = ['test.com', 'example.com', 'app.local', 'local', 'localhost'];
 
-    let delivered = false;
+    let emailStatus = 'not_sent';
     try {
       const isDevDomain = devDomains.includes(recipientDomain);
       const toAddress = isDevDomain ? smtpFrom : customerEmail;
@@ -164,7 +164,7 @@ serve(async (req) => {
           ? `<p style="font-size:12px;color:#999;">Copie redirigée (destinataire invalide: ${customerEmail})</p>` + emailHtml
           : emailHtml,
       });
-      delivered = true;
+      emailStatus = 'sent';
       console.log(isDevDomain
         ? `Preparation notification redirected to sender for invalid domain: ${customerEmail}`
         : `Preparation notification sent successfully to: ${customerEmail}`
@@ -173,8 +173,8 @@ serve(async (req) => {
       const msg = e instanceof Error ? e.message : String(e);
       console.error('Primary SMTP send failed:', msg);
 
-      // Fallback: when MX is invalid, redirect to sender to avoid 500 while staying on SMTP
-      if (msg.includes('invalid DNS MX') || msg.includes('MX or A/AAAA')) {
+      // Fallback: when MX is invalid, redirect to sender to avoid blocking the workflow
+      if (msg.includes('invalid DNS MX') || msg.includes('MX or A/AAAA') || msg.includes('mailbox unavailable')) {
         try {
           await client.send({
             from: smtpFrom,
@@ -183,20 +183,21 @@ serve(async (req) => {
             content: 'auto',
             html: `<p style="font-size:12px;color:#999;">Original destinataire: ${customerEmail}</p>` + emailHtml,
           });
-          delivered = true;
+          emailStatus = 'sent_to_fallback';
           console.log(`Preparation notification fallback sent to sender for original recipient: ${customerEmail}`);
         } catch (fallbackErr) {
-          console.error('Fallback SMTP send failed:', fallbackErr);
+          emailStatus = 'failed';
+          console.error('Fallback SMTP send also failed:', fallbackErr);
         }
+      } else {
+        emailStatus = 'failed';
       }
     }
 
     await client.close();
-    if (!delivered) {
-      throw new Error('Email non délivré et fallback indisponible');
-    }
-
-    // Update cart with preparation notification timestamp
+    
+    // IMPORTANT: Always update cart status even if email fails
+    // The order workflow must continue regardless of email delivery
     await supabaseClient
       .from('carts')
       .update({ 
