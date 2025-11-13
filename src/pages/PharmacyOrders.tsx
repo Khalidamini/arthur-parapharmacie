@@ -441,10 +441,10 @@ const PharmacyOrders = () => {
                   <Button size="sm" onClick={() => handleMarkAsPickedUp(cart.id, cart)} className="w-full" variant={cart.status === 'completed' ? "secondary" : "default"} style={cart.status === 'completed' ? {
                 backgroundColor: '#3b82f6',
                 color: 'white'
-              } : {
+              } : (cart.ready_for_pickup && cart.notification_sent_at ? {
                 backgroundColor: '#22c55e',
                 color: 'white'
-              }} disabled={!cart.ready_for_pickup || cart.status === 'completed'}>
+              } : undefined)} disabled={!cart.ready_for_pickup || cart.status === 'completed'}>
                     <CheckCircle className="mr-2 h-4 w-4" />
                     Commande terminée
                   </Button>
