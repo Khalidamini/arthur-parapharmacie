@@ -8,16 +8,22 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Pencil } from "lucide-react";
 import { usePharmacyActivityLog } from "@/hooks/usePharmacyActivityLog";
-
 interface PharmacyInfoEditProps {
   pharmacyData: any;
   pharmacyId: string;
   onUpdate: (updatedData: any) => void;
 }
-
-const PharmacyInfoEdit = ({ pharmacyData, pharmacyId, onUpdate }: PharmacyInfoEditProps) => {
-  const { toast } = useToast();
-  const { logActivity } = usePharmacyActivityLog();
+const PharmacyInfoEdit = ({
+  pharmacyData,
+  pharmacyId,
+  onUpdate
+}: PharmacyInfoEditProps) => {
+  const {
+    toast
+  } = useToast();
+  const {
+    logActivity
+  } = usePharmacyActivityLog();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [formData, setFormData] = useState({
@@ -26,35 +32,31 @@ const PharmacyInfoEdit = ({ pharmacyData, pharmacyId, onUpdate }: PharmacyInfoEd
     address: pharmacyData.address || '',
     city: pharmacyData.city || '',
     postal_code: pharmacyData.postal_code || '',
-    notification_email: pharmacyData.notification_email || '',
+    notification_email: pharmacyData.notification_email || ''
   });
-
   const handleUpdate = async () => {
     setUpdating(true);
     try {
-      const { data, error } = await supabase
-        .from('pharmacies')
-        .update(formData)
-        .eq('id', pharmacyId)
-        .select()
-        .single();
-
+      const {
+        data,
+        error
+      } = await supabase.from('pharmacies').update(formData).eq('id', pharmacyId).select().single();
       if (error) throw error;
-
       toast({
         title: "Informations mises à jour",
-        description: "Les informations de votre pharmacie ont été mises à jour avec succès.",
+        description: "Les informations de votre pharmacie ont été mises à jour avec succès."
       });
 
       // Log l'activité
       await logActivity({
         pharmacyId,
         actionType: 'pharmacy_info_updated',
-        actionDetails: { updatedFields: Object.keys(formData) },
+        actionDetails: {
+          updatedFields: Object.keys(formData)
+        },
         entityType: 'pharmacy',
-        entityId: pharmacyId,
+        entityId: pharmacyId
       });
-
       onUpdate(data);
       setEditDialogOpen(false);
     } catch (error: any) {
@@ -62,13 +64,12 @@ const PharmacyInfoEdit = ({ pharmacyData, pharmacyId, onUpdate }: PharmacyInfoEd
       toast({
         title: "Erreur",
         description: "Une erreur est survenue lors de la mise à jour.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setUpdating(false);
     }
   };
-
   const openEditDialog = () => {
     setFormData({
       name: pharmacyData.name || '',
@@ -76,13 +77,11 @@ const PharmacyInfoEdit = ({ pharmacyData, pharmacyId, onUpdate }: PharmacyInfoEd
       address: pharmacyData.address || '',
       city: pharmacyData.city || '',
       postal_code: pharmacyData.postal_code || '',
-      notification_email: pharmacyData.notification_email || '',
+      notification_email: pharmacyData.notification_email || ''
     });
     setEditDialogOpen(true);
   };
-
-  return (
-    <>
+  return <>
       <Card>
         <CardHeader>
           <CardTitle>Informations de l'établissement</CardTitle>
@@ -106,7 +105,7 @@ const PharmacyInfoEdit = ({ pharmacyData, pharmacyId, onUpdate }: PharmacyInfoEd
               <p className="font-medium">{pharmacyData.postal_code} {pharmacyData.city}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Email de notification</p>
+              <p className="text-sm text-muted-foreground">Email de notification et de connexion   </p>
               <p className="font-medium">{pharmacyData.notification_email || 'Non renseigné'}</p>
             </div>
             <div>
@@ -133,32 +132,26 @@ const PharmacyInfoEdit = ({ pharmacyData, pharmacyId, onUpdate }: PharmacyInfoEd
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="name">Nom de la pharmacie</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
+              <Input id="name" value={formData.name} onChange={e => setFormData({
+              ...formData,
+              name: e.target.value
+            })} />
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="phone">Téléphone</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              />
+              <Input id="phone" type="tel" value={formData.phone} onChange={e => setFormData({
+              ...formData,
+              phone: e.target.value
+            })} />
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="notification_email">Email de notification</Label>
-              <Input
-                id="notification_email"
-                type="email"
-                placeholder="email@pharmacie.fr"
-                value={formData.notification_email}
-                onChange={(e) => setFormData({ ...formData, notification_email: e.target.value })}
-              />
+              <Input id="notification_email" type="email" placeholder="email@pharmacie.fr" value={formData.notification_email} onChange={e => setFormData({
+              ...formData,
+              notification_email: e.target.value
+            })} />
               <p className="text-sm text-muted-foreground">
                 Cet email sera utilisé pour recevoir les notifications de nouvelles commandes
               </p>
@@ -166,29 +159,26 @@ const PharmacyInfoEdit = ({ pharmacyData, pharmacyId, onUpdate }: PharmacyInfoEd
 
             <div className="grid gap-2">
               <Label htmlFor="address">Adresse</Label>
-              <Input
-                id="address"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              />
+              <Input id="address" value={formData.address} onChange={e => setFormData({
+              ...formData,
+              address: e.target.value
+            })} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="postal_code">Code postal</Label>
-                <Input
-                  id="postal_code"
-                  value={formData.postal_code}
-                  onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
-                />
+                <Input id="postal_code" value={formData.postal_code} onChange={e => setFormData({
+                ...formData,
+                postal_code: e.target.value
+              })} />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="city">Ville</Label>
-                <Input
-                  id="city"
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                />
+                <Input id="city" value={formData.city} onChange={e => setFormData({
+                ...formData,
+                city: e.target.value
+              })} />
               </div>
             </div>
           </div>
@@ -203,8 +193,6 @@ const PharmacyInfoEdit = ({ pharmacyData, pharmacyId, onUpdate }: PharmacyInfoEd
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
-  );
+    </>;
 };
-
 export default PharmacyInfoEdit;
