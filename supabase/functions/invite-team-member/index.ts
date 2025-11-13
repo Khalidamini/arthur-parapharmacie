@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
 import { Resend } from 'https://esm.sh/resend@4.0.0';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -141,9 +142,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (createError) {
       // Si l'utilisateur existe déjà, on rattache simplement le rôle
-      // et on n'impose pas de mot de passe provisoire
-      // (on évite aussi d'envoyer un mot de passe invalide)
-      // code retourné: 422 email_exists
       if ((createError as any).code === 'email_exists' || (createError as any).message?.includes('already been registered')) {
         userAlreadyExists = true;
         const { data: users } = await supabaseAdmin.auth.admin.listUsers();
@@ -248,35 +246,39 @@ const handler = async (req: Request): Promise<Response> => {
     const sendResult = await resend.emails.send({
       from: fromAddress,
       to: [email],
-      subject: `Invitation à rejoindre ${pharmacy?.name || 'la pharmacie'}`,
+      subject: `Invitation à rejoindre ${pharmacy?.name || 'une pharmacie'} sur Arthur`,
       html: `
-        <h2>Invitation à rejoindre ${pharmacy?.name || 'la pharmacie'}</h2>
-        <p>Vous avez été invité(e) à rejoindre l'équipe en tant que <strong>${role}</strong>.</p>
-        ${userAlreadyExists ? `
-          <p>Votre compte existe déjà. Connectez-vous avec votre mot de passe actuel.</p>
-        ` : `
-          <p><strong>Vos identifiants de connexion :</strong></p>
-          <ul>
-            <li>Email : ${email}</li>
-            <li>Mot de passe provisoire : ${temporaryPassword}</li>
-          </ul>
-          <p>⚠️ Vous devrez changer ce mot de passe lors de votre première connexion.</p>
-        `}
-        <p>Se connecter : <a href="${loginUrl}">${loginUrl}</a></p>
+        <h1>Bienvenue sur Arthur</h1>
+        <p>Vous avez été invité à rejoindre l'équipe de <strong>${pharmacy?.name || 'une pharmacie'}</strong>.</p>
+        <p>Voici vos identifiants de connexion :</p>
+        <ul>
+          <li><strong>Email :</strong> ${email}</li>
+          ${!userAlreadyExists ? `<li><strong>Mot de passe provisoire :</strong> ${temporaryPassword}</li>` : ''}
+        </ul>
+        ${!userAlreadyExists ? '<p><strong>Important :</strong> Vous devrez changer ce mot de passe lors de votre première connexion.</p>' : ''}
+        <p><a href="${loginUrl}" style="display: inline-block; padding: 12px 24px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 6px; margin-top: 16px;">Se connecter maintenant</a></p>
+        <p style="margin-top: 24px; color: #6b7280; font-size: 14px;">Si vous n'avez pas demandé cette invitation, vous pouvez ignorer cet email.</p>
       `,
     });
-    // Gestion d'erreur Resend (ne jette pas toujours)
-    // @ts-ignore - Deno/esm type
+
+    // Vérifier explicitement si l'email a été envoyé
     if (sendResult?.error) {
       emailSent = false;
-      // @ts-ignore
-      emailErrorMessage = sendResult.error?.message || 'Email send failed';
+      emailErrorMessage = sendResult.error.message || 'Erreur inconnue lors de l\'envoi';
       console.error('Erreur envoi email:', sendResult.error);
     }
 
+    console.log('Résultat invitation:', {
+      email,
+      role,
+      pharmacyId,
+      userCreated: !userAlreadyExists,
+      emailSent,
+      emailErrorMessage,
+    });
+
     return new Response(
-      JSON.stringify({ 
-        success: true,
+      JSON.stringify({
         message: `Invitation envoyée à ${email}`,
         temporaryPassword: userAlreadyExists ? null : temporaryPassword,
         emailSent,
