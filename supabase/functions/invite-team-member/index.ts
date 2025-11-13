@@ -241,7 +241,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Envoyer l'email d'invitation directement avec Resend
     const loginUrl = `${getFrontendUrl(req)}/pharmacy-login`;
-    const fromAddress = `${Deno.env.get('RESEND_FROM_NAME') || 'Arthur'} <${Deno.env.get('RESEND_FROM_EMAIL') || 'onboarding@resend.dev'}>`;
+    const fromAddress = 'Arthur <contact@gptprive.com>';
 
     let emailSent = true;
     let emailErrorMessage: string | null = null;
