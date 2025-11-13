@@ -25,6 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { usePharmacyActivityLog } from "@/hooks/usePharmacyActivityLog";
 
 interface Promotion {
   id: string;
@@ -51,6 +52,7 @@ export default function PharmacyPromotionsList({ pharmacyId }: PharmacyPromotion
   const [promotionToEdit, setPromotionToEdit] = useState<Promotion | null>(null);
   const [updating, setUpdating] = useState(false);
   const { toast } = useToast();
+  const { logActivity } = usePharmacyActivityLog();
 
   useEffect(() => {
     loadPromotions();
@@ -122,6 +124,14 @@ export default function PharmacyPromotionsList({ pharmacyId }: PharmacyPromotion
         description: "La promotion a été supprimée avec succès",
       });
 
+      // Log l'activité
+      await logActivity({
+        pharmacyId,
+        actionType: 'promotion_deleted',
+        entityType: 'promotion',
+        entityId: promotionToDelete,
+      });
+
       loadPromotions();
     } catch (error) {
       console.error('Error deleting promotion:', error);
@@ -163,6 +173,15 @@ export default function PharmacyPromotionsList({ pharmacyId }: PharmacyPromotion
       toast({
         title: "Promotion modifiée",
         description: "La promotion a été modifiée avec succès",
+      });
+
+      // Log l'activité
+      await logActivity({
+        pharmacyId,
+        actionType: 'promotion_updated',
+        actionDetails: { title: promotionToEdit.title },
+        entityType: 'promotion',
+        entityId: promotionToEdit.id,
       });
 
       loadPromotions();

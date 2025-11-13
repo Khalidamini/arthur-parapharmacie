@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { usePharmacyActivityLog } from "@/hooks/usePharmacyActivityLog";
 
 interface Product {
   id: string;
@@ -39,6 +40,7 @@ export default function PharmacyProductsList({ pharmacyId }: PharmacyProductsLis
   const [promotionDialogOpen, setPromotionDialogOpen] = useState(false);
   const [creatingPromotion, setCreatingPromotion] = useState(false);
   const { toast } = useToast();
+  const { logActivity } = usePharmacyActivityLog();
 
   const [promotionForm, setPromotionForm] = useState({
     title: '',
@@ -170,6 +172,14 @@ export default function PharmacyProductsList({ pharmacyId }: PharmacyProductsLis
       toast({
         title: "Promotion créée",
         description: "La promotion a été créée avec succès",
+      });
+
+      // Log l'activité
+      await logActivity({
+        pharmacyId,
+        actionType: 'promotion_created',
+        actionDetails: { title: promotionForm.title, productName: selectedProduct.name },
+        entityType: 'promotion',
       });
 
       setPromotionDialogOpen(false);

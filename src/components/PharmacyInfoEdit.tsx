@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Pencil } from "lucide-react";
+import { usePharmacyActivityLog } from "@/hooks/usePharmacyActivityLog";
 
 interface PharmacyInfoEditProps {
   pharmacyData: any;
@@ -16,6 +17,7 @@ interface PharmacyInfoEditProps {
 
 const PharmacyInfoEdit = ({ pharmacyData, pharmacyId, onUpdate }: PharmacyInfoEditProps) => {
   const { toast } = useToast();
+  const { logActivity } = usePharmacyActivityLog();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [formData, setFormData] = useState({
@@ -42,6 +44,15 @@ const PharmacyInfoEdit = ({ pharmacyData, pharmacyId, onUpdate }: PharmacyInfoEd
       toast({
         title: "Informations mises à jour",
         description: "Les informations de votre pharmacie ont été mises à jour avec succès.",
+      });
+
+      // Log l'activité
+      await logActivity({
+        pharmacyId,
+        actionType: 'pharmacy_info_updated',
+        actionDetails: { updatedFields: Object.keys(formData) },
+        entityType: 'pharmacy',
+        entityId: pharmacyId,
       });
 
       onUpdate(data);

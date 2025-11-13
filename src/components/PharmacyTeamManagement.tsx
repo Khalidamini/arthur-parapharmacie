@@ -11,6 +11,7 @@ import { UserPlus, Trash2, Edit, Copy } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { z } from "zod";
+import { usePharmacyActivityLog } from "@/hooks/usePharmacyActivityLog";
 
 interface TeamMember {
   id: string;
@@ -31,6 +32,7 @@ interface PharmacyTeamManagementProps {
 
 const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagementProps) => {
   const { toast } = useToast();
+  const { logActivity } = usePharmacyActivityLog();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
@@ -159,6 +161,14 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
         console.error('Invitation email not sent:', emailErrorMessage);
       }
 
+      // Log l'activité
+      await logActivity({
+        pharmacyId,
+        actionType: 'team_member_invited',
+        actionDetails: { email: inviteForm.email, role: inviteForm.role },
+        entityType: 'user_role',
+      });
+
       setInviteDialogOpen(false);
       setInviteForm({ email: '', role: 'admin' });
       loadTeamMembers();
@@ -195,6 +205,14 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
       toast({
         title: "Membre retiré",
         description: "Le membre a été retiré de votre équipe.",
+      });
+
+      // Log l'activité
+      await logActivity({
+        pharmacyId,
+        actionType: 'team_member_removed',
+        entityType: 'user_role',
+        entityId: memberId,
       });
 
       loadTeamMembers();
@@ -257,6 +275,15 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
       toast({
         title: "Rôle modifié",
         description: "Le rôle du membre a été modifié avec succès.",
+      });
+
+      // Log l'activité
+      await logActivity({
+        pharmacyId,
+        actionType: 'team_member_role_changed',
+        actionDetails: { oldRole: selectedMember.role, newRole },
+        entityType: 'user_role',
+        entityId: selectedMember.id,
       });
 
       setEditRoleDialogOpen(false);
