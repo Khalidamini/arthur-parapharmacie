@@ -59,13 +59,6 @@ const PharmacyRegister = () => {
       if (signUpError) throw signUpError;
 
       if (authData.user) {
-        // Après inscription, vérifier et attribuer les invitations en attente
-        try {
-          await supabase.functions.invoke('claim-team-invitations');
-        } catch (claimError) {
-          console.error('Error claiming invitations:', claimError);
-        }
-
         // Créer la demande d'inscription de la pharmacie
         const { data: registrationData, error: registrationError } = await supabase
           .from('pharmacy_registrations')

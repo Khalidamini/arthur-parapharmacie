@@ -186,16 +186,39 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Attribuer le rôle
-    const { error: roleError } = await supabaseAdmin
+    // Attribuer le rôle (vérifier si déjà existant)
+    const { data: existingRole } = await supabaseAdmin
       .from('user_roles')
-      .upsert({
-        user_id: newUserId,
-        pharmacy_id: pharmacyId,
-        role,
-        must_change_password: !userAlreadyExists,
-        temporary_password_set_at: !userAlreadyExists ? new Date().toISOString() : null,
-      }, { onConflict: 'user_id,pharmacy_id' });
+      .select('id')
+      .eq('user_id', newUserId)
+      .eq('pharmacy_id', pharmacyId)
+      .maybeSingle();
+
+    let roleError = null;
+    if (existingRole) {
+      // Mettre à jour le rôle existant
+      const { error } = await supabaseAdmin
+        .from('user_roles')
+        .update({
+          role,
+          must_change_password: !userAlreadyExists,
+          temporary_password_set_at: !userAlreadyExists ? new Date().toISOString() : null,
+        })
+        .eq('id', existingRole.id);
+      roleError = error;
+    } else {
+      // Créer un nouveau rôle
+      const { error } = await supabaseAdmin
+        .from('user_roles')
+        .insert({
+          user_id: newUserId,
+          pharmacy_id: pharmacyId,
+          role,
+          must_change_password: !userAlreadyExists,
+          temporary_password_set_at: !userAlreadyExists ? new Date().toISOString() : null,
+        });
+      roleError = error;
+    }
 
     if (roleError) {
       console.error('Erreur création rôle:', roleError);
