@@ -20,9 +20,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Filter, Calendar, User, Activity, RefreshCw } from 'lucide-react';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Filter, Calendar, User, Activity, RefreshCw, Download, CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 interface ActivityLog {
   id: string;
@@ -52,6 +55,8 @@ const PharmacyActivityLogs = ({ pharmacyId }: PharmacyActivityLogsProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'user' | 'action'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [startDate, setStartDate] = useState<Date>();
+  const [endDate, setEndDate] = useState<Date>();
   
   const { toast } = useToast();
 
@@ -120,6 +125,16 @@ const PharmacyActivityLogs = ({ pharmacyId }: PharmacyActivityLogsProps) => {
   useEffect(() => {
     let result = [...logs];
 
+    // Filtrer par dates
+    if (startDate) {
+      result = result.filter(log => new Date(log.created_at) >= startDate);
+    }
+    if (endDate) {
+      const endOfDay = new Date(endDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      result = result.filter(log => new Date(log.created_at) <= endOfDay);
+    }
+
     // Filtrer par utilisateur
     if (selectedUser !== 'all') {
       result = result.filter(log => log.user_id === selectedUser);
@@ -156,7 +171,37 @@ const PharmacyActivityLogs = ({ pharmacyId }: PharmacyActivityLogsProps) => {
     });
 
     setFilteredLogs(result);
-  }, [logs, selectedUser, selectedActionType, searchQuery, sortBy, sortOrder]);
+  }, [logs, selectedUser, selectedActionType, searchQuery, sortBy, sortOrder, startDate, endDate]);
+
+  const exportToCSV = () => {
+    const headers = ['Date', 'Collaborateur', 'Action', 'Détails'];
+    const csvData = filteredLogs.map(log => [
+      format(new Date(log.created_at), 'dd/MM/yyyy HH:mm', { locale: fr }),
+      log.user_name || 'Inconnu',
+      getActionLabel(log.action_type),
+      JSON.stringify(log.action_details || {})
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `journal_activites_${format(new Date(), 'dd-MM-yyyy_HH-mm')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: 'Export réussi',
+      description: 'Le journal d\'activité a été exporté en CSV',
+    });
+  };
 
   // Obtenir tous les types d'actions uniques
   const actionTypes = Array.from(new Set(logs.map(log => log.action_type)));
@@ -209,15 +254,26 @@ const PharmacyActivityLogs = ({ pharmacyId }: PharmacyActivityLogsProps) => {
               Suivi de toutes les opérations effectuées par votre équipe
             </CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchLogs}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Actualiser
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={exportToCSV}
+              disabled={filteredLogs.length === 0}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Exporter CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={fetchLogs}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Actualiser
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
         {/* Filtres et recherche */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
           <div className="space-y-2">
             <label className="text-sm font-medium flex items-center gap-2">
               <User className="h-4 w-4" />
@@ -263,6 +319,68 @@ const PharmacyActivityLogs = ({ pharmacyId }: PharmacyActivityLogsProps) => {
             </Select>
           </div>
 
+          {/* Date de début */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-2">
+              <CalendarIcon className="h-4 w-4" />
+              Date de début
+            </label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !startDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {startDate ? format(startDate, "dd/MM/yyyy", { locale: fr }) : "Sélectionner"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarComponent
+                  mode="single"
+                  selected={startDate}
+                  onSelect={setStartDate}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Date de fin */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-2">
+              <CalendarIcon className="h-4 w-4" />
+              Date de fin
+            </label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !endDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {endDate ? format(endDate, "dd/MM/yyyy", { locale: fr }) : "Sélectionner"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarComponent
+                  mode="single"
+                  selected={endDate}
+                  onSelect={setEndDate}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
           <div className="space-y-2">
             <label className="text-sm font-medium flex items-center gap-2">
               <Calendar className="h-4 w-4" />
@@ -292,15 +410,19 @@ const PharmacyActivityLogs = ({ pharmacyId }: PharmacyActivityLogsProps) => {
               </SelectContent>
             </Select>
           </div>
-        </div>
 
-        <div className="mb-4">
-          <Input
-            placeholder="Rechercher dans le journal..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="max-w-md"
-          />
+          {/* Recherche */}
+          <div className="space-y-2 md:col-span-2">
+            <label className="text-sm font-medium flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              Recherche
+            </label>
+            <Input
+              placeholder="Rechercher dans le journal..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
         </div>
 
         {/* Résumé */}
