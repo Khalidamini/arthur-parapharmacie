@@ -104,7 +104,8 @@ export default function PharmacyProductsList({ pharmacyId }: PharmacyProductsLis
             image_url
           )
         `)
-        .eq('pharmacy_id', pharmacyId);
+        .eq('pharmacy_id', pharmacyId)
+        .eq('is_available', true); // Filtrer seulement les produits disponibles
 
       if (error) throw error;
 
@@ -159,6 +160,7 @@ export default function PharmacyProductsList({ pharmacyId }: PharmacyProductsLis
         .from('promotions')
         .insert({
           pharmacy_id: pharmacyId,
+          product_id: selectedProduct.id, // Lier la promotion au produit
           title: promotionForm.title,
           description: promotionForm.description,
           discount_percentage: promotionForm.discount_percentage,
