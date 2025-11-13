@@ -26,3 +26,6 @@ verify_jwt = true
 
 [functions.upload-installer-scripts]
 verify_jwt = false
+
+[functions.check-delivery-status]
+verify_jwt = false
