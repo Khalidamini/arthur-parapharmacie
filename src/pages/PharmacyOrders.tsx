@@ -43,6 +43,7 @@ interface Cart {
     username: string | null;
     first_name: string | null;
     last_name: string | null;
+    phone: string | null;
   };
 }
 
@@ -140,7 +141,7 @@ const PharmacyOrders = () => {
       const userIds = [...new Set(cartsData?.map(c => c.user_id) || [])];
       const { data: profilesData } = await supabase
         .from('profiles')
-        .select('id, email, qr_code_number, username, first_name, last_name')
+        .select('id, email, qr_code_number, username, first_name, last_name, phone')
         .in('id', userIds);
 
       // Organiser les données
@@ -309,14 +310,38 @@ const PharmacyOrders = () => {
       <Card key={cart.id} className="mb-4">
         <CardHeader>
           <div className="flex justify-between items-start">
-            <div className="space-y-1">
+            <div className="space-y-2 flex-1">
               <CardTitle className="text-lg flex items-center gap-2">
-                <User className="h-4 w-4" />
+                <User className="h-5 w-5 text-primary" />
                 {cart.profiles?.first_name && cart.profiles?.last_name 
                   ? `${cart.profiles.first_name} ${cart.profiles.last_name}`
                   : cart.profiles?.username || cart.profiles?.email || `Client ${cart.profiles?.qr_code_number || 'Inconnu'}`
                 }
               </CardTitle>
+              
+              {/* Coordonnées du client */}
+              <div className="space-y-1 text-sm bg-muted/30 p-3 rounded-lg">
+                {cart.profiles?.email && (
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Email:</span>
+                    <a href={`mailto:${cart.profiles.email}`} className="text-primary hover:underline">
+                      {cart.profiles.email}
+                    </a>
+                  </div>
+                )}
+                {cart.profiles?.phone && (
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Tél:</span>
+                    <a href={`tel:${cart.profiles.phone}`} className="text-primary hover:underline">
+                      {cart.profiles.phone}
+                    </a>
+                  </div>
+                )}
+                {!cart.profiles?.email && !cart.profiles?.phone && (
+                  <p className="text-muted-foreground italic">Aucune coordonnée disponible</p>
+                )}
+              </div>
+              
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar className="h-3 w-3" />
                 {format(new Date(cart.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
