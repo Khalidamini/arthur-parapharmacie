@@ -293,7 +293,7 @@ const PharmacyOrders = () => {
           entityType: 'cart',
           entityId: cartId
         });
-        await loadCarts(pharmacyId);
+        // Pas de rechargement forcé ici pour ne pas écraser l'état local immédiat
       }
     } catch (error) {
       console.error('Error notifying customer:', error);
