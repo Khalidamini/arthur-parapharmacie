@@ -162,6 +162,21 @@ const handler = async (req: Request): Promise<Response> => {
       newUserId = created!.user.id;
     }
 
+    // Si l'utilisateur existait déjà, on réinitialise son mot de passe avec le mot de passe provisoire
+    if (userAlreadyExists && newUserId) {
+      const { error: updatePwdError } = await supabaseAdmin.auth.admin.updateUserById(newUserId, {
+        password: temporaryPassword,
+        email_confirm: true,
+      });
+      if (updatePwdError) {
+        console.error('Erreur mise à jour mot de passe:', updatePwdError);
+        return new Response(
+          JSON.stringify({ error: 'Impossible de définir un mot de passe provisoire' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        );
+      }
+    }
+
     // Créer le profil si inexistant (avec QR obligatoire)
     const { data: existingProfile } = await supabaseAdmin
       .from('profiles')
@@ -192,26 +207,26 @@ const handler = async (req: Request): Promise<Response> => {
 
     let roleError = null;
     if (existingRole) {
-      // Mettre à jour le rôle existant
+      // Mettre à jour le rôle existant et forcer le changement de mot de passe
       const { error } = await supabaseAdmin
         .from('user_roles')
         .update({
           role,
-          must_change_password: !userAlreadyExists,
-          temporary_password_set_at: !userAlreadyExists ? new Date().toISOString() : null,
+          must_change_password: true,
+          temporary_password_set_at: new Date().toISOString(),
         })
         .eq('id', existingRole.id);
       roleError = error;
     } else {
-      // Créer un nouveau rôle
+      // Créer un nouveau rôle et forcer le changement de mot de passe
       const { error } = await supabaseAdmin
         .from('user_roles')
         .insert({
           user_id: newUserId,
           pharmacy_id: pharmacyId,
           role,
-          must_change_password: !userAlreadyExists,
-          temporary_password_set_at: !userAlreadyExists ? new Date().toISOString() : null,
+          must_change_password: true,
+          temporary_password_set_at: new Date().toISOString(),
         });
       roleError = error;
     }
@@ -265,9 +280,9 @@ const handler = async (req: Request): Promise<Response> => {
           <p>Voici vos identifiants de connexion :</p>
           <ul>
             <li><strong>Email :</strong> ${email}</li>
-            ${!userAlreadyExists ? `<li><strong>Mot de passe provisoire :</strong> ${temporaryPassword}</li>` : ''}
+            <li><strong>Mot de passe provisoire :</strong> ${temporaryPassword}</li>
           </ul>
-          ${!userAlreadyExists ? '<p><strong>Important :</strong> Vous devrez changer ce mot de passe lors de votre première connexion.</p>' : ''}
+          <p><strong>Important :</strong> Vous devrez changer ce mot de passe lors de votre première connexion.</p>
           <p><a href="${loginUrl}" style="display: inline-block; padding: 12px 24px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 6px; margin-top: 16px;">Se connecter maintenant</a></p>
           <p style="margin-top: 24px; color: #6b7280; font-size: 14px;">Si vous n'avez pas demandé cette invitation, vous pouvez ignorer cet email.</p>
         `,
@@ -293,7 +308,7 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({
         message: `Invitation envoyée à ${email}`,
-        temporaryPassword: userAlreadyExists ? null : temporaryPassword,
+        temporaryPassword,
         emailSent,
         emailErrorMessage,
       }),
