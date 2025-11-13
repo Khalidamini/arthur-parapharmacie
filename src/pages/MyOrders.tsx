@@ -29,8 +29,14 @@ interface Order {
   payment_status: string;
   ready_for_pickup: boolean;
   delivery_method: string;
+  delivery_type?: string;
+  delivery_location_type?: string;
+  estimated_delivery_date?: string | null;
   delivery_address: any;
+  relay_point_name?: string | null;
+  relay_point_address?: string | null;
   shipping_tracking_number: string | null;
+  delivery_status?: string | null;
   items: CartItem[];
   pharmacy: {
     name: string;
@@ -70,8 +76,14 @@ const MyOrders = () => {
           payment_status,
           ready_for_pickup,
           delivery_method,
+          delivery_type,
+          delivery_location_type,
+          estimated_delivery_date,
           delivery_address,
+          relay_point_name,
+          relay_point_address,
           shipping_tracking_number,
+          delivery_status,
           pharmacy:pharmacies(name, address, city, phone)
         `)
         .eq('user_id', user.id)
@@ -232,10 +244,21 @@ const MyOrders = () => {
                         <div>
                           <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                             <Truck className="h-4 w-4" />
-                            Livraison à domicile
+                            Livraison {order.delivery_type === 'express' ? 'Express' : 'Standard'}
+                            {order.delivery_location_type === 'relay' ? ' - Point relais' : ' - À domicile'}
                           </h4>
+                          
+                          {order.estimated_delivery_date && (
+                            <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg mb-3">
+                              <p className="text-sm font-medium">Date de livraison estimée</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {format(new Date(order.estimated_delivery_date), 'EEEE dd MMMM yyyy', { locale: fr })}
+                              </p>
+                            </div>
+                          )}
+
                           {order.shipping_tracking_number && (
-                            <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg space-y-2 mb-3">
+                            <div className="bg-green-50 dark:bg-green-950 p-3 rounded-lg space-y-2 mb-3">
                               <div className="flex items-center justify-between">
                                 <div>
                                   <p className="text-sm font-medium">Suivi de livraison</p>
@@ -246,29 +269,54 @@ const MyOrders = () => {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => window.open(`https://panel.sendcloud.sc/track-trace/?tracking_number=${order.shipping_tracking_number}`, '_blank')}
+                                  onClick={() => window.open(`https://www.sendcloud.fr/tracking/?tracking_number=${order.shipping_tracking_number}`, '_blank')}
                                 >
                                   <ExternalLink className="h-3 w-3 mr-1" />
                                   Suivre
                                 </Button>
                               </div>
-                              <div className="text-xs text-muted-foreground bg-background/50 p-2 rounded">
-                                ℹ️ Cliquez sur "Suivre" pour voir le statut détaillé de votre livraison
-                              </div>
+                              {order.delivery_status && (
+                                <div className="text-xs bg-background/50 p-2 rounded">
+                                  Statut: <span className="font-medium">{order.delivery_status}</span>
+                                </div>
+                              )}
                             </div>
                           )}
+                          
                           {!order.shipping_tracking_number && (
                             <div className="bg-muted/50 p-3 rounded-lg mb-3">
                               <p className="text-xs text-muted-foreground">
-                                📦 Votre étiquette d'expédition est en cours de génération...
+                                ⏳ Étiquette d'expédition en cours de génération...
                               </p>
                             </div>
                           )}
-                          <div className="text-sm">
-                            <p className="text-muted-foreground">Adresse de livraison:</p>
-                            <p>{order.delivery_address?.street}</p>
-                            <p>{order.delivery_address?.postal_code} {order.delivery_address?.city}</p>
-                          </div>
+                          
+                          {order.delivery_location_type === 'relay' && order.relay_point_name ? (
+                            <div className="bg-muted/50 p-3 rounded-lg space-y-1">
+                              <p className="font-medium text-sm flex items-center gap-2">
+                                <Package className="h-3 w-3" />
+                                {order.relay_point_name}
+                              </p>
+                              {order.relay_point_address && (
+                                <p className="text-xs text-muted-foreground">{order.relay_point_address}</p>
+                              )}
+                            </div>
+                          ) : order.delivery_address && (
+                            <div className="bg-muted/50 p-3 rounded-lg space-y-1">
+                              <p className="font-medium text-sm flex items-center gap-2">
+                                <MapPin className="h-3 w-3" />
+                                Adresse de livraison
+                              </p>
+                              <p className="text-xs">{order.delivery_address.name}</p>
+                              <p className="text-xs">{order.delivery_address.street}</p>
+                              <p className="text-xs">
+                                {order.delivery_address.postal_code} {order.delivery_address.city}
+                              </p>
+                              {order.delivery_address.phone && (
+                                <p className="text-xs">📱 {order.delivery_address.phone}</p>
+                              )}
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div>
