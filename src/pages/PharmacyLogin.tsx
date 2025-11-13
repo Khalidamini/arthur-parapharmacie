@@ -23,12 +23,17 @@ const PharmacyLogin = () => {
         // Vérifier si l'utilisateur a un rôle de pharmacien
         const { data: roles } = await supabase
           .from('user_roles')
-          .select('role, pharmacy_id')
+          .select('role, pharmacy_id, must_change_password')
           .eq('user_id', user.id)
           .maybeSingle();
 
         if (roles) {
-          navigate('/pharmacy-dashboard');
+          // Vérifier si l'utilisateur doit changer son mot de passe
+          if (roles.must_change_password) {
+            navigate('/pharmacy-force-password-change');
+          } else {
+            navigate('/pharmacy-dashboard');
+          }
         } else {
           // Utilisateur connecté mais pas pharmacien
           navigate('/');
@@ -60,17 +65,10 @@ const PharmacyLogin = () => {
       if (error) throw error;
 
       if (data.user) {
-        // Après connexion, vérifier et attribuer les invitations en attente
-        try {
-          await supabase.functions.invoke('claim-team-invitations');
-        } catch (claimError) {
-          console.error('Error claiming invitations:', claimError);
-        }
-
         // Vérifier si l'utilisateur a un rôle de pharmacien
         const { data: roles, error: rolesError } = await supabase
           .from('user_roles')
-          .select('role, pharmacy_id')
+          .select('role, pharmacy_id, must_change_password')
           .eq('user_id', data.user.id)
           .maybeSingle();
 
@@ -91,10 +89,15 @@ const PharmacyLogin = () => {
 
         toast({
           title: "Connexion réussie",
-          description: "Redirection vers votre tableau de bord...",
+          description: "Redirection...",
         });
 
-        navigate('/pharmacy-dashboard');
+        // Vérifier si l'utilisateur doit changer son mot de passe
+        if (roles.must_change_password) {
+          navigate('/pharmacy-force-password-change');
+        } else {
+          navigate('/pharmacy-dashboard');
+        }
       }
     } catch (error: any) {
       console.error('Login error:', error);

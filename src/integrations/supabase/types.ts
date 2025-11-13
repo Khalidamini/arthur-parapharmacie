@@ -301,53 +301,6 @@ export type Database = {
           },
         ]
       }
-      pharmacy_invitations: {
-        Row: {
-          accepted_at: string | null
-          created_at: string
-          email: string
-          expires_at: string
-          id: string
-          invited_by: string
-          pharmacy_id: string
-          role: Database["public"]["Enums"]["pharmacy_role"]
-          status: string
-          token: string
-        }
-        Insert: {
-          accepted_at?: string | null
-          created_at?: string
-          email: string
-          expires_at?: string
-          id?: string
-          invited_by: string
-          pharmacy_id: string
-          role: Database["public"]["Enums"]["pharmacy_role"]
-          status?: string
-          token: string
-        }
-        Update: {
-          accepted_at?: string | null
-          created_at?: string
-          email?: string
-          expires_at?: string
-          id?: string
-          invited_by?: string
-          pharmacy_id?: string
-          role?: Database["public"]["Enums"]["pharmacy_role"]
-          status?: string
-          token?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pharmacy_invitations_pharmacy_id_fkey"
-            columns: ["pharmacy_id"]
-            isOneToOne: false
-            referencedRelation: "pharmacies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       pharmacy_products: {
         Row: {
           created_at: string | null
@@ -660,24 +613,30 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          must_change_password: boolean | null
           pharmacy_id: string
           role: Database["public"]["Enums"]["pharmacy_role"]
+          temporary_password_set_at: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
           created_at?: string | null
           id?: string
+          must_change_password?: boolean | null
           pharmacy_id: string
           role: Database["public"]["Enums"]["pharmacy_role"]
+          temporary_password_set_at?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
           created_at?: string | null
           id?: string
+          must_change_password?: boolean | null
           pharmacy_id?: string
           role?: Database["public"]["Enums"]["pharmacy_role"]
+          temporary_password_set_at?: string | null
           updated_at?: string | null
           user_id?: string
         }

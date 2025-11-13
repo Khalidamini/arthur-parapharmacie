@@ -24,6 +24,7 @@ import PharmacyLogin from "./pages/PharmacyLogin";
 import PharmacyOrders from "./pages/PharmacyOrders";
 import PharmacyResetPassword from "./pages/PharmacyResetPassword";
 import PharmacyUpdatePassword from "./pages/PharmacyUpdatePassword";
+import PharmacyForcePasswordChange from "./pages/PharmacyForcePasswordChange";
 import PharmacyConnectorDownload from "./pages/PharmacyConnectorDownload";
 import Checkout from "./pages/Checkout";
 import PaymentSuccess from "./pages/PaymentSuccess";
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/pharmacy-login" element={<PharmacyLogin />} />
             <Route path="/pharmacy-reset-password" element={<PharmacyResetPassword />} />
             <Route path="/pharmacy-update-password" element={<PharmacyUpdatePassword />} />
+            <Route path="/pharmacy-force-password-change" element={<PharmacyForcePasswordChange />} />
             <Route path="/pharmacy-dashboard" element={<PharmacyDashboard />} />
             <Route path="/pharmacy-orders" element={<PharmacyOrders />} />
             <Route path="/pharmacy-connector-download" element={<PharmacyConnectorDownload />} />

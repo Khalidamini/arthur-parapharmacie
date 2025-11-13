@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, UserPlus, Trash2, Edit } from "lucide-react";
+import { UserPlus, Trash2, Edit, Copy } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { z } from "zod";
@@ -18,15 +18,7 @@ interface TeamMember {
   role: string;
   email: string;
   created_at: string;
-}
-
-interface PendingInvitation {
-  id: string;
-  email: string;
-  role: string;
-  created_at: string;
-  expires_at: string;
-  status: string;
+  must_change_password: boolean;
 }
 
 interface PharmacyTeamManagementProps {
@@ -37,7 +29,6 @@ interface PharmacyTeamManagementProps {
 const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagementProps) => {
   const { toast } = useToast();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [editRoleDialogOpen, setEditRoleDialogOpen] = useState(false);
@@ -52,14 +43,13 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
 
   useEffect(() => {
     loadTeamMembers();
-    loadPendingInvitations();
   }, [pharmacyId]);
 
   const loadTeamMembers = async () => {
     try {
       const { data: roles, error } = await supabase
         .from('user_roles')
-        .select('id, user_id, role, created_at')
+        .select('id, user_id, role, created_at, must_change_password')
         .eq('pharmacy_id', pharmacyId);
 
       if (error) throw error;
@@ -107,13 +97,17 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
         });
       emailSchema.parse(inviteForm.email);
     } catch (e: any) {
-      toast({ title: "Email invalide", description: e?.errors?.[0]?.message || "Vérifiez l'adresse e-mail.", variant: "destructive" });
+      toast({ 
+        title: "Email invalide", 
+        description: e?.errors?.[0]?.message || "Vérifiez l'adresse e-mail.", 
+        variant: "destructive" 
+      });
       return;
     }
 
     setInviting(true);
     try {
-      const { data, error } = await supabase.functions.invoke('create-team-invitation', {
+      const { data, error } = await supabase.functions.invoke('invite-team-member', {
         body: {
           email: inviteForm.email.trim(),
           role: inviteForm.role,
@@ -123,18 +117,19 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
 
       if (error) throw error;
 
-      const invitationMessage = (data as any)?.invitationMessage;
-      if (invitationMessage) {
+      const temporaryPassword = (data as any)?.temporaryPassword;
+      if (temporaryPassword) {
         try { 
-          await navigator.clipboard.writeText(invitationMessage); 
+          const message = `Identifiants de connexion:\nEmail: ${inviteForm.email}\nMot de passe provisoire: ${temporaryPassword}\n\nLe membre devra changer son mot de passe lors de sa première connexion.`;
+          await navigator.clipboard.writeText(message); 
           toast({
-            title: "Invitation créée",
-            description: "Message d'invitation copié ! Envoyez-le au membre par email ou autre moyen.",
+            title: "Membre invité",
+            description: "Les identifiants ont été copiés dans le presse-papiers. Un email a également été envoyé.",
           });
         } catch {
           toast({
-            title: "Invitation créée",
-            description: "Copiez le message d'invitation pour l'envoyer au membre.",
+            title: "Membre invité",
+            description: `Mot de passe provisoire: ${temporaryPassword}. Communiquez-le au membre.`,
           });
         }
       }
@@ -142,7 +137,6 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
       setInviteDialogOpen(false);
       setInviteForm({ email: '', role: 'admin' });
       loadTeamMembers();
-      loadPendingInvitations();
     } catch (error: any) {
       console.error('Error inviting member:', error);
       toast({
@@ -155,7 +149,16 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
     }
   };
 
-  const handleRemoveMember = async (memberId: string) => {
+  const handleRemoveMember = async (memberId: string, memberRole: string) => {
+    if (memberRole === 'owner') {
+      toast({
+        title: "Action impossible",
+        description: "Vous ne pouvez pas retirer un propriétaire.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('user_roles')
@@ -200,85 +203,15 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
     return labels[role] || role;
   };
 
-  const loadPendingInvitations = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('pharmacy_invitations')
-        .select('*')
-        .eq('pharmacy_id', pharmacyId)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setPendingInvitations(data || []);
-    } catch (error: any) {
-      console.error('Error loading invitations:', error);
-    }
-  };
-
-  const handleCancelInvitation = async (invitationId: string) => {
-    try {
-      const { error } = await supabase
-        .from('pharmacy_invitations')
-        .update({ status: 'cancelled' })
-        .eq('id', invitationId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Invitation annulée",
-        description: "L'invitation a été annulée avec succès.",
-      });
-
-      loadPendingInvitations();
-    } catch (error: any) {
-      console.error('Error cancelling invitation:', error);
-      toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de l'annulation.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleResendInvitation = async (invitation: PendingInvitation) => {
-    try {
-      const { data, error } = await supabase.functions.invoke('create-team-invitation', {
-        body: {
-          email: invitation.email,
-          role: invitation.role,
-          pharmacyId: pharmacyId,
-        },
-      });
-
-      if (error) throw error;
-
-      const invitationMessage = (data as any)?.invitationMessage;
-      if (invitationMessage) {
-        try { 
-          await navigator.clipboard.writeText(invitationMessage); 
-          toast({
-            title: "Invitation renouvelée",
-            description: "Message d'invitation copié ! Envoyez-le au membre.",
-          });
-        } catch {
-          toast({
-            title: "Invitation renouvelée",
-            description: "Copiez le message pour l'envoyer au membre.",
-          });
-        }
-      }
-    } catch (error: any) {
-      console.error('Error resending invitation:', error);
-      toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors du renvoi.",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleOpenEditRole = (member: TeamMember) => {
+    if (member.role === 'owner') {
+      toast({
+        title: "Action impossible",
+        description: "Vous ne pouvez pas modifier le rôle d'un propriétaire.",
+        variant: "destructive",
+      });
+      return;
+    }
     setSelectedMember(member);
     setNewRole(member.role as 'admin' | 'owner' | 'promotion_manager');
     setEditRoleDialogOpen(true);
@@ -359,6 +292,7 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
                 <TableRow>
                   <TableHead>Email</TableHead>
                   <TableHead>Rôle</TableHead>
+                  <TableHead>Statut</TableHead>
                   <TableHead>Date d'ajout</TableHead>
                   {(userRole === 'owner' || userRole === 'admin') && (
                     <TableHead className="text-right">Actions</TableHead>
@@ -375,28 +309,39 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
                       </Badge>
                     </TableCell>
                     <TableCell>
+                      {member.must_change_password ? (
+                        <Badge variant="outline" className="text-amber-600">
+                          Mot de passe provisoire
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-green-600">
+                          Actif
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       {new Date(member.created_at).toLocaleDateString('fr-FR')}
                     </TableCell>
                     {(userRole === 'owner' || userRole === 'admin') && (
                       <TableCell className="text-right">
-                        {member.role !== 'owner' && (
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleOpenEditRole(member)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveMember(member.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        )}
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenEditRole(member)}
+                            disabled={member.role === 'owner'}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveMember(member.id, member.role)}
+                            disabled={member.role === 'owner'}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>
@@ -407,72 +352,12 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
         </CardContent>
       </Card>
 
-      {(userRole === 'owner' || userRole === 'admin') && pendingInvitations.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Invitations en attente</CardTitle>
-            <CardDescription>
-              Gérez les invitations qui n'ont pas encore été acceptées
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Rôle</TableHead>
-                  <TableHead>Envoyée le</TableHead>
-                  <TableHead>Expire le</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pendingInvitations.map((invitation) => (
-                  <TableRow key={invitation.id}>
-                    <TableCell className="font-medium">{invitation.email}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {getRoleLabel(invitation.role)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(invitation.created_at).toLocaleDateString('fr-FR')}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(invitation.expires_at).toLocaleDateString('fr-FR')}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleResendInvitation(invitation)}
-                        >
-                          Renvoyer
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleCancelInvitation(invitation.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-
       <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Inviter un membre</DialogTitle>
             <DialogDescription>
-              Créez une invitation. Un message sera copié pour que vous l'envoyiez au membre par email ou autre moyen.
+              Un compte sera créé avec un mot de passe provisoire. Le membre devra le changer lors de sa première connexion.
             </DialogDescription>
           </DialogHeader>
 
@@ -498,7 +383,6 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="owner">Propriétaire</SelectItem>
                   <SelectItem value="admin">Administrateur</SelectItem>
                   <SelectItem value="promotion_manager">Gestionnaire de promotions</SelectItem>
                 </SelectContent>
@@ -507,11 +391,17 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setInviteDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setInviteDialogOpen(false);
+                setInviteForm({ email: '', role: 'admin' });
+              }}
+            >
               Annuler
             </Button>
-            <Button onClick={handleInvite} disabled={inviting || !inviteForm.email}>
-              {inviting ? "Invitation..." : "Inviter"}
+            <Button onClick={handleInvite} disabled={inviting}>
+              {inviting ? 'Invitation...' : 'Inviter'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -528,16 +418,15 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="role">Nouveau rôle</Label>
+              <Label htmlFor="new-role">Nouveau rôle</Label>
               <Select
                 value={newRole}
-                onValueChange={(value) => setNewRole(value as 'admin' | 'owner' | 'promotion_manager')}
+                onValueChange={(value: any) => setNewRole(value)}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="owner">Propriétaire</SelectItem>
                   <SelectItem value="admin">Administrateur</SelectItem>
                   <SelectItem value="promotion_manager">Gestionnaire de promotions</SelectItem>
                 </SelectContent>
@@ -546,11 +435,17 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditRoleDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditRoleDialogOpen(false);
+                setSelectedMember(null);
+              }}
+            >
               Annuler
             </Button>
-            <Button onClick={handleUpdateRole} disabled={updatingRole || !newRole}>
-              {updatingRole ? "Modification..." : "Modifier"}
+            <Button onClick={handleUpdateRole} disabled={updatingRole}>
+              {updatingRole ? 'Modification...' : 'Modifier'}
             </Button>
           </DialogFooter>
         </DialogContent>
