@@ -241,37 +241,46 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Envoyer l'email d'invitation directement avec Resend
     const loginUrl = `${getFrontendUrl(req)}/pharmacy-login`;
-    const emailHtml = `
-      <h2>Invitation à rejoindre ${pharmacy?.name || 'la pharmacie'}</h2>
-      <p>Vous avez été invité(e) à rejoindre l'équipe en tant que <strong>${role}</strong>.</p>
-      ${userAlreadyExists ? `
-        <p>Votre compte existe déjà. Connectez-vous avec votre mot de passe actuel.</p>
-      ` : `
-        <p><strong>Vos identifiants de connexion :</strong></p>
-        <ul>
-          <li>Email : ${email}</li>
-          <li>Mot de passe provisoire : ${temporaryPassword}</li>
-        </ul>
-        <p>⚠️ Vous devrez changer ce mot de passe lors de votre première connexion.</p>
-      `}
-      <p>Se connecter : <a href="${loginUrl}">${loginUrl}</a></p>
-    `;
+    const fromAddress = `${Deno.env.get('RESEND_FROM_NAME') || 'Arthur'} <${Deno.env.get('RESEND_FROM_EMAIL') || 'onboarding@resend.dev'}>`;
 
-    const { error: sendErr } = await resend.emails.send({
-      from: 'Arthur <onboarding@resend.dev>',
+    let emailSent = true;
+    let emailErrorMessage: string | null = null;
+    const sendResult = await resend.emails.send({
+      from: fromAddress,
       to: [email],
       subject: `Invitation à rejoindre ${pharmacy?.name || 'la pharmacie'}`,
-      html: emailHtml,
+      html: `
+        <h2>Invitation à rejoindre ${pharmacy?.name || 'la pharmacie'}</h2>
+        <p>Vous avez été invité(e) à rejoindre l'équipe en tant que <strong>${role}</strong>.</p>
+        ${userAlreadyExists ? `
+          <p>Votre compte existe déjà. Connectez-vous avec votre mot de passe actuel.</p>
+        ` : `
+          <p><strong>Vos identifiants de connexion :</strong></p>
+          <ul>
+            <li>Email : ${email}</li>
+            <li>Mot de passe provisoire : ${temporaryPassword}</li>
+          </ul>
+          <p>⚠️ Vous devrez changer ce mot de passe lors de votre première connexion.</p>
+        `}
+        <p>Se connecter : <a href="${loginUrl}">${loginUrl}</a></p>
+      `,
     });
-    if (sendErr) {
-      console.error('Erreur envoi email:', sendErr);
+    // Gestion d'erreur Resend (ne jette pas toujours)
+    // @ts-ignore - Deno/esm type
+    if (sendResult?.error) {
+      emailSent = false;
+      // @ts-ignore
+      emailErrorMessage = sendResult.error?.message || 'Email send failed';
+      console.error('Erreur envoi email:', sendResult.error);
     }
 
     return new Response(
       JSON.stringify({ 
         success: true,
         message: `Invitation envoyée à ${email}`,
-        temporaryPassword: userAlreadyExists ? null : temporaryPassword
+        temporaryPassword: userAlreadyExists ? null : temporaryPassword,
+        emailSent,
+        emailErrorMessage,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );

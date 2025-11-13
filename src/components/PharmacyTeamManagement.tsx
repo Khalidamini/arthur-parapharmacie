@@ -118,20 +118,39 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
       if (error) throw error;
 
       const temporaryPassword = (data as any)?.temporaryPassword;
+      const emailSent = (data as any)?.emailSent !== false;
+      const emailErrorMessage = (data as any)?.emailErrorMessage as string | undefined;
+
       if (temporaryPassword) {
-        try { 
+        try {
           const message = `Identifiants de connexion:\nEmail: ${inviteForm.email}\nMot de passe provisoire: ${temporaryPassword}\n\nLe membre devra changer son mot de passe lors de sa première connexion.`;
-          await navigator.clipboard.writeText(message); 
+          await navigator.clipboard.writeText(message);
           toast({
             title: "Membre invité",
-            description: "Les identifiants ont été copiés dans le presse-papiers. Un email a également été envoyé.",
+            description: emailSent ?
+              "Les identifiants ont été copiés dans le presse-papiers. Un email a également été envoyé." :
+              "Les identifiants ont été copiés dans le presse-papiers. L'email n'a pas pu être envoyé (configuration domaine nécessaire).",
           });
         } catch {
           toast({
             title: "Membre invité",
-            description: `Mot de passe provisoire: ${temporaryPassword}. Communiquez-le au membre.`,
+            description: emailSent ?
+              `Mot de passe provisoire: ${temporaryPassword}. Un email a été envoyé.` :
+              `Mot de passe provisoire: ${temporaryPassword}. Email non envoyé, communiquez ces identifiants manuellement.`,
           });
         }
+      } else {
+        // Compte existant: pas de mot de passe provisoire
+        toast({
+          title: "Membre ajouté",
+          description: emailSent ?
+            "Le membre peut se connecter avec son mot de passe actuel. Un email d'information a été envoyé." :
+            "Le membre est ajouté. Email non envoyé (vérifiez la configuration d'envoi).",
+        });
+      }
+
+      if (!emailSent && emailErrorMessage) {
+        console.error('Invitation email not sent:', emailErrorMessage);
       }
 
       setInviteDialogOpen(false);
