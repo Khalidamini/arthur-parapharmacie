@@ -262,7 +262,7 @@ const PharmacyOrders = () => {
       setCarts(prevCarts => 
         prevCarts.map(c => 
           c.id === cartId 
-            ? { ...c, notification_sent_at: new Date().toISOString() }
+            ? { ...c, notification_sent_at: new Date().toISOString(), ready_for_pickup: true }
             : c
         )
       );
@@ -447,7 +447,7 @@ const PharmacyOrders = () => {
               } : {
                 backgroundColor: '#22c55e',
                 color: 'white'
-              }} disabled={!cart.notification_sent_at || cart.status === 'completed'}>
+              }} disabled={!cart.ready_for_pickup || cart.status === 'completed'}>
                     <CheckCircle className="mr-2 h-4 w-4" />
                     Commande terminée
                   </Button>
