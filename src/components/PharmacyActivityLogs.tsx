@@ -44,7 +44,7 @@ const PharmacyActivityLogs = ({ pharmacyId }: PharmacyActivityLogsProps) => {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [filteredLogs, setFilteredLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; email: string; username: string | null }>>([]);
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; email: string; first_name: string | null; last_name: string | null }>>([]);
   
   // Filtres
   const [selectedUser, setSelectedUser] = useState<string>('all');
@@ -70,7 +70,7 @@ const PharmacyActivityLogs = ({ pharmacyId }: PharmacyActivityLogsProps) => {
         // Récupérer les emails des utilisateurs
         const { data: profilesData } = await supabase
           .from('profiles')
-          .select('id, email, username')
+          .select('id, email, first_name, last_name')
           .in('id', userIds);
 
         setTeamMembers(profilesData || []);
@@ -87,10 +87,13 @@ const PharmacyActivityLogs = ({ pharmacyId }: PharmacyActivityLogsProps) => {
         // Enrichir les logs avec les infos utilisateur
         const enrichedLogs = (logsData || []).map(log => {
           const profile = profilesData?.find(p => p.id === log.user_id);
+          const fullName = profile?.first_name && profile?.last_name
+            ? `${profile.first_name} ${profile.last_name}`
+            : profile?.email || 'Inconnu';
           return {
             ...log,
             user_email: profile?.email || 'Inconnu',
-            user_name: profile?.username || profile?.email || 'Inconnu',
+            user_name: fullName,
           };
         });
 
@@ -226,11 +229,16 @@ const PharmacyActivityLogs = ({ pharmacyId }: PharmacyActivityLogsProps) => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les collaborateurs</SelectItem>
-                {teamMembers.map(member => (
-                  <SelectItem key={member.id} value={member.id}>
-                    {member.username || member.email}
-                  </SelectItem>
-                ))}
+                {teamMembers.map(member => {
+                  const displayName = member.first_name && member.last_name
+                    ? `${member.first_name} ${member.last_name}`
+                    : member.email;
+                  return (
+                    <SelectItem key={member.id} value={member.id}>
+                      {displayName}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
