@@ -22,6 +22,8 @@ import AdminPharmacies from "./pages/AdminPharmacies";
 import AdminPermissions from "./pages/AdminPermissions";
 import PharmacyLogin from "./pages/PharmacyLogin";
 import PharmacyOrders from "./pages/PharmacyOrders";
+import PharmacyPickupOrders from "./pages/PharmacyPickupOrders";
+import PharmacyDeliveryOrders from "./pages/PharmacyDeliveryOrders";
 import PharmacyResetPassword from "./pages/PharmacyResetPassword";
 import PharmacyUpdatePassword from "./pages/PharmacyUpdatePassword";
 import PharmacyForcePasswordChange from "./pages/PharmacyForcePasswordChange";
@@ -60,6 +62,8 @@ const App = () => (
             <Route path="/pharmacy-dashboard" element={<PharmacyDashboard />} />
             <Route path="/pharmacy-profile" element={<PharmacyProfile />} />
             <Route path="/pharmacy-orders" element={<PharmacyOrders />} />
+            <Route path="/pharmacy-pickup-orders" element={<PharmacyPickupOrders />} />
+            <Route path="/pharmacy-delivery-orders" element={<PharmacyDeliveryOrders />} />
             <Route path="/pharmacy-connector-download" element={<PharmacyConnectorDownload />} />
             <Route path="/admin/pharmacies" element={<AdminPharmacies />} />
             <Route path="/admin/permissions" element={<AdminPermissions />} />
