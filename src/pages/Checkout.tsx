@@ -7,10 +7,12 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ArrowLeft, Building2, CreditCard, Loader2, Package, Truck } from "lucide-react";
+import { ArrowLeft, Building2, CreditCard, Loader2, Package, Truck, Clock, MapPin, Zap } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { addDays, format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 export default function Checkout() {
   const { cartId } = useParams();
@@ -20,6 +22,8 @@ export default function Checkout() {
   const [cart, setCart] = useState<any>(null);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup');
+  const [deliveryType, setDeliveryType] = useState<'standard' | 'express'>('standard');
+  const [deliveryLocationType, setDeliveryLocationType] = useState<'home' | 'relay'>('home');
   const [notificationEmail, setNotificationEmail] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState({
     name: '',
@@ -28,6 +32,11 @@ export default function Checkout() {
     postal_code: '',
     country: 'France',
     phone: '',
+  });
+  const [relayPoint, setRelayPoint] = useState({
+    id: '',
+    name: '',
+    address: '',
   });
 
   useEffect(() => {
@@ -125,36 +134,82 @@ export default function Checkout() {
   }
 
   const cartTotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const deliveryFee = deliveryMethod === 'delivery' ? 6.90 : 0;
+  
+  // Calculate delivery fees
+  const getDeliveryFee = () => {
+    if (deliveryMethod === 'pickup') return 0;
+    if (deliveryType === 'express') {
+      return deliveryLocationType === 'relay' ? 9.90 : 12.90;
+    }
+    return deliveryLocationType === 'relay' ? 4.90 : 6.90;
+  };
+
+  const deliveryFee = getDeliveryFee();
   const totalWithDelivery = cartTotal + deliveryFee;
+  
+  // Calculate estimated delivery date
+  const getEstimatedDeliveryDate = () => {
+    if (deliveryMethod === 'pickup') return null;
+    const daysToAdd = deliveryType === 'express' ? 2 : 5;
+    return addDays(new Date(), daysToAdd);
+  };
+
+  const estimatedDeliveryDate = getEstimatedDeliveryDate();
+  
   const arthurItems = cart.items.filter(item => item.source === 'arthur');
   const shopItems = cart.items.filter(item => item.source === 'shop');
   const promoItems = cart.items.filter(item => item.source === 'promotion');
 
   const handlePayment = async () => {
     try {
-      // Validate delivery address if delivery is selected
+      // Validate delivery info if delivery is selected
       if (deliveryMethod === 'delivery') {
-        if (!deliveryAddress.name || !deliveryAddress.street || !deliveryAddress.city || !deliveryAddress.postal_code) {
-          toast({
-            title: "Adresse incomplète",
-            description: "Veuillez renseigner tous les champs de l'adresse de livraison.",
-            variant: "destructive",
-          });
-          return;
+        if (deliveryLocationType === 'home') {
+          if (!deliveryAddress.name || !deliveryAddress.street || !deliveryAddress.city || !deliveryAddress.postal_code) {
+            toast({
+              title: "Adresse incomplète",
+              description: "Veuillez renseigner tous les champs de l'adresse de livraison.",
+              variant: "destructive",
+            });
+            return;
+          }
+        } else if (deliveryLocationType === 'relay') {
+          if (!relayPoint.id || !relayPoint.name) {
+            toast({
+              title: "Point relais non sélectionné",
+              description: "Veuillez sélectionner un point relais.",
+              variant: "destructive",
+            });
+            return;
+          }
         }
       }
 
       setProcessingPayment(true);
 
       // Update cart with delivery info
+      const updateData: any = {
+        delivery_method: deliveryMethod,
+        notification_email: notificationEmail || null,
+      };
+
+      if (deliveryMethod === 'delivery') {
+        updateData.delivery_type = deliveryType;
+        updateData.delivery_location_type = deliveryLocationType;
+        updateData.estimated_delivery_date = estimatedDeliveryDate?.toISOString();
+        
+        if (deliveryLocationType === 'home') {
+          updateData.delivery_address = deliveryAddress;
+        } else {
+          updateData.relay_point_id = relayPoint.id;
+          updateData.relay_point_name = relayPoint.name;
+          updateData.relay_point_address = relayPoint.address;
+        }
+      }
+
       const { error: updateError } = await supabase
         .from('carts')
-        .update({
-          delivery_method: deliveryMethod,
-          delivery_address: deliveryMethod === 'delivery' ? deliveryAddress : null,
-          notification_email: notificationEmail || null,
-        })
+        .update(updateData as any)
         .eq('id', cart.id);
 
       if (updateError) throw updateError;
@@ -248,7 +303,7 @@ export default function Checkout() {
                     <Package className="h-4 w-4" />
                     <div>
                       <div className="font-medium">Retrait en pharmacie</div>
-                      <div className="text-xs text-muted-foreground">Gratuit</div>
+                      <div className="text-xs text-muted-foreground">Gratuit - Disponible sous 24-48h</div>
                     </div>
                   </Label>
                 </div>
@@ -257,49 +312,141 @@ export default function Checkout() {
                   <Label htmlFor="delivery" className="flex items-center gap-2 cursor-pointer flex-1">
                     <Truck className="h-4 w-4" />
                     <div className="flex-1">
-                      <div className="font-medium">Livraison à domicile</div>
-                      <div className="text-xs text-muted-foreground">Via Shipy (La Poste, Chronopost...)</div>
+                      <div className="font-medium">Livraison</div>
+                      <div className="text-xs text-muted-foreground">Via Sendcloud</div>
                     </div>
                     <div className="text-right">
-                      <div className="font-semibold text-primary">6,90 €</div>
+                      <div className="font-semibold text-primary">À partir de 4,90 €</div>
                     </div>
                   </Label>
                 </div>
               </RadioGroup>
 
               {deliveryMethod === 'delivery' && (
-                <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
-                  <h4 className="font-semibold text-sm">Adresse de livraison</h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Input
-                      placeholder="Nom complet"
-                      value={deliveryAddress.name}
-                      onChange={(e) => setDeliveryAddress({...deliveryAddress, name: e.target.value})}
-                      className="col-span-2"
-                    />
-                    <Input
-                      placeholder="Rue et numéro"
-                      value={deliveryAddress.street}
-                      onChange={(e) => setDeliveryAddress({...deliveryAddress, street: e.target.value})}
-                      className="col-span-2"
-                    />
-                    <Input
-                      placeholder="Code postal"
-                      value={deliveryAddress.postal_code}
-                      onChange={(e) => setDeliveryAddress({...deliveryAddress, postal_code: e.target.value})}
-                    />
-                    <Input
-                      placeholder="Ville"
-                      value={deliveryAddress.city}
-                      onChange={(e) => setDeliveryAddress({...deliveryAddress, city: e.target.value})}
-                    />
-                    <Input
-                      placeholder="Téléphone"
-                      value={deliveryAddress.phone}
-                      onChange={(e) => setDeliveryAddress({...deliveryAddress, phone: e.target.value})}
-                      className="col-span-2"
-                    />
+                <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+                  {/* Delivery speed selection */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-semibold">Vitesse de livraison</Label>
+                    <RadioGroup value={deliveryType} onValueChange={(v: 'standard' | 'express') => setDeliveryType(v)}>
+                      <div className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-accent" onClick={() => setDeliveryType('standard')}>
+                        <RadioGroupItem value="standard" id="standard" />
+                        <Label htmlFor="standard" className="flex items-center gap-2 cursor-pointer flex-1">
+                          <Clock className="h-4 w-4" />
+                          <div className="flex-1">
+                            <div className="font-medium">Standard</div>
+                            <div className="text-xs text-muted-foreground">5 jours ouvrés</div>
+                          </div>
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-accent" onClick={() => setDeliveryType('express')}>
+                        <RadioGroupItem value="express" id="express" />
+                        <Label htmlFor="express" className="flex items-center gap-2 cursor-pointer flex-1">
+                          <Zap className="h-4 w-4 text-orange-500" />
+                          <div className="flex-1">
+                            <div className="font-medium">Express</div>
+                            <div className="text-xs text-muted-foreground">2 jours ouvrés</div>
+                          </div>
+                          <Badge variant="secondary" className="text-xs">+3€</Badge>
+                        </Label>
+                      </div>
+                    </RadioGroup>
                   </div>
+
+                  {/* Delivery location type selection */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-semibold">Lieu de livraison</Label>
+                    <RadioGroup value={deliveryLocationType} onValueChange={(v: 'home' | 'relay') => setDeliveryLocationType(v)}>
+                      <div className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-accent" onClick={() => setDeliveryLocationType('home')}>
+                        <RadioGroupItem value="home" id="home" />
+                        <Label htmlFor="home" className="flex items-center gap-2 cursor-pointer flex-1">
+                          <MapPin className="h-4 w-4" />
+                          <div className="flex-1">
+                            <div className="font-medium">À domicile</div>
+                            <div className="text-xs text-muted-foreground">
+                              {deliveryType === 'express' ? '12,90 €' : '6,90 €'}
+                            </div>
+                          </div>
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-accent" onClick={() => setDeliveryLocationType('relay')}>
+                        <RadioGroupItem value="relay" id="relay" />
+                        <Label htmlFor="relay" className="flex items-center gap-2 cursor-pointer flex-1">
+                          <Package className="h-4 w-4" />
+                          <div className="flex-1">
+                            <div className="font-medium">Point relais</div>
+                            <div className="text-xs text-muted-foreground">
+                              {deliveryType === 'express' ? '9,90 €' : '4,90 €'}
+                            </div>
+                          </div>
+                          <Badge variant="secondary" className="text-xs">-2€</Badge>
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  {/* Estimated delivery date */}
+                  {estimatedDeliveryDate && (
+                    <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        <span className="font-medium">Livraison estimée:</span>
+                        <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                          {format(estimatedDeliveryDate, 'EEEE dd MMMM yyyy', { locale: fr })}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Address or relay point input */}
+                  {deliveryLocationType === 'home' ? (
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm">Adresse de livraison</h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Input
+                          placeholder="Nom complet"
+                          value={deliveryAddress.name}
+                          onChange={(e) => setDeliveryAddress({...deliveryAddress, name: e.target.value})}
+                          className="col-span-2"
+                        />
+                        <Input
+                          placeholder="Rue et numéro"
+                          value={deliveryAddress.street}
+                          onChange={(e) => setDeliveryAddress({...deliveryAddress, street: e.target.value})}
+                          className="col-span-2"
+                        />
+                        <Input
+                          placeholder="Code postal"
+                          value={deliveryAddress.postal_code}
+                          onChange={(e) => setDeliveryAddress({...deliveryAddress, postal_code: e.target.value})}
+                        />
+                        <Input
+                          placeholder="Ville"
+                          value={deliveryAddress.city}
+                          onChange={(e) => setDeliveryAddress({...deliveryAddress, city: e.target.value})}
+                        />
+                        <Input
+                          placeholder="Téléphone"
+                          value={deliveryAddress.phone}
+                          onChange={(e) => setDeliveryAddress({...deliveryAddress, phone: e.target.value})}
+                          className="col-span-2"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm">Point relais</h4>
+                      <div className="p-4 border rounded-lg bg-background">
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Sélectionnez votre point relais après le paiement. Vous recevrez un email avec la liste des points relais disponibles.
+                        </p>
+                        <Input
+                          placeholder="Code postal pour recherche"
+                          value={relayPoint.address}
+                          onChange={(e) => setRelayPoint({...relayPoint, address: e.target.value, id: 'pending', name: 'À sélectionner'})}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -382,7 +529,10 @@ export default function Checkout() {
             </Button>
 
             <p className="text-xs text-muted-foreground text-center mt-4">
-              Paiement sécurisé par Stripe. {deliveryMethod === 'delivery' ? 'Votre commande sera expédiée après paiement.' : 'Vous pourrez retirer votre commande à la pharmacie après paiement.'}
+              Paiement sécurisé par Stripe. 
+              {deliveryMethod === 'delivery' 
+                ? ` Votre commande sera ${deliveryLocationType === 'relay' ? 'disponible en point relais' : 'livrée à domicile'} ${estimatedDeliveryDate ? format(estimatedDeliveryDate, 'le dd/MM/yyyy', { locale: fr }) : 'sous quelques jours'}.`
+                : ' Vous pourrez retirer votre commande à la pharmacie après paiement.'}
             </p>
           </CardContent>
         </Card>
