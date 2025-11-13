@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, ShoppingBag, User, Calendar, Package, Search, Bell, CheckCircle } from "lucide-react";
+import { ArrowLeft, ShoppingBag, User, Calendar, Package, Search, Bell, CheckCircle, Truck, Download, ExternalLink } from "lucide-react";
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import PharmacyLayout from '@/layouts/PharmacyLayout';
@@ -35,6 +35,10 @@ interface Cart {
   notification_sent_at: string | null;
   preparation_notified_at?: string | null;
   pickup_message: string | null;
+  delivery_method?: string;
+  delivery_address?: any;
+  shipping_tracking_number?: string | null;
+  shipping_label_url?: string | null;
   items: CartItem[];
   profiles?: {
     email: string;
@@ -595,7 +599,7 @@ const PharmacyOrders = () => {
             Retour au tableau de bord
           </Button>
           
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-3 mb-6">
             <ShoppingBag className="h-8 w-8 text-primary" />
             <div>
               <h1 className="text-3xl font-bold">Gestion des commandes</h1>
@@ -603,103 +607,206 @@ const PharmacyOrders = () => {
             </div>
           </div>
 
-          {/* Filtres */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Rechercher par nom, email ou ID..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10" />
-            </div>
+          <Tabs defaultValue="orders" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="orders">
+                <Package className="h-4 w-4 mr-2" />
+                Toutes les commandes
+              </TabsTrigger>
+              <TabsTrigger value="deliveries">
+                <Truck className="h-4 w-4 mr-2" />
+                Livraisons ({carts.filter(c => c.delivery_method === 'delivery').length})
+              </TabsTrigger>
+            </TabsList>
 
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger>
-                <SelectValue placeholder="Trier par" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="date-desc">Date (plus récent)</SelectItem>
-                <SelectItem value="date-asc">Date (plus ancien)</SelectItem>
-                <SelectItem value="total-desc">Montant (décroissant)</SelectItem>
-                <SelectItem value="total-asc">Montant (croissant)</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filtrer par statut" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="paid">Payées</SelectItem>
-                <SelectItem value="active">En cours</SelectItem>
-                <SelectItem value="completed">Commandes retirées</SelectItem>
-                <SelectItem value="cancelled">Abandonnés</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Statistiques */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Paniers en cours</p>
-                  <p className="text-2xl font-bold">
-                    {carts.filter(c => c.status === 'active').length}
-                  </p>
+            {/* Tab: Toutes les commandes */}
+            <TabsContent value="orders" className="space-y-4">
+              {/* Filtres */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Rechercher par nom, email ou ID..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10" />
                 </div>
-                <Badge variant="secondary" className="text-lg px-3 py-1">
-                  En cours
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Commandes payées</p>
-                  <p className="text-2xl font-bold">
-                    {carts.filter(c => c.payment_status === 'paid').length}
-                  </p>
-                </div>
-                <Badge variant="default" className="text-lg px-3 py-1">
-                  Payées
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Trier par" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="date-desc">Date (plus récent)</SelectItem>
+                    <SelectItem value="date-asc">Date (plus ancien)</SelectItem>
+                    <SelectItem value="total-desc">Montant (décroissant)</SelectItem>
+                    <SelectItem value="total-asc">Montant (croissant)</SelectItem>
+                  </SelectContent>
+                </Select>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Paniers abandonnés</p>
-                  <p className="text-2xl font-bold">
-                    {carts.filter(c => c.status === 'cancelled').length}
-                  </p>
-                </div>
-                <Badge variant="outline" className="text-lg px-3 py-1">
-                  Abandonnés
-                </Badge>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filtrer par statut" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les statuts</SelectItem>
+                    <SelectItem value="paid">Payées</SelectItem>
+                    <SelectItem value="active">En cours</SelectItem>
+                    <SelectItem value="completed">Commandes retirées</SelectItem>
+                    <SelectItem value="cancelled">Abandonnés</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </CardContent>
-          </Card>
-        </div>
 
-        {/* Liste des paniers */}
-        <div>
-          {filteredCarts.length === 0 ? <Card>
-              <CardContent className="py-12 text-center">
-                <ShoppingBag className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-lg text-muted-foreground">
-                  Aucun panier trouvé avec ces critères
-                </p>
-              </CardContent>
-            </Card> : filteredCarts.map(cart => renderCart(cart))}
+              {/* Liste des commandes */}
+              {filteredCarts.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <ShoppingBag className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Aucune commande</h3>
+                    <p className="text-muted-foreground">Les nouvelles commandes apparaîtront ici.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                filteredCarts.map(cart => renderCart(cart))
+              )}
+            </TabsContent>
+
+            {/* Tab: Livraisons */}
+            <TabsContent value="deliveries" className="space-y-4">
+              {carts.filter(c => c.delivery_method === 'delivery').length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <Truck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Aucune livraison</h3>
+                    <p className="text-muted-foreground">Les commandes avec livraison à domicile apparaîtront ici.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                carts
+                  .filter(c => c.delivery_method === 'delivery')
+                  .map(cart => {
+                    const total = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+                    const customerName = cart.profiles?.first_name && cart.profiles?.last_name 
+                      ? `${cart.profiles.first_name} ${cart.profiles.last_name}` 
+                      : cart.profiles?.email || cart.profiles?.qr_code_number || 'Client inconnu';
+                    
+                    return (
+                      <Card key={cart.id}>
+                        <CardHeader>
+                          <div className="flex justify-between items-start">
+                            <div className="space-y-2 flex-1">
+                              <CardTitle className="text-lg flex items-center gap-2">
+                                <Truck className="h-5 w-5 text-primary" />
+                                {customerName}
+                              </CardTitle>
+                              
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Calendar className="h-3 w-3" />
+                                {format(new Date(cart.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                              </div>
+
+                              {cart.shipping_tracking_number && (
+                                <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg mt-2">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <p className="text-sm font-medium">N° de suivi</p>
+                                      <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                                        {cart.shipping_tracking_number}
+                                      </p>
+                                    </div>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => window.open(`https://panel.sendcloud.sc/track-trace/?tracking_number=${cart.shipping_tracking_number}`, '_blank')}
+                                    >
+                                      <ExternalLink className="h-3 w-3 mr-1" />
+                                      Suivre
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {cart.delivery_address && (
+                                <div className="bg-muted/30 p-3 rounded-lg mt-2">
+                                  <p className="text-sm font-medium mb-1">Adresse de livraison</p>
+                                  <div className="text-xs text-muted-foreground">
+                                    <p>{cart.delivery_address.name}</p>
+                                    <p>{cart.delivery_address.street}</p>
+                                    <p>{cart.delivery_address.postal_code} {cart.delivery_address.city}</p>
+                                    {cart.delivery_address.phone && <p>Tél: {cart.delivery_address.phone}</p>}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="text-right space-y-2">
+                              <div className="flex flex-col gap-2">
+                                <Badge variant="default" className="bg-blue-500">
+                                  Livraison
+                                </Badge>
+                                {cart.shipping_tracking_number ? (
+                                  <Badge variant="default" className="bg-green-500">
+                                    Expédiée
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary">
+                                    En attente
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-2xl font-bold text-primary">
+                                {total.toFixed(2)} €
+                              </p>
+                              {cart.shipping_label_url && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => window.open(cart.shipping_label_url, '_blank')}
+                                  className="w-full"
+                                >
+                                  <Download className="h-3 w-3 mr-1" />
+                                  Étiquette
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2">
+                            <h4 className="font-semibold text-sm">Articles ({cart.items.length})</h4>
+                            {cart.items.map(item => (
+                              <div key={item.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                                <div className="flex items-center gap-3">
+                                  {item.image_url && (
+                                    <img 
+                                      src={item.image_url} 
+                                      alt={item.product_name}
+                                      className="w-12 h-12 object-cover rounded"
+                                      onError={(e) => {
+                                        e.currentTarget.onerror = null;
+                                        e.currentTarget.src = '/placeholder.svg';
+                                      }}
+                                    />
+                                  )}
+                                  <div>
+                                    <p className="font-medium text-sm">{item.product_name}</p>
+                                    <p className="text-xs text-muted-foreground">{item.brand}</p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-sm">x{item.quantity}</p>
+                                  <p className="font-medium">{(item.price * item.quantity).toFixed(2)} €</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </PharmacyLayout>;
 };
+
 export default PharmacyOrders;
