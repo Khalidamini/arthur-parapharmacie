@@ -39,6 +39,9 @@ interface Cart {
   profiles?: {
     email: string;
     qr_code_number: string;
+    username: string | null;
+    first_name: string | null;
+    last_name: string | null;
   };
 }
 
@@ -135,7 +138,7 @@ const PharmacyOrders = () => {
       const userIds = [...new Set(cartsData?.map(c => c.user_id) || [])];
       const { data: profilesData } = await supabase
         .from('profiles')
-        .select('id, email, qr_code_number')
+        .select('id, email, qr_code_number, username, first_name, last_name')
         .in('id', userIds);
 
       // Organiser les données
@@ -243,7 +246,10 @@ const PharmacyOrders = () => {
             <div className="space-y-1">
               <CardTitle className="text-lg flex items-center gap-2">
                 <User className="h-4 w-4" />
-                {cart.profiles?.email || `Client ${cart.profiles?.qr_code_number || 'Inconnu'}`}
+                {cart.profiles?.first_name && cart.profiles?.last_name 
+                  ? `${cart.profiles.first_name} ${cart.profiles.last_name}`
+                  : cart.profiles?.username || cart.profiles?.email || `Client ${cart.profiles?.qr_code_number || 'Inconnu'}`
+                }
               </CardTitle>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar className="h-3 w-3" />
