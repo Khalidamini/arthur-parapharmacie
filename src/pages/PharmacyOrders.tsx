@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { usePharmacyActivityLog } from "@/hooks/usePharmacyActivityLog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, ShoppingBag, User, Calendar, Package, Search, Bell } from "lucide-react";
+import { ArrowLeft, ShoppingBag, User, Calendar, Package, Search, Bell, CheckCircle } from "lucide-react";
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import PharmacyLayout from '@/layouts/PharmacyLayout';
@@ -48,6 +49,7 @@ interface Cart {
 const PharmacyOrders = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { logActivity } = usePharmacyActivityLog();
   const [loading, setLoading] = useState(true);
   const [carts, setCarts] = useState<Cart[]>([]);
   const [filteredCarts, setFilteredCarts] = useState<Cart[]>([]);
@@ -169,15 +171,19 @@ const PharmacyOrders = () => {
       filtered = filtered.filter(c => c.status === statusFilter);
     }
 
-    // Filtrer par recherche (ID client ou email)
+    // Filtrer par recherche (ID client, email ou nom)
     if (searchQuery) {
       filtered = filtered.filter(c => {
         const email = c.profiles?.email?.toLowerCase() || '';
         const qrCode = c.profiles?.qr_code_number?.toLowerCase() || '';
         const userId = c.user_id.toLowerCase();
+        const firstName = c.profiles?.first_name?.toLowerCase() || '';
+        const lastName = c.profiles?.last_name?.toLowerCase() || '';
+        const username = c.profiles?.username?.toLowerCase() || '';
         const query = searchQuery.toLowerCase();
         
-        return email.includes(query) || qrCode.includes(query) || userId.includes(query);
+        return email.includes(query) || qrCode.includes(query) || userId.includes(query) ||
+               firstName.includes(query) || lastName.includes(query) || username.includes(query);
       });
     }
 
@@ -204,7 +210,7 @@ const PharmacyOrders = () => {
     setFilteredCarts(filtered);
   };
 
-  const handleNotifyCustomer = async (cartId: string) => {
+  const handleNotifyCustomer = async (cartId: string, cart: Cart) => {
     try {
       // Call edge function to send email notification
       const { error } = await supabase.functions.invoke('notify-customer-order-ready', {
@@ -218,8 +224,24 @@ const PharmacyOrders = () => {
         description: "Le client a été notifié par email que sa commande est prête.",
       });
 
-      // Recharger les données
+      // Log activity
       if (pharmacyId) {
+        const customerName = cart.profiles?.first_name && cart.profiles?.last_name 
+          ? `${cart.profiles.first_name} ${cart.profiles.last_name}`
+          : cart.profiles?.email || cart.profiles?.qr_code_number || 'Client inconnu';
+        
+        await logActivity({
+          pharmacyId,
+          actionType: 'order_ready_notification_sent',
+          actionDetails: {
+            cart_id: cartId,
+            customer_name: customerName,
+            total_amount: cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+          },
+          entityType: 'cart',
+          entityId: cartId
+        });
+
         await loadCarts(pharmacyId);
       }
     } catch (error) {
@@ -227,6 +249,50 @@ const PharmacyOrders = () => {
       toast({
         title: "Erreur",
         description: "Impossible d'envoyer la notification.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleMarkAsPickedUp = async (cartId: string, cart: Cart) => {
+    try {
+      const { error } = await supabase
+        .from('carts')
+        .update({ status: 'completed' })
+        .eq('id', cartId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Commande marquée comme retirée",
+        description: "La commande a été marquée comme retirée avec succès.",
+      });
+
+      // Log activity
+      if (pharmacyId) {
+        const customerName = cart.profiles?.first_name && cart.profiles?.last_name 
+          ? `${cart.profiles.first_name} ${cart.profiles.last_name}`
+          : cart.profiles?.email || cart.profiles?.qr_code_number || 'Client inconnu';
+        
+        await logActivity({
+          pharmacyId,
+          actionType: 'order_picked_up',
+          actionDetails: {
+            cart_id: cartId,
+            customer_name: customerName,
+            total_amount: cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+          },
+          entityType: 'cart',
+          entityId: cartId
+        });
+
+        await loadCarts(pharmacyId);
+      }
+    } catch (error) {
+      console.error('Error marking order as picked up:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de marquer la commande comme retirée.",
         variant: "destructive",
       });
     }
@@ -281,15 +347,30 @@ const PharmacyOrders = () => {
               <p className="text-2xl font-bold text-primary">
                 {total.toFixed(2)} €
               </p>
-              {isPaid && !cart.ready_for_pickup && (
-                <Button 
-                  size="sm" 
-                  onClick={() => handleNotifyCustomer(cart.id)}
-                  className="w-full"
-                >
-                  <Bell className="mr-2 h-4 w-4" />
-                  Notifier client
-                </Button>
+              {isPaid && cart.status !== 'completed' && (
+                <div className="space-y-2">
+                  {!cart.ready_for_pickup && (
+                    <Button 
+                      size="sm" 
+                      onClick={() => handleNotifyCustomer(cart.id, cart)}
+                      className="w-full"
+                    >
+                      <Bell className="mr-2 h-4 w-4" />
+                      Notifier client
+                    </Button>
+                  )}
+                  {cart.ready_for_pickup && (
+                    <Button 
+                      size="sm" 
+                      onClick={() => handleMarkAsPickedUp(cart.id, cart)}
+                      className="w-full"
+                      variant="default"
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Commande retirée
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -450,7 +531,7 @@ const PharmacyOrders = () => {
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher par email ou ID..."
+                placeholder="Rechercher par nom, email ou ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
