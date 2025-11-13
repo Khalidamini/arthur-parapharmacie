@@ -97,10 +97,14 @@ const PharmacyDashboard = () => {
   return (
     <PharmacyLayout pharmacyName={pharmacyData?.name}>
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Button onClick={() => navigate('/pharmacy-orders')} className="mb-4">
+        <div className="mb-6 flex gap-4">
+          <Button onClick={() => navigate('/pharmacy-pickup-orders')} className="mb-4">
             <Package className="mr-2 h-4 w-4" />
-            Voir les commandes clients
+            Commandes à Emporter
+          </Button>
+          <Button onClick={() => navigate('/pharmacy-delivery-orders')} className="mb-4" variant="secondary">
+            <Package className="mr-2 h-4 w-4" />
+            Livraisons
           </Button>
         </div>
 
