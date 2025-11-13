@@ -64,7 +64,7 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
             .from('profiles')
             .select('email, first_name, last_name, phone')
             .eq('id', role.user_id)
-            .single();
+            .maybeSingle();
 
           return {
             ...role,
