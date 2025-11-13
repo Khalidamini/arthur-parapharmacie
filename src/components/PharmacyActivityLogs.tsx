@@ -215,10 +215,13 @@ const PharmacyActivityLogs = ({ pharmacyId }: PharmacyActivityLogsProps) => {
       'promotion_updated': 'Promotion modifiée',
       'promotion_deleted': 'Promotion supprimée',
       'order_updated': 'Commande mise à jour',
+      'order_ready_notification_sent': 'Client notifié - commande prête',
+      'order_picked_up': 'Commande retirée',
       'team_member_invited': 'Membre invité',
       'team_member_updated': 'Membre modifié',
       'team_member_removed': 'Membre supprimé',
       'pharmacy_info_updated': 'Infos pharmacie mises à jour',
+      'profile_update': 'Profil mis à jour',
     };
     return labels[actionType] || actionType;
   };
