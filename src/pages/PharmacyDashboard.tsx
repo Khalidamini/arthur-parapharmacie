@@ -5,13 +5,14 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building2, Users, Package, Tag, Upload } from "lucide-react";
+import { Building2, Users, Package, Tag, Upload, Activity } from "lucide-react";
 import PharmacyLayout from '@/layouts/PharmacyLayout';
 import PharmacyProductsList from '@/components/PharmacyProductsList';
 import PharmacyPromotionsList from '@/components/PharmacyPromotionsList';
 import ConnectorDownload from '@/components/ConnectorDownload';
 import PharmacyInfoEdit from '@/components/PharmacyInfoEdit';
 import PharmacyTeamManagement from '@/components/PharmacyTeamManagement';
+import PharmacyActivityLogs from '@/components/PharmacyActivityLogs';
 
 const PharmacyDashboard = () => {
   const navigate = useNavigate();
@@ -104,7 +105,7 @@ const PharmacyDashboard = () => {
         </div>
 
         <Tabs defaultValue="info" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="info">
               <Building2 className="mr-2 h-4 w-4" />
               Informations
@@ -124,6 +125,10 @@ const PharmacyDashboard = () => {
             <TabsTrigger value="team">
               <Users className="mr-2 h-4 w-4" />
               Équipe
+            </TabsTrigger>
+            <TabsTrigger value="logs">
+              <Activity className="mr-2 h-4 w-4" />
+              Journal
             </TabsTrigger>
           </TabsList>
 
@@ -185,6 +190,11 @@ const PharmacyDashboard = () => {
                 userRole={userRole}
               />
             )}
+          </TabsContent>
+
+          {/* Journal des activités */}
+          <TabsContent value="logs">
+            {pharmacyId && <PharmacyActivityLogs pharmacyId={pharmacyId} />}
           </TabsContent>
         </Tabs>
       </div>

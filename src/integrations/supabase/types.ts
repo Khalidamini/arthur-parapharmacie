@@ -269,6 +269,47 @@ export type Database = {
         }
         Relationships: []
       }
+      pharmacy_activity_logs: {
+        Row: {
+          action_details: Json | null
+          action_type: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          pharmacy_id: string
+          user_id: string
+        }
+        Insert: {
+          action_details?: Json | null
+          action_type: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          pharmacy_id: string
+          user_id: string
+        }
+        Update: {
+          action_details?: Json | null
+          action_type?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          pharmacy_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pharmacy_activity_logs_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pharmacy_api_keys: {
         Row: {
           api_key: string
@@ -668,6 +709,17 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      log_pharmacy_activity: {
+        Args: {
+          _action_details?: Json
+          _action_type: string
+          _entity_id?: string
+          _entity_type?: string
+          _pharmacy_id: string
+          _user_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       admin_role: "admin" | "super_admin"
