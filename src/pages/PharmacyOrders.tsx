@@ -211,15 +211,6 @@ const PharmacyOrders = () => {
       });
       if (error) throw error;
       
-      // Update local state immediately
-      setCarts(prevCarts => 
-        prevCarts.map(c => 
-          c.id === cartId 
-            ? { ...c, preparation_notified_at: new Date().toISOString() }
-            : c
-        )
-      );
-      
       toast({
         title: "Notification envoyée",
         description: "Le client a été notifié que sa commande est en préparation."
@@ -237,6 +228,7 @@ const PharmacyOrders = () => {
           entityType: 'cart',
           entityId: cartId
         });
+        await loadCarts(pharmacyId);
       }
     } catch (error) {
       console.error('Error notifying customer:', error);
@@ -258,15 +250,6 @@ const PharmacyOrders = () => {
       });
       if (error) throw error;
       
-      // Update local state immediately
-      setCarts(prevCarts => 
-        prevCarts.map(c => 
-          c.id === cartId 
-            ? { ...c, notification_sent_at: new Date().toISOString(), ready_for_pickup: true }
-            : c
-        )
-      );
-      
       toast({
         title: "Notification envoyée",
         description: "Le client a été notifié que sa commande est prête."
@@ -284,6 +267,7 @@ const PharmacyOrders = () => {
           entityType: 'cart',
           entityId: cartId
         });
+        await loadCarts(pharmacyId);
       }
     } catch (error) {
       console.error('Error notifying customer:', error);
@@ -316,15 +300,6 @@ const PharmacyOrders = () => {
         ready_for_pickup: false
       }).eq('id', cartId);
       if (error) throw error;
-      
-      // Update local state immediately
-      setCarts(prevCarts => 
-        prevCarts.map(c => 
-          c.id === cartId 
-            ? { ...c, status: 'completed', ready_for_pickup: false }
-            : c
-        )
-      );
       
       toast({
         title: "Commande marquée comme retirée",
