@@ -146,16 +146,55 @@ serve(async (req) => {
       },
     });
 
-    await client.send({
-      from: Deno.env.get('SMTP_USER') || '',
-      to: customerEmail,
-      subject: `Commande en préparation - ${pharmacyName}`,
-      content: 'auto',
-      html: emailHtml,
-    });
+    const smtpFrom = Deno.env.get('SMTP_USER') || '';
+    const recipientDomain = (customerEmail.split('@')[1] || '').toLowerCase();
+    const devDomains = ['test.com', 'example.com', 'app.local', 'local', 'localhost'];
+
+    let delivered = false;
+    try {
+      const isDevDomain = devDomains.includes(recipientDomain);
+      const toAddress = isDevDomain ? smtpFrom : customerEmail;
+
+      await client.send({
+        from: smtpFrom,
+        to: toAddress,
+        subject: `Commande en préparation - ${pharmacyName}${isDevDomain ? ` (copie pour ${customerEmail})` : ''}`,
+        content: 'auto',
+        html: isDevDomain
+          ? `<p style="font-size:12px;color:#999;">Copie redirigée (destinataire invalide: ${customerEmail})</p>` + emailHtml
+          : emailHtml,
+      });
+      delivered = true;
+      console.log(isDevDomain
+        ? `Preparation notification redirected to sender for invalid domain: ${customerEmail}`
+        : `Preparation notification sent successfully to: ${customerEmail}`
+      );
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('Primary SMTP send failed:', msg);
+
+      // Fallback: when MX is invalid, redirect to sender to avoid 500 while staying on SMTP
+      if (msg.includes('invalid DNS MX') || msg.includes('MX or A/AAAA')) {
+        try {
+          await client.send({
+            from: smtpFrom,
+            to: smtpFrom,
+            subject: `DEV COPY - Commande en préparation (original: ${customerEmail}) - ${pharmacyName}`,
+            content: 'auto',
+            html: `<p style="font-size:12px;color:#999;">Original destinataire: ${customerEmail}</p>` + emailHtml,
+          });
+          delivered = true;
+          console.log(`Preparation notification fallback sent to sender for original recipient: ${customerEmail}`);
+        } catch (fallbackErr) {
+          console.error('Fallback SMTP send failed:', fallbackErr);
+        }
+      }
+    }
 
     await client.close();
-    console.log('Preparation notification sent successfully to:', customerEmail);
+    if (!delivered) {
+      throw new Error('Email non délivré et fallback indisponible');
+    }
 
     // Update cart with preparation notification timestamp
     await supabaseClient
