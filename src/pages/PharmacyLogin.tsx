@@ -25,7 +25,8 @@ const PharmacyLogin = () => {
           .from('user_roles')
           .select('role, pharmacy_id, must_change_password')
           .eq('user_id', user.id)
-          .maybeSingle();
+          .limit(1)
+          .single();
 
         if (roles) {
           // Vérifier si l'utilisateur doit changer son mot de passe
@@ -70,7 +71,8 @@ const PharmacyLogin = () => {
           .from('user_roles')
           .select('role, pharmacy_id, must_change_password')
           .eq('user_id', data.user.id)
-          .maybeSingle();
+          .limit(1)
+          .single();
 
         if (rolesError) {
           console.error('Error checking roles:', rolesError);
