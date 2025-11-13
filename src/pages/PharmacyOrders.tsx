@@ -35,7 +35,7 @@ interface Cart {
   completed_at: string | null;
   ready_for_pickup: boolean;
   notification_sent_at: string | null;
-  preparation_notified_at: string | null;
+  preparation_notified_at?: string | null;
   pickup_message: string | null;
   items: CartItem[];
   profiles?: {
@@ -122,7 +122,6 @@ const PharmacyOrders = () => {
           completed_at,
           ready_for_pickup,
           notification_sent_at,
-          preparation_notified_at,
           pickup_message
         `)
         .eq('pharmacy_id', pharmId)
@@ -432,7 +431,7 @@ const PharmacyOrders = () => {
                     className="w-full"
                     variant={cart.preparation_notified_at ? "secondary" : "default"}
                     style={cart.preparation_notified_at ? { backgroundColor: '#3b82f6', color: 'white' } : { backgroundColor: '#22c55e', color: 'white' }}
-                    disabled={cart.status === 'completed'}
+                    disabled={!!cart.preparation_notified_at}
                   >
                     <Bell className="mr-2 h-4 w-4" />
                     En préparation
@@ -444,7 +443,7 @@ const PharmacyOrders = () => {
                     className="w-full"
                     variant={cart.notification_sent_at ? "secondary" : "default"}
                     style={cart.notification_sent_at ? { backgroundColor: '#3b82f6', color: 'white' } : { backgroundColor: '#22c55e', color: 'white' }}
-                    disabled={cart.status === 'completed'}
+                    disabled={!cart.preparation_notified_at || !!cart.notification_sent_at}
                   >
                     <Package className="mr-2 h-4 w-4" />
                     Prête à retirer
@@ -456,6 +455,7 @@ const PharmacyOrders = () => {
                     className="w-full"
                     variant={cart.status === 'completed' ? "secondary" : "default"}
                     style={cart.status === 'completed' ? { backgroundColor: '#3b82f6', color: 'white' } : { backgroundColor: '#22c55e', color: 'white' }}
+                    disabled={!cart.notification_sent_at || cart.status === 'completed'}
                   >
                     <CheckCircle className="mr-2 h-4 w-4" />
                     Commande terminée
