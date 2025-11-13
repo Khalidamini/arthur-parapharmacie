@@ -17,6 +17,9 @@ interface TeamMember {
   user_id: string;
   role: string;
   email: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
   created_at: string;
   must_change_password: boolean;
 }
@@ -54,18 +57,21 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
 
       if (error) throw error;
 
-      // Get user emails
+      // Get user emails and names
       const membersWithEmails = await Promise.all(
         (roles || []).map(async (role) => {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('email')
+            .select('email, first_name, last_name, phone')
             .eq('id', role.user_id)
             .single();
 
           return {
             ...role,
             email: profile?.email || 'Email inconnu',
+            first_name: profile?.first_name || null,
+            last_name: profile?.last_name || null,
+            phone: profile?.phone || null,
           };
         })
       );
@@ -309,7 +315,9 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Nom</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>Téléphone</TableHead>
                   <TableHead>Rôle</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead>Date d'ajout</TableHead>
@@ -321,7 +329,16 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
               <TableBody>
                 {teamMembers.map((member) => (
                   <TableRow key={member.id}>
-                    <TableCell className="font-medium">{member.email}</TableCell>
+                    <TableCell className="font-medium">
+                      {member.first_name && member.last_name 
+                        ? `${member.first_name} ${member.last_name}`
+                        : <span className="text-muted-foreground italic">Non renseigné</span>
+                      }
+                    </TableCell>
+                    <TableCell>{member.email}</TableCell>
+                    <TableCell>
+                      {member.phone || <span className="text-muted-foreground italic">Non renseigné</span>}
+                    </TableCell>
                     <TableCell>
                       <Badge variant={getRoleBadgeVariant(member.role)}>
                         {getRoleLabel(member.role)}

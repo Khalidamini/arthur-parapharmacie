@@ -471,10 +471,13 @@ export type Database = {
           allergies: string | null
           created_at: string | null
           email: string | null
+          first_name: string | null
           gender: string | null
           id: string
           is_pregnant: boolean | null
+          last_name: string | null
           medical_history: string | null
+          phone: string | null
           qr_code_number: string
           updated_at: string | null
           username: string | null
@@ -484,10 +487,13 @@ export type Database = {
           allergies?: string | null
           created_at?: string | null
           email?: string | null
+          first_name?: string | null
           gender?: string | null
           id: string
           is_pregnant?: boolean | null
+          last_name?: string | null
           medical_history?: string | null
+          phone?: string | null
           qr_code_number: string
           updated_at?: string | null
           username?: string | null
@@ -497,10 +503,13 @@ export type Database = {
           allergies?: string | null
           created_at?: string | null
           email?: string | null
+          first_name?: string | null
           gender?: string | null
           id?: string
           is_pregnant?: boolean | null
+          last_name?: string | null
           medical_history?: string | null
+          phone?: string | null
           qr_code_number?: string
           updated_at?: string | null
           username?: string | null

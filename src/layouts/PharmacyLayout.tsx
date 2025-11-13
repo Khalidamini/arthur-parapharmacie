@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Building2, LogOut, Home } from "lucide-react";
+import { Building2, LogOut, Home, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import Footer from '@/components/Footer';
 
@@ -37,6 +37,14 @@ const PharmacyLayout = ({ children, pharmacyName }: PharmacyLayoutProps) => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate('/pharmacy-profile')}
+            >
+              <User className="mr-2 h-4 w-4" />
+              Mon Profil
+            </Button>
             <Button 
               variant="ghost" 
               size="sm"
