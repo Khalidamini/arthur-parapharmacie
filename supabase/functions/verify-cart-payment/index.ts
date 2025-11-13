@@ -38,6 +38,13 @@ serve(async (req) => {
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
       );
 
+      // Get cart details to check delivery method
+      const { data: cart } = await supabaseClient
+        .from('carts')
+        .select('delivery_method')
+        .eq('id', cartId)
+        .single();
+
       // Update cart status to completed and paid
       await supabaseClient
         .from('carts')
@@ -47,6 +54,20 @@ serve(async (req) => {
           completed_at: new Date().toISOString(),
         })
         .eq('id', cartId);
+
+      // Generate shipping label for delivery orders
+      if (cart?.delivery_method === 'delivery') {
+        console.log('Generating shipping label for delivery order:', cartId);
+        try {
+          await supabaseClient.functions.invoke('create-shipping-label', {
+            body: { cartId }
+          });
+          console.log('Shipping label generated successfully');
+        } catch (labelError) {
+          console.error('Failed to generate shipping label:', labelError);
+          // Don't fail the payment if label generation fails
+        }
+      }
 
       // Notify pharmacy about new paid order
       try {

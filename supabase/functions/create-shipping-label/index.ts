@@ -55,73 +55,76 @@ serve(async (req) => {
     const totalItems = items?.reduce((sum, item) => sum + item.quantity, 0) || 1;
     const estimatedWeight = totalItems * 500; // grams
 
-    // Create Shipy shipment
-    const shipyApiKey = Deno.env.get('SHIPY_API_KEY');
+    // Create Sendcloud shipment
+    const sendcloudPublicKey = Deno.env.get('SENDCLOUD_PUBLIC_KEY');
+    const sendcloudSecretKey = Deno.env.get('SENDCLOUD_SECRET_KEY');
     
-    if (!shipyApiKey) {
-      throw new Error("Shipy API key not configured");
+    if (!sendcloudPublicKey || !sendcloudSecretKey) {
+      throw new Error("Sendcloud API keys not configured");
     }
 
-    const shipyPayload = {
-      from: {
-        company: cart.pharmacy.name,
-        address: cart.pharmacy.address,
-        city: cart.pharmacy.city,
-        postal_code: cart.pharmacy.postal_code,
-        country: 'FR',
-        phone: cart.pharmacy.phone || '',
-      },
-      to: {
+    // Sendcloud uses Basic Auth with public:secret keys
+    const authString = btoa(`${sendcloudPublicKey}:${sendcloudSecretKey}`);
+
+    const sendcloudPayload = {
+      parcel: {
         name: cart.delivery_address.name || 'Client',
         address: cart.delivery_address.street,
         city: cart.delivery_address.city,
         postal_code: cart.delivery_address.postal_code,
         country: cart.delivery_address.country || 'FR',
-        phone: cart.delivery_address.phone || '',
+        telephone: cart.delivery_address.phone || '',
         email: cart.notification_email || '',
+        weight: (estimatedWeight / 1000).toFixed(3), // Convert to kg
+        order_number: cartId,
+        insured_value: cart.amount_total ? Math.round(Number(cart.amount_total)) : 0,
       },
-      parcel: {
-        weight: estimatedWeight,
-        length: 30,
-        width: 20,
-        height: 10,
+      sender_address: {
+        company_name: cart.pharmacy.name,
+        address: cart.pharmacy.address,
+        city: cart.pharmacy.city,
+        postal_code: cart.pharmacy.postal_code,
+        country: 'FR',
+        telephone: cart.pharmacy.phone || '',
       },
-      service: 'colissimo_domicile', // Default to Colissimo home delivery
-      insurance: cart.amount_total ? Math.round(Number(cart.amount_total)) : 0,
-      reference: cartId,
+      shipment: {
+        id: 8, // Default to Colissimo (adjust based on your Sendcloud configuration)
+      },
     };
 
-    const shipyResponse = await fetch('https://api.shipy.pro/v1/shipments', {
+    const sendcloudResponse = await fetch('https://panel.sendcloud.sc/api/v2/parcels', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${shipyApiKey}`,
+        'Authorization': `Basic ${authString}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(shipyPayload),
+      body: JSON.stringify(sendcloudPayload),
     });
 
-    if (!shipyResponse.ok) {
-      const errorText = await shipyResponse.text();
-      console.error('Shipy API error:', errorText);
+    if (!sendcloudResponse.ok) {
+      const errorText = await sendcloudResponse.text();
+      console.error('Sendcloud API error:', errorText);
       throw new Error(`Failed to create shipment: ${errorText}`);
     }
 
-    const shipmentData = await shipyResponse.json();
+    const shipmentData = await sendcloudResponse.json();
 
     // Update cart with tracking info
+    const parcelData = shipmentData.parcel;
     await supabaseClient
       .from('carts')
       .update({
-        shipping_tracking_number: shipmentData.tracking_number,
-        shipping_label_url: shipmentData.label_url,
+        shipping_tracking_number: parcelData.tracking_number,
+        shipping_label_url: parcelData.label?.label_printer || parcelData.label?.normal_printer?.[0],
       })
       .eq('id', cartId);
 
     return new Response(
       JSON.stringify({
         success: true,
-        tracking_number: shipmentData.tracking_number,
-        label_url: shipmentData.label_url,
+        tracking_number: parcelData.tracking_number,
+        label_url: parcelData.label?.label_printer || parcelData.label?.normal_printer?.[0],
+        parcel_id: parcelData.id,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
