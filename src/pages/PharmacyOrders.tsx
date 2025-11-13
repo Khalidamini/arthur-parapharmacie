@@ -258,7 +258,7 @@ const PharmacyOrders = () => {
     try {
       const { error } = await supabase
         .from('carts')
-        .update({ status: 'completed' })
+        .update({ status: 'completed', ready_for_pickup: false })
         .eq('id', cartId);
 
       if (error) throw error;
@@ -359,7 +359,7 @@ const PharmacyOrders = () => {
                       Notifier client
                     </Button>
                   )}
-                  {cart.ready_for_pickup && cart.status !== 'completed' && (
+                  {cart.ready_for_pickup && (
                     <Button 
                       size="sm" 
                       onClick={() => handleMarkAsPickedUp(cart.id, cart)}
