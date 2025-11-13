@@ -35,6 +35,7 @@ interface Cart {
   completed_at: string | null;
   ready_for_pickup: boolean;
   notification_sent_at: string | null;
+  preparation_notified_at: string | null;
   pickup_message: string | null;
   items: CartItem[];
   profiles?: {
@@ -121,6 +122,7 @@ const PharmacyOrders = () => {
           completed_at,
           ready_for_pickup,
           notification_sent_at,
+          preparation_notified_at,
           pickup_message
         `)
         .eq('pharmacy_id', pharmId)
@@ -211,9 +213,50 @@ const PharmacyOrders = () => {
     setFilteredCarts(filtered);
   };
 
-  const handleNotifyCustomer = async (cartId: string, cart: Cart) => {
+  const handleNotifyPreparation = async (cartId: string, cart: Cart) => {
     try {
-      // Call edge function to send email notification
+      const { error } = await supabase.functions.invoke('notify-customer-order-preparation', {
+        body: { cartId }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Notification envoyée",
+        description: "Le client a été notifié que sa commande est en préparation.",
+      });
+
+      if (pharmacyId) {
+        const customerName = cart.profiles?.first_name && cart.profiles?.last_name 
+          ? `${cart.profiles.first_name} ${cart.profiles.last_name}`
+          : cart.profiles?.email || cart.profiles?.qr_code_number || 'Client inconnu';
+        
+        await logActivity({
+          pharmacyId,
+          actionType: 'order_preparation_notification_sent',
+          actionDetails: {
+            cart_id: cartId,
+            customer_name: customerName,
+            total_amount: cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+          },
+          entityType: 'cart',
+          entityId: cartId
+        });
+
+        await loadCarts(pharmacyId);
+      }
+    } catch (error) {
+      console.error('Error notifying customer:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'envoyer la notification.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleNotifyReady = async (cartId: string, cart: Cart) => {
+    try {
       const { error } = await supabase.functions.invoke('notify-customer-order-ready', {
         body: { cartId }
       });
@@ -222,10 +265,9 @@ const PharmacyOrders = () => {
 
       toast({
         title: "Notification envoyée",
-        description: "Le client a été notifié par email que sa commande est prête.",
+        description: "Le client a été notifié que sa commande est prête.",
       });
 
-      // Log activity
       if (pharmacyId) {
         const customerName = cart.profiles?.first_name && cart.profiles?.last_name 
           ? `${cart.profiles.first_name} ${cart.profiles.last_name}`
@@ -382,29 +424,42 @@ const PharmacyOrders = () => {
               <p className="text-2xl font-bold text-primary">
                 {total.toFixed(2)} €
               </p>
-              {isPaid && cart.status !== 'completed' && (
+              {isPaid && (
                 <div className="space-y-2">
-                  {!cart.ready_for_pickup && (
-                    <Button 
-                      size="sm" 
-                      onClick={() => handleNotifyCustomer(cart.id, cart)}
-                      className="w-full"
-                    >
-                      <Bell className="mr-2 h-4 w-4" />
-                      Notifier client
-                    </Button>
-                  )}
-                  {cart.ready_for_pickup && (
-                    <Button 
-                      size="sm" 
-                      onClick={() => handleMarkAsPickedUp(cart.id, cart)}
-                      className="w-full"
-                      variant="default"
-                    >
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      Commande retirée
-                    </Button>
-                  )}
+                  <Button 
+                    size="sm" 
+                    onClick={() => handleNotifyPreparation(cart.id, cart)}
+                    className="w-full"
+                    variant={cart.preparation_notified_at ? "secondary" : "default"}
+                    style={cart.preparation_notified_at ? { backgroundColor: '#3b82f6', color: 'white' } : { backgroundColor: '#22c55e', color: 'white' }}
+                    disabled={cart.status === 'completed'}
+                  >
+                    <Bell className="mr-2 h-4 w-4" />
+                    En préparation
+                  </Button>
+                  
+                  <Button 
+                    size="sm" 
+                    onClick={() => handleNotifyReady(cart.id, cart)}
+                    className="w-full"
+                    variant={cart.notification_sent_at ? "secondary" : "default"}
+                    style={cart.notification_sent_at ? { backgroundColor: '#3b82f6', color: 'white' } : { backgroundColor: '#22c55e', color: 'white' }}
+                    disabled={cart.status === 'completed'}
+                  >
+                    <Package className="mr-2 h-4 w-4" />
+                    Prête à retirer
+                  </Button>
+                  
+                  <Button 
+                    size="sm" 
+                    onClick={() => handleMarkAsPickedUp(cart.id, cart)}
+                    className="w-full"
+                    variant={cart.status === 'completed' ? "secondary" : "default"}
+                    style={cart.status === 'completed' ? { backgroundColor: '#3b82f6', color: 'white' } : { backgroundColor: '#22c55e', color: 'white' }}
+                  >
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Commande terminée
+                  </Button>
                 </div>
               )}
               {cart.status === 'completed' && (
