@@ -347,7 +347,7 @@ const PharmacyOrders = () => {
               <p className="text-2xl font-bold text-primary">
                 {total.toFixed(2)} €
               </p>
-              {isPaid && cart.status !== 'completed' && (
+              {isPaid && (
                 <div className="space-y-2">
                   {!cart.ready_for_pickup && (
                     <Button 
@@ -359,7 +359,7 @@ const PharmacyOrders = () => {
                       Notifier client
                     </Button>
                   )}
-                  {cart.ready_for_pickup && (
+                  {cart.ready_for_pickup && cart.status !== 'completed' && (
                     <Button 
                       size="sm" 
                       onClick={() => handleMarkAsPickedUp(cart.id, cart)}
