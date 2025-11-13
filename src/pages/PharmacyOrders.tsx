@@ -597,10 +597,10 @@ const PharmacyOrders = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="paid">Payées</SelectItem>
-                <SelectItem value="active">En cours</SelectItem>
-                <SelectItem value="completed">Achetés</SelectItem>
-                <SelectItem value="cancelled">Abandonnés</SelectItem>
+                <SelectItem value="paid">💰 Payées</SelectItem>
+                <SelectItem value="active">🔄 En cours</SelectItem>
+                <SelectItem value="completed">✅ Commandes retirées</SelectItem>
+                <SelectItem value="cancelled">❌ Abandonnés</SelectItem>
               </SelectContent>
             </Select>
           </div>
