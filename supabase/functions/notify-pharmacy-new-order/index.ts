@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -152,24 +153,31 @@ serve(async (req) => {
       if (profiles && profiles.length > 0) {
         const pharmacyEmails = profiles.map(p => p.email).filter(Boolean);
         
-        // Send email notification using Resend
-        const resendResponse = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${Deno.env.get('RESEND_API_KEY')}`,
-            'Content-Type': 'application/json',
+        // Send email notification using SMTP
+        const client = new SMTPClient({
+          connection: {
+            hostname: Deno.env.get('SMTP_HOST') || '',
+            port: Number(Deno.env.get('SMTP_PORT')) || 465,
+            tls: true,
+            auth: {
+              username: Deno.env.get('SMTP_USER') || '',
+              password: Deno.env.get('SMTP_PASSWORD') || '',
+            },
           },
-          body: JSON.stringify({
-            from: 'Arthur Pharmacie <onboarding@resend.dev>',
-            to: pharmacyEmails,
-            subject: `Nouvelle commande - ${customerName}`,
-            html: emailHtml,
-          }),
         });
 
-        if (!resendResponse.ok) {
-          console.error('Failed to send pharmacy notification:', await resendResponse.text());
+        for (const email of pharmacyEmails) {
+          await client.send({
+            from: Deno.env.get('SMTP_USER') || '',
+            to: email,
+            subject: `Nouvelle commande - ${customerName}`,
+            content: 'auto',
+            html: emailHtml,
+          });
         }
+
+        await client.close();
+        console.log('Pharmacy notification sent to:', pharmacyEmails.join(', '));
       }
     }
 
