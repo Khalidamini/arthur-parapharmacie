@@ -166,18 +166,56 @@ serve(async (req) => {
       },
     });
 
-    await client.send({
-      from: Deno.env.get('SMTP_USER') || '',
-      to: customerEmail,
-      subject: subject,
-      content: 'auto',
-      html: emailHtml,
-    });
+    const smtpFrom = Deno.env.get('SMTP_USER') || '';
+    const recipientDomain = (customerEmail.split('@')[1] || '').toLowerCase();
+    const devDomains = ['test.com', 'example.com', 'app.local', 'local', 'localhost'];
+
+    let emailStatus = 'not_sent';
+    try {
+      const isDevDomain = devDomains.includes(recipientDomain);
+      const toAddress = isDevDomain ? smtpFrom : customerEmail;
+
+      await client.send({
+        from: smtpFrom,
+        to: toAddress,
+        subject: isDevDomain ? `${subject} (copie pour ${customerEmail})` : subject,
+        content: 'auto',
+        html: isDevDomain
+          ? `<p style="font-size:12px;color:#999;">Copie redirigée (destinataire invalide: ${customerEmail})</p>` + emailHtml
+          : emailHtml,
+      });
+      emailStatus = 'sent';
+      console.log(isDevDomain
+        ? `Ready notification redirected to sender for invalid domain: ${customerEmail}`
+        : 'Customer notification sent successfully'
+      );
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('Primary SMTP send failed:', msg);
+
+      if (msg.includes('invalid DNS MX') || msg.includes('MX or A/AAAA') || msg.includes('mailbox unavailable')) {
+        try {
+          await client.send({
+            from: smtpFrom,
+            to: smtpFrom,
+            subject: `DEV COPY - ${subject} (original: ${customerEmail})`,
+            content: 'auto',
+            html: `<p style="font-size:12px;color:#999;">Original destinataire: ${customerEmail}</p>` + emailHtml,
+          });
+          emailStatus = 'sent_to_fallback';
+          console.log(`Ready notification fallback sent to sender for original recipient: ${customerEmail}`);
+        } catch (fallbackErr) {
+          emailStatus = 'failed';
+          console.error('Fallback SMTP send also failed:', fallbackErr);
+        }
+      } else {
+        emailStatus = 'failed';
+      }
+    }
 
     await client.close();
-    console.log('Customer notification sent successfully');
 
-    // Update cart notification timestamp
+    // IMPORTANT: Always update cart status even if email fails
     await supabaseClient
       .from('carts')
       .update({ 

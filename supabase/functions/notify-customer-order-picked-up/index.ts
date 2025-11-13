@@ -158,17 +158,55 @@ serve(async (req) => {
       },
     });
 
-    await client.send({
-      from: Deno.env.get("SMTP_USER") || "contact@gptprive.com",
-      to: customerEmail,
-      subject: "Confirmation de retrait de commande",
-      content: emailHtml,
-      html: emailHtml,
-    });
+    const smtpFrom = Deno.env.get('SMTP_USER') || 'contact@gptprive.com';
+    const recipientDomain = (customerEmail.split('@')[1] || '').toLowerCase();
+    const devDomains = ['test.com', 'example.com', 'app.local', 'local', 'localhost'];
+
+    let emailStatus = 'not_sent';
+    try {
+      const isDevDomain = devDomains.includes(recipientDomain);
+      const toAddress = isDevDomain ? smtpFrom : customerEmail;
+
+      await client.send({
+        from: smtpFrom,
+        to: toAddress,
+        subject: isDevDomain ? `Confirmation de retrait (copie pour ${customerEmail})` : "Confirmation de retrait de commande",
+        content: 'auto',
+        html: isDevDomain
+          ? `<p style="font-size:12px;color:#999;">Copie redirigée (destinataire invalide: ${customerEmail})</p>` + emailHtml
+          : emailHtml,
+      });
+      emailStatus = 'sent';
+      console.log(isDevDomain
+        ? `Pickup confirmation redirected to sender for invalid domain: ${customerEmail}`
+        : `Pickup confirmation email sent successfully to ${customerEmail}`
+      );
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('Primary SMTP send failed:', msg);
+
+      if (msg.includes('invalid DNS MX') || msg.includes('MX or A/AAAA') || msg.includes('mailbox unavailable')) {
+        try {
+          await client.send({
+            from: smtpFrom,
+            to: smtpFrom,
+            subject: `DEV COPY - Confirmation de retrait (original: ${customerEmail})`,
+            content: 'auto',
+            html: `<p style="font-size:12px;color:#999;">Original destinataire: ${customerEmail}</p>` + emailHtml,
+          });
+          emailStatus = 'sent_to_fallback';
+          console.log(`Pickup confirmation fallback sent to sender for original recipient: ${customerEmail}`);
+        } catch (fallbackErr) {
+          emailStatus = 'failed';
+          console.error('Fallback SMTP send also failed:', fallbackErr);
+        }
+      } else {
+        emailStatus = 'failed';
+      }
+    }
 
     await client.close();
-
-    console.log(`Pickup confirmation email sent successfully to ${customerEmail}`);
+    console.log(`Email status: ${emailStatus}`);
 
     return new Response(
       JSON.stringify({ success: true }),
