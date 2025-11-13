@@ -110,16 +110,7 @@ const PharmacyOrders = () => {
         data: cartsData,
         error: cartsError
       } = await supabase.from('carts').select(`
-          id,
-          user_id,
-          status,
-          payment_status,
-          created_at,
-          updated_at,
-          completed_at,
-          ready_for_pickup,
-          notification_sent_at,
-          pickup_message
+          *
         `).eq('pharmacy_id', pharmId).order('created_at', {
         ascending: false
       });
