@@ -257,6 +257,16 @@ const PharmacyOrders = () => {
 
   const handleMarkAsPickedUp = async (cartId: string, cart: Cart) => {
     try {
+      // Send pickup confirmation email
+      const { error: emailError } = await supabase.functions.invoke('notify-customer-order-picked-up', {
+        body: { cartId }
+      });
+
+      if (emailError) {
+        console.error('Error sending pickup confirmation:', emailError);
+      }
+
+      // Update cart status
       const { error } = await supabase
         .from('carts')
         .update({ status: 'completed', ready_for_pickup: false })
@@ -266,7 +276,7 @@ const PharmacyOrders = () => {
 
       toast({
         title: "Commande marquée comme retirée",
-        description: "La commande a été marquée comme retirée avec succès.",
+        description: "La commande a été marquée comme retirée et le client a été notifié par email.",
       });
 
       // Log activity
@@ -290,7 +300,7 @@ const PharmacyOrders = () => {
         await loadCarts(pharmacyId);
       }
     } catch (error) {
-      console.error('Error marking order as picked up:', error);
+      console.error('Error marking as picked up:', error);
       toast({
         title: "Erreur",
         description: "Impossible de marquer la commande comme retirée.",
@@ -372,7 +382,7 @@ const PharmacyOrders = () => {
               <p className="text-2xl font-bold text-primary">
                 {total.toFixed(2)} €
               </p>
-              {isPaid && (
+              {isPaid && cart.status !== 'completed' && (
                 <div className="space-y-2">
                   {!cart.ready_for_pickup && (
                     <Button 
@@ -396,6 +406,12 @@ const PharmacyOrders = () => {
                     </Button>
                   )}
                 </div>
+              )}
+              {cart.status === 'completed' && (
+                <Badge className="bg-primary text-primary-foreground px-3 py-1">
+                  <CheckCircle className="mr-1 h-3 w-3" />
+                  Commande retirée
+                </Badge>
               )}
             </div>
           </div>
