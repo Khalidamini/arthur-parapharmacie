@@ -23,13 +23,13 @@ const PharmacyLogin = () => {
         // Vérifier si l'utilisateur a un rôle de pharmacien
         const { data: roles } = await supabase
           .from('user_roles')
-          .select('role, pharmacy_id, must_change_password')
-          .eq('user_id', user.id)
-          .maybeSingle();
+          .select('must_change_password')
+          .eq('user_id', user.id);
 
-        if (roles) {
-          // Vérifier si l'utilisateur doit changer son mot de passe
-          if (roles.must_change_password) {
+        if (roles && roles.length > 0) {
+          // Vérifier si au moins un rôle impose le changement de mot de passe
+          const mustChange = roles.some((r: any) => r.must_change_password === true);
+          if (mustChange) {
             navigate('/pharmacy-force-password-change');
           } else {
             navigate('/pharmacy-dashboard');
@@ -68,15 +68,14 @@ const PharmacyLogin = () => {
         // Vérifier si l'utilisateur a un rôle de pharmacien
         const { data: roles, error: rolesError } = await supabase
           .from('user_roles')
-          .select('role, pharmacy_id, must_change_password')
-          .eq('user_id', data.user.id)
-          .maybeSingle();
+          .select('must_change_password')
+          .eq('user_id', data.user.id);
 
         if (rolesError) {
           console.error('Error checking roles:', rolesError);
         }
 
-        if (!roles) {
+        if (!roles || roles.length === 0) {
           // Pas de rôle pharmacien trouvé
           await supabase.auth.signOut();
           toast({
@@ -93,7 +92,8 @@ const PharmacyLogin = () => {
         });
 
         // Vérifier si l'utilisateur doit changer son mot de passe
-        if (roles.must_change_password) {
+        const mustChange = roles.some((r: any) => r.must_change_password === true);
+        if (mustChange) {
           navigate('/pharmacy-force-password-change');
         } else {
           navigate('/pharmacy-dashboard');

@@ -52,13 +52,12 @@ const PharmacyForcePasswordChange = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Utilisateur non trouvé');
 
-      // Mettre à jour le flag must_change_password
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .update({ must_change_password: false })
-        .eq('user_id', user.id);
+      // Appeler la fonction backend pour mettre à jour le flag
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('complete-password-change', {
+        body: {}
+      });
 
-      if (roleError) throw roleError;
+      if (fnError) throw fnError;
 
       toast({
         title: "Mot de passe changé",
