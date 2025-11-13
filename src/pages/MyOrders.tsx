@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ShoppingBag, Calendar, Package, MapPin, Truck } from "lucide-react";
+import { ArrowLeft, ShoppingBag, Calendar, Package, MapPin, Truck, ExternalLink } from "lucide-react";
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Footer from '@/components/Footer';
@@ -235,12 +235,36 @@ const MyOrders = () => {
                             Livraison à domicile
                           </h4>
                           {order.shipping_tracking_number && (
-                            <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
-                              <p className="text-sm font-medium">Numéro de suivi</p>
-                              <p className="text-sm text-muted-foreground font-mono">{order.shipping_tracking_number}</p>
+                            <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg space-y-2 mb-3">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-sm font-medium">Suivi de livraison</p>
+                                  <p className="text-xs text-muted-foreground mt-0.5 font-mono">
+                                    {order.shipping_tracking_number}
+                                  </p>
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => window.open(`https://panel.sendcloud.sc/track-trace/?tracking_number=${order.shipping_tracking_number}`, '_blank')}
+                                >
+                                  <ExternalLink className="h-3 w-3 mr-1" />
+                                  Suivre
+                                </Button>
+                              </div>
+                              <div className="text-xs text-muted-foreground bg-background/50 p-2 rounded">
+                                ℹ️ Cliquez sur "Suivre" pour voir le statut détaillé de votre livraison
+                              </div>
                             </div>
                           )}
-                          <div className="mt-2 text-sm">
+                          {!order.shipping_tracking_number && (
+                            <div className="bg-muted/50 p-3 rounded-lg mb-3">
+                              <p className="text-xs text-muted-foreground">
+                                📦 Votre étiquette d'expédition est en cours de génération...
+                              </p>
+                            </div>
+                          )}
+                          <div className="text-sm">
                             <p className="text-muted-foreground">Adresse de livraison:</p>
                             <p>{order.delivery_address?.street}</p>
                             <p>{order.delivery_address?.postal_code} {order.delivery_address?.city}</p>
