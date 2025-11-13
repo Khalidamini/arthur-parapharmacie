@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -134,27 +135,28 @@ serve(async (req) => {
       </html>
     `;
 
-    // Send email using Resend
-    const resendResponse = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('RESEND_API_KEY')}`,
-        'Content-Type': 'application/json',
+    // Send email using SMTP
+    const client = new SMTPClient({
+      connection: {
+        hostname: Deno.env.get('SMTP_HOST') || '',
+        port: Number(Deno.env.get('SMTP_PORT')) || 465,
+        tls: true,
+        auth: {
+          username: Deno.env.get('SMTP_USER') || '',
+          password: Deno.env.get('SMTP_PASSWORD') || '',
+        },
       },
-      body: JSON.stringify({
-        from: 'Arthur Pharmacie <onboarding@resend.dev>',
-        to: [customerEmail],
-        subject: 'Confirmation de votre commande',
-        html: emailHtml,
-      }),
     });
 
-    if (!resendResponse.ok) {
-      const errorText = await resendResponse.text();
-      console.error('Failed to send confirmation email:', errorText);
-      throw new Error(`Failed to send email: ${errorText}`);
-    }
+    await client.send({
+      from: Deno.env.get('SMTP_USER') || '',
+      to: customerEmail,
+      subject: 'Confirmation de votre commande',
+      content: 'auto',
+      html: emailHtml,
+    });
 
+    await client.close();
     console.log('Order confirmation email sent to:', customerEmail);
 
     return new Response(
