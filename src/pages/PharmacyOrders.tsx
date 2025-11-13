@@ -241,14 +241,15 @@ const PharmacyOrders = () => {
   };
   const handleNotifyReady = async (cartId: string, cart: Cart) => {
     try {
-      const {
-        error
-      } = await supabase.functions.invoke('notify-customer-order-ready', {
+      const { error } = await supabase.functions.invoke('notify-customer-order-ready', {
         body: {
           cartId
         }
       });
-      if (error) throw error;
+      if (error) {
+        console.error('Error notifying customer (ready):', error);
+        // On continue quand même le flux pour ne pas bloquer l'UI
+      }
       
       // Mise à jour immédiate de l'état local pour refléter l'étape 2
       setCarts(prevCarts => 
@@ -262,6 +263,18 @@ const PharmacyOrders = () => {
             : c
         )
       );
+
+      // Persistance en base (ne bloque pas l'UI en cas d'erreur)
+      const { error: dbError } = await supabase
+        .from('carts')
+        .update({
+          notification_sent_at: new Date().toISOString(),
+          ready_for_pickup: true
+        })
+        .eq('id', cartId);
+      if (dbError) {
+        console.error('Error updating cart state (ready):', dbError);
+      }
       
       toast({
         title: "Notification envoyée",
