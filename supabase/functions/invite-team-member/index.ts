@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
-import { Resend } from 'https://esm.sh/resend@4.0.0';
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,8 +21,6 @@ const generateTemporaryPassword = (): string => {
   }
   return password;
 };
-
-const resend = new Resend(Deno.env.get('RESEND_API_KEY') ?? '');
 
 const getFrontendUrl = (req: Request) => {
   return req.headers.get('origin') || Deno.env.get('SITE_URL') || (Deno.env.get('SUPABASE_URL')?.replace('/rest/v1','')) || '';
@@ -237,35 +235,50 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('id', pharmacyId)
       .single();
 
-    // Envoyer l'email d'invitation directement avec Resend
-    const loginUrl = `${getFrontendUrl(req)}/pharmacy-login`;
-    const fromAddress = 'Arthur <contact@gptprive.com>';
-
+    // 6. Envoyer l'email d'invitation via SMTP
     let emailSent = true;
     let emailErrorMessage: string | null = null;
-    const sendResult = await resend.emails.send({
-      from: fromAddress,
-      to: [email],
-      subject: `Invitation à rejoindre ${pharmacy?.name || 'une pharmacie'} sur Arthur`,
-      html: `
-        <h1>Bienvenue sur Arthur</h1>
-        <p>Vous avez été invité à rejoindre l'équipe de <strong>${pharmacy?.name || 'une pharmacie'}</strong>.</p>
-        <p>Voici vos identifiants de connexion :</p>
-        <ul>
-          <li><strong>Email :</strong> ${email}</li>
-          ${!userAlreadyExists ? `<li><strong>Mot de passe provisoire :</strong> ${temporaryPassword}</li>` : ''}
-        </ul>
-        ${!userAlreadyExists ? '<p><strong>Important :</strong> Vous devrez changer ce mot de passe lors de votre première connexion.</p>' : ''}
-        <p><a href="${loginUrl}" style="display: inline-block; padding: 12px 24px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 6px; margin-top: 16px;">Se connecter maintenant</a></p>
-        <p style="margin-top: 24px; color: #6b7280; font-size: 14px;">Si vous n'avez pas demandé cette invitation, vous pouvez ignorer cet email.</p>
-      `,
-    });
+    
+    try {
+      const client = new SMTPClient({
+        connection: {
+          hostname: Deno.env.get('SMTP_HOST') || 'smtp.ionos.fr',
+          port: parseInt(Deno.env.get('SMTP_PORT') || '465'),
+          tls: true,
+          auth: {
+            username: Deno.env.get('SMTP_USER') || '',
+            password: Deno.env.get('SMTP_PASSWORD') || '',
+          },
+        },
+      });
 
-    // Vérifier explicitement si l'email a été envoyé
-    if (sendResult?.error) {
+      const loginUrl = `${getFrontendUrl(req)}/pharmacy-login`;
+
+      await client.send({
+        from: 'contact@gptprive.com',
+        to: email,
+        subject: `Invitation à rejoindre ${pharmacy?.name || 'une pharmacie'} sur Arthur`,
+        content: 'auto',
+        html: `
+          <h1>Bienvenue sur Arthur</h1>
+          <p>Vous avez été invité à rejoindre l'équipe de <strong>${pharmacy?.name || 'une pharmacie'}</strong>.</p>
+          <p>Voici vos identifiants de connexion :</p>
+          <ul>
+            <li><strong>Email :</strong> ${email}</li>
+            ${!userAlreadyExists ? `<li><strong>Mot de passe provisoire :</strong> ${temporaryPassword}</li>` : ''}
+          </ul>
+          ${!userAlreadyExists ? '<p><strong>Important :</strong> Vous devrez changer ce mot de passe lors de votre première connexion.</p>' : ''}
+          <p><a href="${loginUrl}" style="display: inline-block; padding: 12px 24px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 6px; margin-top: 16px;">Se connecter maintenant</a></p>
+          <p style="margin-top: 24px; color: #6b7280; font-size: 14px;">Si vous n'avez pas demandé cette invitation, vous pouvez ignorer cet email.</p>
+        `,
+      });
+
+      await client.close();
+      console.log('Email envoyé avec succès via SMTP');
+    } catch (error: any) {
       emailSent = false;
-      emailErrorMessage = sendResult.error.message || 'Erreur inconnue lors de l\'envoi';
-      console.error('Erreur envoi email:', sendResult.error);
+      emailErrorMessage = error.message || 'Erreur lors de l\'envoi de l\'email';
+      console.error('Erreur envoi email SMTP:', error);
     }
 
     console.log('Résultat invitation:', {
