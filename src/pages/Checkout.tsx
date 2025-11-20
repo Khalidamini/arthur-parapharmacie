@@ -531,7 +531,7 @@ export default function Checkout() {
             <p className="text-xs text-muted-foreground text-center mt-4">
               Paiement sécurisé par Stripe. 
               {deliveryMethod === 'delivery' 
-                ? ` Votre commande sera ${deliveryLocationType === 'relay' ? 'disponible en point relais' : 'livrée à domicile'} ${estimatedDeliveryDate ? format(estimatedDeliveryDate, 'le dd/MM/yyyy', { locale: fr }) : 'sous quelques jours'}.`
+                ? ` Votre commande sera ${deliveryLocationType === 'relay' ? 'disponible en point relais' : 'livrée à domicile'} ${estimatedDeliveryDate ? format(estimatedDeliveryDate, "'le' dd/MM/yyyy", { locale: fr }) : 'sous quelques jours'}.`
                 : ' Vous pourrez retirer votre commande à la pharmacie après paiement.'}
             </p>
           </CardContent>
