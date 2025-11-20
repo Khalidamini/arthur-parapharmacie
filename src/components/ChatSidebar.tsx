@@ -123,11 +123,11 @@ export function ChatSidebar() {
   const isActive = (convId: string) => currentConvId === convId;
 
   return (
-    <Sidebar className="w-64 bg-background border-r border-border">
-      <SidebarHeader className="p-4 border-b border-border bg-background">
+    <Sidebar className="w-64 md:w-72 bg-background border-r border-border">
+      <SidebarHeader className="p-3 border-b border-border bg-background">
         <Button
           onClick={createNewConversation}
-          className="w-full justify-start gap-2"
+          className="w-full justify-start gap-2 text-sm"
           variant="outline"
         >
           <Plus className="h-4 w-4" />
@@ -135,9 +135,9 @@ export function ChatSidebar() {
         </Button>
       </SidebarHeader>
 
-      <SidebarContent className="bg-background">
+      <SidebarContent className="bg-background overflow-y-auto">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-muted-foreground px-4 py-2">
+          <SidebarGroupLabel className="text-muted-foreground px-3 py-2 text-xs">
             Historique
           </SidebarGroupLabel>
 
@@ -147,20 +147,20 @@ export function ChatSidebar() {
                 <SidebarMenuItem key={conv.id}>
                   <SidebarMenuButton
                     onClick={() => navigate(`/chat?conversationId=${conv.id}`)}
-                    className={`group relative text-foreground ${
+                    className={`group relative text-foreground text-sm ${
                       isActive(conv.id)
                         ? 'bg-accent text-accent-foreground font-medium'
                         : 'hover:bg-accent/50 hover:text-accent-foreground'
                     }`}
                   >
-                    <MessageSquare className="h-4 w-4 flex-shrink-0" />
-                    <span className="flex-1 truncate text-sm">
+                    <MessageSquare className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="flex-1 truncate text-xs sm:text-sm">
                       {conv.title}
                     </span>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10"
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 flex-shrink-0"
                       onClick={(e) => deleteConversation(conv.id, e)}
                     >
                       <Trash2 className="h-3 w-3 text-destructive" />

@@ -326,32 +326,36 @@ const Chat = () => {
         
         <div className="flex flex-col flex-1 h-screen">
           {/* Header */}
-          <div className="bg-card border-b border-border shadow-sm">
-            <div className="max-w-3xl w-full mx-auto px-2 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1 sm:gap-3 min-w-0">
-                <SidebarTrigger className="flex-shrink-0" />
-                <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-full flex-shrink-0">
-                  <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+          <div className="bg-card border-b border-border shadow-sm sticky top-0 z-10">
+            <div className="max-w-3xl w-full mx-auto px-3 py-3 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <SidebarTrigger className="flex-shrink-0 h-8 w-8" />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => navigate('/')} 
+                  className="rounded-full flex-shrink-0 h-8 w-8"
+                >
+                  <ArrowLeft className="h-4 w-4" />
                 </Button>
-                <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
                   <img 
                     src="/icon-192.png" 
                     alt="Arthur Logo" 
-                    className="h-8 w-8 sm:h-10 sm:w-10 rounded-full flex-shrink-0"
+                    className="h-8 w-8 rounded-full flex-shrink-0"
                   />
-                  <div className="min-w-0">
-                    <h1 className="font-semibold text-foreground text-sm sm:text-base truncate">Arthur</h1>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Assistant parapharmacie</p>
+                  <div className="min-w-0 flex-1">
+                    <h1 className="font-semibold text-foreground text-sm truncate">Arthur</h1>
+                    <p className="text-xs text-muted-foreground truncate hidden sm:block">Assistant parapharmacie</p>
                   </div>
                 </div>
               </div>
-              
             </div>
           </div>
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto pb-40">
-            <div className="max-w-3xl w-full mx-auto px-2 sm:px-4 py-4 sm:py-6">
+            <div className="max-w-3xl w-full mx-auto px-3 py-4">
 
               {/* Welcome Message */}
               {messages.length === 0 && <div className="text-center py-12 animate-in fade-in duration-500">
@@ -464,17 +468,24 @@ const Chat = () => {
           </div>
 
           {/* Promotions Slider - fixe au-dessus de l'input */}
-          {promotions.length > 0 && <div className="bg-card border-t border-border">
-              <div className="max-w-3xl w-full mx-auto px-2 sm:px-4 py-2 sm:py-3">
+          {promotions.length > 0 && <div className="bg-card border-t border-border sticky bottom-16 z-10">
+              <div className="max-w-3xl w-full mx-auto px-3 py-2">
                 <PromotionSlider promotions={promotions} onSelectPromotion={handleSelectPromotion} />
               </div>
             </div>}
 
           {/* Input */}
-          <div className="bg-card border-t border-border shadow-lg mb-16">
-            <div className="max-w-3xl w-full mx-auto px-2 sm:px-4 py-3 sm:py-4">
-              <div className="flex gap-1 sm:gap-2">
-                <Input value={input} onChange={e => setInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSend()} placeholder="Posez votre question à Arthur..." disabled={loading} className="flex-1 rounded-full border-2 focus-visible:ring-primary" />
+          <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-lg z-20">
+            <div className="max-w-3xl w-full mx-auto px-3 py-3">
+              <div className="flex gap-2">
+                <Input 
+                  value={input} 
+                  onChange={e => setInput(e.target.value)} 
+                  onKeyPress={e => e.key === 'Enter' && handleSend()} 
+                  placeholder="Votre question..." 
+                  disabled={loading} 
+                  className="flex-1 rounded-full border-2 focus-visible:ring-primary text-sm" 
+                />
                 <Button onClick={handleSend} disabled={loading || !input.trim()} className="rounded-full bg-gradient-primary hover:opacity-90 transition-opacity px-6">
                   <Send className="h-4 w-4" />
                 </Button>
