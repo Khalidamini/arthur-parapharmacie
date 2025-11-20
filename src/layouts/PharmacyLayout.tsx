@@ -22,40 +22,47 @@ const PharmacyLayout = ({ children, pharmacyName }: PharmacyLayoutProps) => {
     <div className="min-h-screen bg-gradient-subtle pb-20">
       {/* Header */}
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <img 
               src="/icon-192.png" 
               alt="Arthur Logo" 
-              className="h-10 w-10 rounded-full"
+              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full shrink-0"
             />
-            <div>
-              <h1 className="font-bold text-xl">Back-Office Pharmacie</h1>
+            <div className="min-w-0">
+              <h1 className="font-bold text-sm sm:text-xl truncate">Back-Office Pharmacie</h1>
               {pharmacyName && (
-                <p className="text-sm text-muted-foreground">{pharmacyName}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">{pharmacyName}</p>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <Button 
               variant="ghost" 
               size="sm"
               onClick={() => navigate('/pharmacy-profile')}
+              className="px-2 sm:px-3"
             >
-              <User className="mr-2 h-4 w-4" />
-              Mon Profil
+              <User className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Mon Profil</span>
             </Button>
             <Button 
               variant="ghost" 
               size="sm"
               onClick={() => navigate('/')}
+              className="px-2 sm:px-3"
             >
-              <Home className="mr-2 h-4 w-4" />
-              Espace Client
+              <Home className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Espace Client</span>
             </Button>
-            <Button variant="outline" onClick={handleSignOut}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Déconnexion
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleSignOut}
+              className="px-2 sm:px-3"
+            >
+              <LogOut className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Déconnexion</span>
             </Button>
           </div>
         </div>
