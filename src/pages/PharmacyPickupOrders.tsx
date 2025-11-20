@@ -376,96 +376,99 @@ const PharmacyPickupOrders = () => {
 
   return (
     <PharmacyLayout>
-      <div className="min-h-screen bg-background p-4 md:p-8">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="flex items-center gap-4">
+      <div className="min-h-screen bg-background p-3 sm:p-4 md:p-8">
+        <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Button
               variant="ghost"
+              size="sm"
               onClick={() => navigate('/pharmacy-dashboard')}
               className="gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              Retour
+              <span className="hidden sm:inline">Retour</span>
             </Button>
           </div>
 
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-foreground">Commandes à Emporter</h1>
-            <p className="text-muted-foreground">{pharmacyName}</p>
+          <div className="space-y-1 sm:space-y-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Commandes à Emporter</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">{pharmacyName}</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">En Attente</CardTitle>
+              <CardHeader className="pb-2 px-3 sm:px-6">
+                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">En Attente</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.pending}</div>
+              <CardContent className="px-3 sm:px-6">
+                <div className="text-xl sm:text-2xl font-bold">{stats.pending}</div>
               </CardContent>
             </Card>
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">En Préparation</CardTitle>
+              <CardHeader className="pb-2 px-3 sm:px-6">
+                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">En Préparation</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.preparation}</div>
+              <CardContent className="px-3 sm:px-6">
+                <div className="text-xl sm:text-2xl font-bold">{stats.preparation}</div>
               </CardContent>
             </Card>
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Prêtes</CardTitle>
+              <CardHeader className="pb-2 px-3 sm:px-6">
+                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Prêtes</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.ready}</div>
+              <CardContent className="px-3 sm:px-6">
+                <div className="text-xl sm:text-2xl font-bold">{stats.ready}</div>
               </CardContent>
             </Card>
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Terminées</CardTitle>
+              <CardHeader className="pb-2 px-3 sm:px-6">
+                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Terminées</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.completed}</div>
+              <CardContent className="px-3 sm:px-6">
+                <div className="text-xl sm:text-2xl font-bold">{stats.completed}</div>
               </CardContent>
             </Card>
           </div>
 
           <Card>
-            <CardHeader>
-              <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-                <CardTitle>Filtrer et Trier</CardTitle>
-                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                  <div className="relative flex-1 md:w-64">
+            <CardHeader className="px-3 sm:px-6">
+              <div className="flex flex-col gap-3">
+                <CardTitle className="text-base sm:text-lg">Filtrer et Trier</CardTitle>
+                <div className="flex flex-col gap-2">
+                  <div className="relative w-full">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="Rechercher..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9"
+                      className="pl-9 text-sm"
                     />
                   </div>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-full sm:w-[180px]">
-                      <SelectValue placeholder="Statut" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Toutes</SelectItem>
-                      <SelectItem value="pending">En attente</SelectItem>
-                      <SelectItem value="preparation">En préparation</SelectItem>
-                      <SelectItem value="ready">Prêtes</SelectItem>
-                      <SelectItem value="completed">Terminées</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-full sm:w-[180px]">
-                      <SelectValue placeholder="Trier par" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="date-desc">Plus récentes</SelectItem>
-                      <SelectItem value="date-asc">Plus anciennes</SelectItem>
-                      <SelectItem value="amount-desc">Montant décroissant</SelectItem>
-                      <SelectItem value="amount-asc">Montant croissant</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="text-sm">
+                        <SelectValue placeholder="Statut" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Toutes</SelectItem>
+                        <SelectItem value="pending">En attente</SelectItem>
+                        <SelectItem value="preparation">En préparation</SelectItem>
+                        <SelectItem value="ready">Prêtes</SelectItem>
+                        <SelectItem value="completed">Terminées</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={sortBy} onValueChange={setSortBy}>
+                      <SelectTrigger className="text-sm">
+                        <SelectValue placeholder="Trier par" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="date-desc">Plus récentes</SelectItem>
+                        <SelectItem value="date-asc">Plus anciennes</SelectItem>
+                        <SelectItem value="amount-desc">Montant ↓</SelectItem>
+                        <SelectItem value="amount-asc">Montant ↑</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
             </CardHeader>

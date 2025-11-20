@@ -96,43 +96,57 @@ const PharmacyDashboard = () => {
 
   return (
     <PharmacyLayout pharmacyName={pharmacyData?.name}>
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-6 flex gap-4">
-          <Button onClick={() => navigate('/pharmacy-pickup-orders')} className="mb-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+        <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row gap-3">
+          <Button 
+            onClick={() => navigate('/pharmacy-pickup-orders')} 
+            className="w-full sm:w-auto"
+          >
             <Package className="mr-2 h-4 w-4" />
-            Commandes à Emporter
+            <span className="hidden sm:inline">Commandes à Emporter</span>
+            <span className="sm:hidden">À Emporter</span>
           </Button>
-          <Button onClick={() => navigate('/pharmacy-delivery-orders')} className="mb-4" variant="secondary">
+          <Button 
+            onClick={() => navigate('/pharmacy-delivery-orders')} 
+            className="w-full sm:w-auto" 
+            variant="secondary"
+          >
             <Package className="mr-2 h-4 w-4" />
             Livraisons
           </Button>
         </div>
 
         <Tabs defaultValue="info" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="info">
-              <Building2 className="mr-2 h-4 w-4" />
-              Informations
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            <TabsTrigger value="info" className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Informations</span>
+              <span className="sm:hidden">Info</span>
             </TabsTrigger>
-            <TabsTrigger value="products">
-              <Package className="mr-2 h-4 w-4" />
-              Produits
+            <TabsTrigger value="products" className="flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              <span className="hidden sm:inline">Produits</span>
+              <span className="sm:hidden">Produits</span>
             </TabsTrigger>
-            <TabsTrigger value="promotions">
-              <Tag className="mr-2 h-4 w-4" />
-              Promotions
+            <TabsTrigger value="promotions" className="flex items-center gap-2">
+              <Tag className="h-4 w-4" />
+              <span className="hidden sm:inline">Promotions</span>
+              <span className="sm:hidden">Promos</span>
             </TabsTrigger>
-            <TabsTrigger value="sync">
-              <Upload className="mr-2 h-4 w-4" />
-              Synchronisation
+            <TabsTrigger value="sync" className="flex items-center gap-2">
+              <Upload className="h-4 w-4" />
+              <span className="hidden sm:inline">Synchronisation</span>
+              <span className="sm:hidden">Sync</span>
             </TabsTrigger>
-            <TabsTrigger value="team">
-              <Users className="mr-2 h-4 w-4" />
-              Équipe
+            <TabsTrigger value="team" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Équipe</span>
+              <span className="sm:hidden">Équipe</span>
             </TabsTrigger>
-            <TabsTrigger value="logs">
-              <Activity className="mr-2 h-4 w-4" />
-              Journal
+            <TabsTrigger value="logs" className="flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              <span className="hidden sm:inline">Journal</span>
+              <span className="sm:hidden">Journal</span>
             </TabsTrigger>
           </TabsList>
 
