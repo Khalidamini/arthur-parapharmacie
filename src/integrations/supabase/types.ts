@@ -100,7 +100,12 @@ export type Database = {
           completed_at: string | null
           created_at: string
           delivery_address: Json | null
+          delivery_location_type: string | null
           delivery_method: string | null
+          delivery_status: string | null
+          delivery_status_id: number | null
+          delivery_type: string | null
+          estimated_delivery_date: string | null
           id: string
           notification_email: string | null
           notification_sent_at: string | null
@@ -108,7 +113,11 @@ export type Database = {
           payment_status: string | null
           pharmacy_id: string | null
           pickup_message: string | null
+          preparation_notified_at: string | null
           ready_for_pickup: boolean | null
+          relay_point_address: string | null
+          relay_point_id: string | null
+          relay_point_name: string | null
           shipping_label_url: string | null
           shipping_tracking_number: string | null
           status: string
@@ -120,7 +129,12 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           delivery_address?: Json | null
+          delivery_location_type?: string | null
           delivery_method?: string | null
+          delivery_status?: string | null
+          delivery_status_id?: number | null
+          delivery_type?: string | null
+          estimated_delivery_date?: string | null
           id?: string
           notification_email?: string | null
           notification_sent_at?: string | null
@@ -128,7 +142,11 @@ export type Database = {
           payment_status?: string | null
           pharmacy_id?: string | null
           pickup_message?: string | null
+          preparation_notified_at?: string | null
           ready_for_pickup?: boolean | null
+          relay_point_address?: string | null
+          relay_point_id?: string | null
+          relay_point_name?: string | null
           shipping_label_url?: string | null
           shipping_tracking_number?: string | null
           status?: string
@@ -140,7 +158,12 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           delivery_address?: Json | null
+          delivery_location_type?: string | null
           delivery_method?: string | null
+          delivery_status?: string | null
+          delivery_status_id?: number | null
+          delivery_type?: string | null
+          estimated_delivery_date?: string | null
           id?: string
           notification_email?: string | null
           notification_sent_at?: string | null
@@ -148,7 +171,11 @@ export type Database = {
           payment_status?: string | null
           pharmacy_id?: string | null
           pickup_message?: string | null
+          preparation_notified_at?: string | null
           ready_for_pickup?: boolean | null
+          relay_point_address?: string | null
+          relay_point_id?: string | null
+          relay_point_name?: string | null
           shipping_label_url?: string | null
           shipping_tracking_number?: string | null
           status?: string
@@ -528,6 +555,7 @@ export type Database = {
           image_url: string | null
           original_price: number | null
           pharmacy_id: string
+          product_id: string | null
           title: string
           valid_until: string | null
         }
@@ -539,6 +567,7 @@ export type Database = {
           image_url?: string | null
           original_price?: number | null
           pharmacy_id: string
+          product_id?: string | null
           title: string
           valid_until?: string | null
         }
@@ -550,10 +579,19 @@ export type Database = {
           image_url?: string | null
           original_price?: number | null
           pharmacy_id?: string
+          product_id?: string | null
           title?: string
           valid_until?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "promotions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recommendations: {
         Row: {
