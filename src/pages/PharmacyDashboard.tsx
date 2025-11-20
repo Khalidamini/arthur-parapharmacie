@@ -116,39 +116,35 @@ const PharmacyDashboard = () => {
           </Button>
         </div>
 
-        <Tabs defaultValue="info" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-            <TabsTrigger value="info" className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Informations</span>
-              <span className="sm:hidden">Info</span>
-            </TabsTrigger>
-            <TabsTrigger value="products" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              <span className="hidden sm:inline">Produits</span>
-              <span className="sm:hidden">Produits</span>
-            </TabsTrigger>
-            <TabsTrigger value="promotions" className="flex items-center gap-2">
-              <Tag className="h-4 w-4" />
-              <span className="hidden sm:inline">Promotions</span>
-              <span className="sm:hidden">Promos</span>
-            </TabsTrigger>
-            <TabsTrigger value="sync" className="flex items-center gap-2">
-              <Upload className="h-4 w-4" />
-              <span className="hidden sm:inline">Synchronisation</span>
-              <span className="sm:hidden">Sync</span>
-            </TabsTrigger>
-            <TabsTrigger value="team" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Équipe</span>
-              <span className="sm:hidden">Équipe</span>
-            </TabsTrigger>
-            <TabsTrigger value="logs" className="flex items-center gap-2">
-              <Activity className="h-4 w-4" />
-              <span className="hidden sm:inline">Journal</span>
-              <span className="sm:hidden">Journal</span>
-            </TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="info" className="space-y-4 sm:space-y-6">
+          <div className="w-full overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
+            <TabsList className="inline-flex sm:grid w-max sm:w-full min-w-full sm:min-w-0 sm:grid-cols-3 lg:grid-cols-6 h-auto p-1">
+              <TabsTrigger value="info" className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                <span>Info</span>
+              </TabsTrigger>
+              <TabsTrigger value="products" className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                <span>Produits</span>
+              </TabsTrigger>
+              <TabsTrigger value="promotions" className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                <span>Promos</span>
+              </TabsTrigger>
+              <TabsTrigger value="sync" className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Upload className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                <span>Sync</span>
+              </TabsTrigger>
+              <TabsTrigger value="team" className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                <span>Équipe</span>
+              </TabsTrigger>
+              <TabsTrigger value="logs" className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap">
+                <Activity className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                <span>Journal</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Informations de la pharmacie */}
           <TabsContent value="info">
@@ -164,13 +160,13 @@ const PharmacyDashboard = () => {
           {/* Gestion des produits */}
           <TabsContent value="products">
             <Card>
-              <CardHeader>
-                <CardTitle>Catalogue produits</CardTitle>
-                <CardDescription>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl">Catalogue produits</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
                   Gérez votre catalogue de produits et créez des promotions
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
                 {pharmacyId && <PharmacyProductsList pharmacyId={pharmacyId} />}
               </CardContent>
             </Card>
@@ -179,14 +175,14 @@ const PharmacyDashboard = () => {
           {/* Gestion des promotions */}
           <TabsContent value="promotions">
             <Card>
-              <CardHeader>
-                <CardTitle>Promotions actives</CardTitle>
-                <CardDescription>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl">Promotions actives</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
                   Gérez vos promotions affichées dans l'application Arthur
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
+              <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Les promotions sont affichées dans le slider de l'application Arthur pour vos clients.
                   Pour créer une promotion, allez dans l'onglet Produits.
                 </p>
