@@ -41,7 +41,7 @@ serve(async (req) => {
     // Get cart details
     const { data: cart, error: cartError } = await supabaseClient
       .from('carts')
-      .select('id, user_id, pharmacy_id, amount_total, payment_intent_id, delivery_method, delivery_address, notification_email')
+      .select('id, user_id, pharmacy_id, amount_total, payment_intent_id, delivery_method, delivery_type, delivery_location_type, delivery_address, notification_email')
       .eq('id', cartId)
       .maybeSingle();
 
@@ -77,8 +77,22 @@ serve(async (req) => {
       sum + (Number(item.price) * item.quantity), 0
     );
     
-    // Add delivery fee if delivery method is selected
-    const deliveryFee = cart.delivery_method === 'delivery' ? 6.90 : 0;
+    // Calculate delivery fee based on delivery type and location
+    let deliveryFee = 0;
+    if (cart.delivery_method === 'delivery') {
+      const isExpress = cart.delivery_type === 'express';
+      const isHome = cart.delivery_location_type === 'home';
+      
+      if (isHome && isExpress) {
+        deliveryFee = 12.90;
+      } else if (isHome && !isExpress) {
+        deliveryFee = 6.90;
+      } else if (!isHome && isExpress) {
+        deliveryFee = 9.90;
+      } else {
+        deliveryFee = 4.90;
+      }
+    }
     const totalAmount = cartItemsTotal + deliveryFee;
 
     // Initialize Stripe
@@ -113,12 +127,24 @@ serve(async (req) => {
 
     // Add delivery fee as a line item if applicable
     if (deliveryFee > 0) {
+      const isExpress = cart.delivery_type === 'express';
+      const isHome = cart.delivery_location_type === 'home';
+      
+      let deliveryDescription = 'Livraison ';
+      if (isExpress) {
+        deliveryDescription += 'express ';
+      } else {
+        deliveryDescription += 'standard ';
+      }
+      deliveryDescription += isHome ? 'à domicile' : 'en point relais';
+      deliveryDescription += ' via Sendcloud';
+      
       lineItems.push({
         price_data: {
           currency: 'eur',
           product_data: {
             name: 'Frais de livraison',
-            description: 'Livraison à domicile via Shipy',
+            description: deliveryDescription,
             images: [],
           },
           unit_amount: Math.round(deliveryFee * 100),
