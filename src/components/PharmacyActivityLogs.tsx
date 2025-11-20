@@ -246,14 +246,14 @@ const PharmacyActivityLogs = ({ pharmacyId }: PharmacyActivityLogsProps) => {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
+      <CardHeader className="p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <Activity className="h-4 w-4 sm:h-5 sm:w-5" />
               Journal des activités
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs sm:text-sm mt-1">
               Suivi de toutes les opérations effectuées par votre équipe
             </CardDescription>
           </div>
@@ -263,27 +263,29 @@ const PharmacyActivityLogs = ({ pharmacyId }: PharmacyActivityLogsProps) => {
               size="sm" 
               onClick={exportToCSV}
               disabled={filteredLogs.length === 0}
+              className="flex-1 sm:flex-initial"
             >
-              <Download className="h-4 w-4 mr-2" />
-              Exporter CSV
+              <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Exporter CSV</span>
+              <span className="sm:hidden text-xs">CSV</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={fetchLogs}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Actualiser
+            <Button variant="outline" size="sm" onClick={fetchLogs} className="flex-1 sm:flex-initial">
+              <RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Actualiser</span>
             </Button>
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-4 sm:p-6">
         {/* Filtres et recherche */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
-          <div className="space-y-2">
-            <label className="text-sm font-medium flex items-center gap-2">
-              <User className="h-4 w-4" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="space-y-1.5 sm:space-y-2">
+            <label className="text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2">
+              <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               Collaborateur
             </label>
             <Select value={selectedUser} onValueChange={setSelectedUser}>
-              <SelectTrigger>
+              <SelectTrigger className="h-9 text-xs sm:text-sm">
                 <SelectValue placeholder="Tous" />
               </SelectTrigger>
               <SelectContent>
@@ -302,13 +304,13 @@ const PharmacyActivityLogs = ({ pharmacyId }: PharmacyActivityLogsProps) => {
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium flex items-center gap-2">
-              <Filter className="h-4 w-4" />
+          <div className="space-y-1.5 sm:space-y-2">
+            <label className="text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2">
+              <Filter className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               Type d'action
             </label>
             <Select value={selectedActionType} onValueChange={setSelectedActionType}>
-              <SelectTrigger>
+              <SelectTrigger className="h-9 text-xs sm:text-sm">
                 <SelectValue placeholder="Toutes" />
               </SelectTrigger>
               <SelectContent>
@@ -323,21 +325,22 @@ const PharmacyActivityLogs = ({ pharmacyId }: PharmacyActivityLogsProps) => {
           </div>
 
           {/* Date de début */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium flex items-center gap-2">
-              <CalendarIcon className="h-4 w-4" />
+          <div className="space-y-1.5 sm:space-y-2">
+            <label className="text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2">
+              <CalendarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               Date de début
             </label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
+                  size="sm"
                   className={cn(
-                    "w-full justify-start text-left font-normal",
+                    "w-full h-9 justify-start text-left font-normal text-xs sm:text-sm",
                     !startDate && "text-muted-foreground"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <CalendarIcon className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   {startDate ? format(startDate, "dd/MM/yyyy", { locale: fr }) : "Sélectionner"}
                 </Button>
               </PopoverTrigger>
@@ -354,21 +357,22 @@ const PharmacyActivityLogs = ({ pharmacyId }: PharmacyActivityLogsProps) => {
           </div>
 
           {/* Date de fin */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium flex items-center gap-2">
-              <CalendarIcon className="h-4 w-4" />
+          <div className="space-y-1.5 sm:space-y-2">
+            <label className="text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2">
+              <CalendarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               Date de fin
             </label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
+                  size="sm"
                   className={cn(
-                    "w-full justify-start text-left font-normal",
+                    "w-full h-9 justify-start text-left font-normal text-xs sm:text-sm",
                     !endDate && "text-muted-foreground"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <CalendarIcon className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   {endDate ? format(endDate, "dd/MM/yyyy", { locale: fr }) : "Sélectionner"}
                 </Button>
               </PopoverTrigger>
@@ -384,13 +388,13 @@ const PharmacyActivityLogs = ({ pharmacyId }: PharmacyActivityLogsProps) => {
             </Popover>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
+          <div className="space-y-1.5 sm:space-y-2">
+            <label className="text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2">
+              <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               Trier par
             </label>
             <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-              <SelectTrigger>
+              <SelectTrigger className="h-9 text-xs sm:text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -401,10 +405,10 @@ const PharmacyActivityLogs = ({ pharmacyId }: PharmacyActivityLogsProps) => {
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Ordre</label>
+          <div className="space-y-1.5 sm:space-y-2">
+            <label className="text-xs sm:text-sm font-medium">Ordre</label>
             <Select value={sortOrder} onValueChange={(value: any) => setSortOrder(value)}>
-              <SelectTrigger>
+              <SelectTrigger className="h-9 text-xs sm:text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -415,26 +419,27 @@ const PharmacyActivityLogs = ({ pharmacyId }: PharmacyActivityLogsProps) => {
           </div>
 
           {/* Recherche */}
-          <div className="space-y-2 md:col-span-2">
-            <label className="text-sm font-medium flex items-center gap-2">
-              <Filter className="h-4 w-4" />
+          <div className="space-y-1.5 sm:space-y-2 sm:col-span-2">
+            <label className="text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2">
+              <Filter className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               Recherche
             </label>
             <Input
               placeholder="Rechercher dans le journal..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-9 text-xs sm:text-sm"
             />
           </div>
         </div>
 
         {/* Résumé */}
-        <div className="text-sm text-muted-foreground mb-4">
+        <div className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
           {filteredLogs.length} activité{filteredLogs.length > 1 ? 's' : ''} trouvée{filteredLogs.length > 1 ? 's' : ''}
         </div>
 
-        {/* Tableau */}
-        <div className="rounded-md border">
+        {/* Tableau desktop */}
+        <div className="hidden md:block rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -478,6 +483,42 @@ const PharmacyActivityLogs = ({ pharmacyId }: PharmacyActivityLogsProps) => {
               )}
             </TableBody>
           </Table>
+        </div>
+
+        {/* Cartes mobile */}
+        <div className="md:hidden space-y-3">
+          {filteredLogs.length === 0 ? (
+            <div className="text-center text-muted-foreground py-8 text-sm">
+              Aucune activité trouvée
+            </div>
+          ) : (
+            filteredLogs.map((log) => (
+              <Card key={log.id} className="p-3">
+                <div className="space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">{log.user_name}</div>
+                      <div className="text-xs text-muted-foreground truncate">{log.user_email}</div>
+                    </div>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary whitespace-nowrap">
+                      {getActionLabel(log.action_type)}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground font-mono">
+                    {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}
+                  </div>
+                  {log.action_details && (
+                    <details className="text-xs">
+                      <summary className="cursor-pointer text-primary font-medium">Voir détails</summary>
+                      <pre className="mt-2 text-muted-foreground overflow-auto p-2 bg-muted rounded text-[10px]">
+                        {JSON.stringify(log.action_details, null, 2)}
+                      </pre>
+                    </details>
+                  )}
+                </div>
+              </Card>
+            ))
+          )}
         </div>
       </CardContent>
     </Card>
