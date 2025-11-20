@@ -121,37 +121,37 @@ const PromotionSlider = ({ promotions, onSelectPromotion }: PromotionSliderProps
 
   return (
     <>
-      <div className="w-full" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
-        <div className="container max-w-3xl mx-auto relative">
+      <div className="w-full overflow-hidden" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
+        <div className="max-w-3xl mx-auto relative px-0">
           <Card 
             className="cursor-pointer hover:shadow-xl transition-all duration-300 overflow-hidden border-2 border-primary/20 hover:border-primary/40"
             onClick={() => handlePromotionClick(currentIndex)}
           >
             <CardContent className="p-2 sm:p-3">
-              <div className="flex items-center gap-1.5 sm:gap-3">
+              <div className="flex items-center gap-1.5 sm:gap-3 w-full">
                 {currentPromo.image_url && (
-                  <div className="relative h-16 w-16 sm:h-24 sm:w-24 flex-shrink-0 overflow-hidden bg-muted rounded-md">
+                  <div className="relative h-14 w-14 sm:h-20 sm:w-20 flex-shrink-0 overflow-hidden bg-muted rounded-md">
                     <img
                       src={currentPromo.image_url}
                       alt={currentPromo.title}
                       className="h-full w-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
-                    <Badge className="absolute top-1 right-1 bg-gradient-primary text-primary-foreground border-0 shadow-lg text-xs px-1.5 py-0.5">
+                    <Badge className="absolute top-0.5 right-0.5 bg-gradient-primary text-primary-foreground border-0 shadow-lg text-[10px] sm:text-xs px-1 py-0.5">
                       -{currentPromo.discount_percentage}%
                     </Badge>
                   </div>
                 )}
-                <div className="flex-1 min-w-0 pr-2 py-2">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <Tag className="h-3 w-3 sm:h-4 sm:w-4 text-primary flex-shrink-0" />
-                    <h3 className="font-bold text-sm sm:text-base text-foreground truncate">{currentPromo.title}</h3>
+                <div className="flex-1 min-w-0 overflow-hidden py-1">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <Tag className="h-3 w-3 text-primary flex-shrink-0" />
+                    <h3 className="font-bold text-xs sm:text-sm text-foreground truncate">{currentPromo.title}</h3>
                   </div>
-                  <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1 mb-2">{currentPromo.description}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-1 mb-1">{currentPromo.description}</p>
                   {currentPromo.original_price && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs sm:text-sm text-muted-foreground line-through">{currentPromo.original_price.toFixed(2)}€</span>
-                      <span className="text-base sm:text-lg font-bold text-primary">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[10px] sm:text-xs text-muted-foreground line-through whitespace-nowrap">{currentPromo.original_price.toFixed(2)}€</span>
+                      <span className="text-sm sm:text-base font-bold text-primary whitespace-nowrap">
                         {(currentPromo.original_price * (1 - currentPromo.discount_percentage / 100)).toFixed(2)}€
                       </span>
                     </div>
@@ -166,35 +166,35 @@ const PromotionSlider = ({ promotions, onSelectPromotion }: PromotionSliderProps
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/90 backdrop-blur-sm hover:bg-background shadow-lg z-10"
+                className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-background/90 backdrop-blur-sm hover:bg-background shadow-lg z-10"
                 onClick={(e) => {
                   e.stopPropagation();
                   prevSlide();
                 }}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/90 backdrop-blur-sm hover:bg-background shadow-lg z-10"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-background/90 backdrop-blur-sm hover:bg-background shadow-lg z-10"
                 onClick={(e) => {
                   e.stopPropagation();
                   nextSlide();
                 }}
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             </>
           )}
 
           {promotions.length > 1 && (
-            <div className="flex justify-center gap-1.5 mt-2">
+            <div className="flex justify-center gap-1 mt-1.5">
               {promotions.map((_, index) => (
                 <button
                   key={index}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    index === currentIndex ? 'w-6 bg-primary' : 'w-1.5 bg-muted'
+                  className={`h-1 sm:h-1.5 rounded-full transition-all duration-300 ${
+                    index === currentIndex ? 'w-4 sm:w-6 bg-primary' : 'w-1 sm:w-1.5 bg-muted'
                   }`}
                   onClick={(e) => {
                     e.stopPropagation();
