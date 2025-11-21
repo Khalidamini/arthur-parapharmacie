@@ -224,19 +224,25 @@ const Shop = () => {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Retour
             </Button>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => navigate('/promotions')}>
-                <Tag className="mr-2 h-4 w-4" />
-                Promotions
-              </Button>
-              <Button variant="outline" onClick={() => navigate('/cart')}>
-                <ShoppingBag className="mr-2 h-4 w-4" />
-                Panier ({cart.totalItems})
-              </Button>
-            </div>
+            <Button variant="outline" onClick={() => navigate('/cart')}>
+              <ShoppingBag className="mr-2 h-4 w-4" />
+              Panier ({cart.totalItems})
+            </Button>
           </div>
-          <h1 className="text-3xl font-bold">Boutique</h1>
-          <p className="text-muted-foreground">{pharmacyName}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Boutique</h1>
+              <p className="text-muted-foreground">{pharmacyName}</p>
+            </div>
+            <Button
+              size="lg"
+              onClick={() => navigate("/promotions")}
+              className="flex items-center gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg"
+            >
+              <Tag className="h-5 w-5" />
+              🎉 Promotions
+            </Button>
+          </div>
         </div>
 
         {/* Search and Filters */}
