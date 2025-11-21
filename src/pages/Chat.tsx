@@ -466,7 +466,7 @@ const Chat = () => {
           </div>
 
           {/* Promotions Slider - fixe au-dessus de l'input */}
-          {promotions.length > 0 && <div className="bg-card border-t border-border sticky bottom-16 z-10">
+          {promotions.length > 0 && <div className="bg-card border-t border-border sticky bottom-32 z-10">
               <div className="w-full px-2 sm:px-3 py-2 max-w-3xl mx-auto">
                 <PromotionSlider promotions={promotions} onSelectPromotion={handleSelectPromotion} />
               </div>
@@ -474,12 +474,14 @@ const Chat = () => {
 
           {/* Input & Voice Interface */}
           <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-lg z-20">
-            <div className="max-w-3xl w-full mx-auto px-3 py-3 space-y-3">
-              {/* Voice Interface */}
-              <VoiceInterface 
-                userId={userId}
-                selectedPharmacyId={cart.selectedPharmacyId}
-              />
+            <div className="max-w-3xl w-full mx-auto px-3 py-3">
+              {/* Voice Interface - compact version */}
+              <div className="mb-3">
+                <VoiceInterface 
+                  userId={userId}
+                  selectedPharmacyId={cart.selectedPharmacyId}
+                />
+              </div>
               
               {/* Text Input */}
               <div className="flex gap-2">
@@ -487,7 +489,7 @@ const Chat = () => {
                   value={input} 
                   onChange={e => setInput(e.target.value)} 
                   onKeyPress={e => e.key === 'Enter' && handleSend()} 
-                  placeholder="Votre question..." 
+                  placeholder="Ou écrivez votre question..." 
                   disabled={loading} 
                   className="flex-1 rounded-full border-2 focus-visible:ring-primary text-sm" 
                 />

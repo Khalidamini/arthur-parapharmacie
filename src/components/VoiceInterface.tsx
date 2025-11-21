@@ -27,7 +27,8 @@ const VoiceInterface = ({ userId, selectedPharmacyId }: VoiceInterfaceProps) => 
   const connect = async () => {
     try {
       console.log('Requesting microphone access...');
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop()); // Stop immediately, just checking permission
       
       console.log('Initializing audio context...');
       audioContextRef.current = new AudioContext({ sampleRate: 24000 });
@@ -44,8 +45,8 @@ const VoiceInterface = ({ userId, selectedPharmacyId }: VoiceInterfaceProps) => 
         startRecording();
         
         toast({
-          title: "Connexion établie",
-          description: "Arthur vous écoute",
+          title: "🎙️ Connexion établie",
+          description: "Arthur vous écoute, parlez naturellement",
         });
       };
 
@@ -90,10 +91,18 @@ const VoiceInterface = ({ userId, selectedPharmacyId }: VoiceInterfaceProps) => 
           description: "Impossible de se connecter au service vocal",
           variant: "destructive",
         });
+        disconnect();
       };
 
-      wsRef.current.onclose = () => {
-        console.log('WebSocket closed');
+      wsRef.current.onclose = (event) => {
+        console.log('WebSocket closed:', event.code, event.reason);
+        if (event.code !== 1000) {
+          toast({
+            title: "Connexion perdue",
+            description: "La connexion vocale a été interrompue",
+            variant: "destructive",
+          });
+        }
         setIsConnected(false);
         setIsListening(false);
         setIsSpeaking(false);
@@ -130,6 +139,7 @@ const VoiceInterface = ({ userId, selectedPharmacyId }: VoiceInterfaceProps) => 
         description: "Impossible d'accéder au microphone",
         variant: "destructive",
       });
+      disconnect();
     }
   };
 
@@ -162,53 +172,53 @@ const VoiceInterface = ({ userId, selectedPharmacyId }: VoiceInterfaceProps) => 
   };
 
   return (
-    <div className="flex flex-col items-center gap-4 p-6 bg-card rounded-lg border shadow-sm">
-      <div className="flex items-center gap-3">
-        {isSpeaking && (
-          <div className="flex items-center gap-2 text-primary animate-pulse">
-            <Volume2 className="h-5 w-5" />
-            <span className="text-sm font-medium">Arthur parle...</span>
-          </div>
-        )}
-        
-        {isListening && !isSpeaking && (
-          <div className="flex items-center gap-2 text-green-600 animate-pulse">
-            <Mic className="h-5 w-5" />
-            <span className="text-sm font-medium">Vous parlez...</span>
-          </div>
-        )}
-        
-        {isConnected && !isListening && !isSpeaking && (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Mic className="h-5 w-5" />
-            <span className="text-sm font-medium">En écoute...</span>
-          </div>
-        )}
-      </div>
+    <div className="flex items-center justify-center gap-3">
+      {/* Status indicator */}
+      {isConnected && (
+        <div className="flex items-center gap-2 text-xs">
+          {isSpeaking && (
+            <div className="flex items-center gap-1 text-primary animate-pulse">
+              <Volume2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Arthur parle...</span>
+            </div>
+          )}
+          
+          {isListening && !isSpeaking && (
+            <div className="flex items-center gap-1 text-green-600 animate-pulse">
+              <Mic className="h-4 w-4" />
+              <span className="hidden sm:inline">Vous parlez...</span>
+            </div>
+          )}
+          
+          {!isListening && !isSpeaking && (
+            <div className="flex items-center gap-1 text-muted-foreground">
+              <Mic className="h-4 w-4" />
+              <span className="hidden sm:inline">En écoute...</span>
+            </div>
+          )}
+        </div>
+      )}
 
+      {/* Control button */}
       {!isConnected ? (
         <Button 
           onClick={connect}
-          size="lg"
+          size="sm"
           className="bg-primary hover:bg-primary/90"
         >
-          <Mic className="h-5 w-5 mr-2" />
+          <Mic className="h-4 w-4 mr-2" />
           Parler avec Arthur
         </Button>
       ) : (
         <Button 
           onClick={disconnect}
-          size="lg"
+          size="sm"
           variant="secondary"
         >
-          <MicOff className="h-5 w-5 mr-2" />
-          Terminer la conversation
+          <MicOff className="h-4 w-4 mr-2" />
+          Arrêter
         </Button>
       )}
-      
-      <p className="text-xs text-muted-foreground text-center max-w-xs">
-        Parlez naturellement dans la langue de votre choix. Arthur vous répondra vocalement.
-      </p>
     </div>
   );
 };
