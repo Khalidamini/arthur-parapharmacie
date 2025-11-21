@@ -172,28 +172,28 @@ const VoiceInterface = ({ userId, selectedPharmacyId }: VoiceInterfaceProps) => 
   };
 
   return (
-    <div className="flex items-center justify-center gap-3">
+    <div className="flex items-center justify-between w-full gap-2 px-2 py-2 bg-muted/50 rounded-lg">
       {/* Status indicator */}
       {isConnected && (
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-2 text-xs flex-shrink-0">
           {isSpeaking && (
             <div className="flex items-center gap-1 text-primary animate-pulse">
               <Volume2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Arthur parle...</span>
+              <span className="hidden sm:inline">Arthur parle</span>
             </div>
           )}
           
           {isListening && !isSpeaking && (
             <div className="flex items-center gap-1 text-green-600 animate-pulse">
               <Mic className="h-4 w-4" />
-              <span className="hidden sm:inline">Vous parlez...</span>
+              <span className="hidden sm:inline">Vous parlez</span>
             </div>
           )}
           
           {!isListening && !isSpeaking && (
             <div className="flex items-center gap-1 text-muted-foreground">
               <Mic className="h-4 w-4" />
-              <span className="hidden sm:inline">En écoute...</span>
+              <span className="hidden sm:inline">En écoute</span>
             </div>
           )}
         </div>
@@ -204,19 +204,20 @@ const VoiceInterface = ({ userId, selectedPharmacyId }: VoiceInterfaceProps) => 
         <Button 
           onClick={connect}
           size="sm"
-          className="bg-primary hover:bg-primary/90"
+          className="bg-primary hover:bg-primary/90 flex-shrink-0"
         >
-          <Mic className="h-4 w-4 mr-2" />
-          Parler avec Arthur
+          <Mic className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Parler</span>
         </Button>
       ) : (
         <Button 
           onClick={disconnect}
           size="sm"
           variant="secondary"
+          className="flex-shrink-0"
         >
-          <MicOff className="h-4 w-4 mr-2" />
-          Arrêter
+          <MicOff className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Arrêter</span>
         </Button>
       )}
     </div>
