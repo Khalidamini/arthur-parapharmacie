@@ -50,6 +50,8 @@ const Pharmacies = () => {
         .from('user_pharmacy_affiliation')
         .select('pharmacy_id')
         .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
       
       if (data) {
@@ -175,37 +177,17 @@ const Pharmacies = () => {
 
     setSettingPharmacy(pharmacy.id);
     try {
-      // Vérifier si l'utilisateur a déjà une affiliation
-      const { data: existingAffiliation } = await (supabase as any)
+      // Ne pas modifier la pharmacie référente initiale :
+      // on ajoute simplement une nouvelle affiliation qui devient la pharmacie en cours
+      const { error } = await (supabase as any)
         .from('user_pharmacy_affiliation')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
+        .insert({
+          user_id: user.id,
+          pharmacy_id: pharmacy.id,
+          affiliation_type: 'permanent',
+        });
 
-      if (existingAffiliation) {
-        // Mettre à jour l'affiliation existante
-        const { error } = await (supabase as any)
-          .from('user_pharmacy_affiliation')
-          .update({
-            pharmacy_id: pharmacy.id,
-            affiliation_type: 'permanent',
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', user.id);
-
-        if (error) throw error;
-      } else {
-        // Créer une nouvelle affiliation
-        const { error } = await (supabase as any)
-          .from('user_pharmacy_affiliation')
-          .insert({
-            user_id: user.id,
-            pharmacy_id: pharmacy.id,
-            affiliation_type: 'permanent'
-          });
-
-        if (error) throw error;
-      }
+      if (error) throw error;
 
       setCurrentPharmacyId(pharmacy.id);
       toast({
