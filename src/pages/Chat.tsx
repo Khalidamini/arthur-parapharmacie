@@ -76,15 +76,39 @@ const Chat = () => {
   // Surveiller les changements de conversationId dans l'URL
   useEffect(() => {
     const convId = searchParams.get('conversationId');
+
     if (convId && convId !== conversationId) {
+      // Conversation spécifiée dans l'URL : on la charge
       setConversationId(convId);
       loadConversationMessages(convId);
-    } else if (!convId) {
-      // Nouvelle conversation vide
-      setConversationId(null);
-      setMessages([]);
+    } else if (!convId && userId && !conversationId) {
+      // Aucune conversation dans l'URL mais utilisateur connecté :
+      // on recharge automatiquement la DERNIÈRE conversation de l'utilisateur
+      const loadLastConversation = async () => {
+        const { data, error } = await supabase
+          .from('conversations')
+          .select('id')
+          .eq('user_id', userId)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error loading last conversation:', error);
+          return;
+        }
+
+        if (data?.id) {
+          setConversationId(data.id);
+          // Mettre à jour l'URL pour refléter la conversation courante
+          navigate(`/chat?conversationId=${data.id}`, { replace: true });
+          loadConversationMessages(data.id);
+        }
+      };
+
+      loadLastConversation();
     }
-  }, [searchParams]);
+  }, [searchParams, userId, conversationId]);
   useEffect(() => {
     // Scroll vers le haut du dernier message plutôt que vers le bas
     if (messages.length > 0) {
