@@ -9,9 +9,10 @@ interface VoiceInterfaceProps {
   selectedPharmacyId: string | null;
   onDisplayProducts?: (products: any[]) => void;
   onAddToCart?: (product: any) => void;
+  onTranscript?: (text: string, isFinal: boolean) => void;
 }
 
-const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddToCart }: VoiceInterfaceProps) => {
+const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddToCart, onTranscript }: VoiceInterfaceProps) => {
   const { toast } = useToast();
   const [isConnected, setIsConnected] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -66,6 +67,18 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
         if (data.type === 'add_to_cart' && data.product) {
           console.log('Adding product to cart:', data.product);
           onAddToCart?.(data.product);
+        }
+
+        // Handle transcript deltas for text display
+        if (data.type === 'response.audio_transcript.delta') {
+          console.log('Transcript delta:', data.delta);
+          onTranscript?.(data.delta, false);
+        }
+
+        // Handle transcript done for final text
+        if (data.type === 'response.audio_transcript.done') {
+          console.log('Transcript done:', data.transcript);
+          onTranscript?.(data.transcript, true);
         }
 
         if (data.type === 'response.audio.delta') {
