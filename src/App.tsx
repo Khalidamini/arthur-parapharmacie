@@ -32,6 +32,7 @@ import PharmacyProfile from "./pages/PharmacyProfile";
 import Checkout from "./pages/Checkout";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import MyOrders from "./pages/MyOrders";
+import Promotions from "./pages/Promotions";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
             <Route path="/scan-qr" element={<ScanQR />} />
             <Route path="/pharmacies" element={<Pharmacies />} />
             <Route path="/shop" element={<Shop />} />
+            <Route path="/promotions" element={<Promotions />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/install" element={<Install />} />

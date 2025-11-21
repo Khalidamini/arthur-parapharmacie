@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, ArrowLeft, ShoppingCart, ShoppingBag } from "lucide-react";
+import { Search, ArrowLeft, ShoppingCart, ShoppingBag, Tag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
 import Footer from '@/components/Footer';
@@ -224,10 +224,16 @@ const Shop = () => {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Retour
             </Button>
-            <Button variant="outline" onClick={() => navigate('/cart')}>
-              <ShoppingBag className="mr-2 h-4 w-4" />
-              Panier ({cart.totalItems})
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => navigate('/promotions')}>
+                <Tag className="mr-2 h-4 w-4" />
+                Promotions
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/cart')}>
+                <ShoppingBag className="mr-2 h-4 w-4" />
+                Panier ({cart.totalItems})
+              </Button>
+            </div>
           </div>
           <h1 className="text-3xl font-bold">Boutique</h1>
           <p className="text-muted-foreground">{pharmacyName}</p>
