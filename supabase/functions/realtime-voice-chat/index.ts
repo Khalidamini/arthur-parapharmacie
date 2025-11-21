@@ -110,14 +110,14 @@ En cas de doute médical, oriente vers le pharmacien ou médecin.${systemInstruc
       console.log('Client WebSocket connected');
       
       // Connect to OpenAI Realtime API with proper authentication
-      console.log('Connecting to OpenAI Realtime API...');
       const openaiUrl = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17`;
-      openaiSocket = new WebSocket(openaiUrl, {
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'realtime=v1'
-        }
-      });
+      
+      // Use WebSocket subprotocols for authentication as required by OpenAI Realtime API
+      // Format: ["realtime", `openai-insecure-api-key.${OPENAI_API_KEY}`]
+      openaiSocket = new WebSocket(openaiUrl, [
+        "realtime",
+        `openai-insecure-api-key.${OPENAI_API_KEY}`
+      ]);
 
       openaiSocket.onopen = () => {
         console.log('Connected to OpenAI, sending session config...');
