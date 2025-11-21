@@ -231,17 +231,15 @@ const Recommendations = () => {
     }
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-      // Supprimer toutes les données utilisateur
-      await (supabase as any).from('recommendations').delete().eq('user_id', user.id);
-      await (supabase as any).from('conversations').delete().eq('user_id', user.id);
-      await (supabase as any).from('user_pharmacy_affiliation').delete().eq('user_id', user.id);
-      await (supabase as any).from('profiles').delete().eq('id', user.id);
-      
-      // Supprimer le compte auth
-      const { error } = await supabase.auth.admin.deleteUser(user.id);
+      // Appeler la fonction edge pour supprimer le compte
+      const { error } = await supabase.functions.invoke('delete-user-account', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
       
       if (error) throw error;
 
