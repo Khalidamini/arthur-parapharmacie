@@ -60,8 +60,9 @@ Adapte tes recommandations en fonction de ces informations.`;
       }
     }
 
-    // Fetch available products from the selected pharmacy
+    // Fetch available products and promotions from the selected pharmacy
     let productsContext = '';
+    let promotionsContext = '';
     let pharmacyInfo = '';
     let alternativePharmaciesInfo = '';
 
@@ -87,6 +88,7 @@ Adapte tes recommandations en fonction de ces informations.`;
           category,
           description,
           price,
+          image_url,
           pharmacy_products!inner(
             pharmacy_id,
             stock_quantity,
@@ -98,10 +100,45 @@ Adapte tes recommandations en fonction de ces informations.`;
         .gt('pharmacy_products.stock_quantity', 0)
         .limit(100);
 
+      // Get active promotions from the selected pharmacy
+      const now = new Date().toISOString();
+      const { data: activePromotions } = await supabase
+        .from('promotions')
+        .select(`
+          id,
+          title,
+          description,
+          discount_percentage,
+          original_price,
+          image_url,
+          valid_until,
+          product_id,
+          products(
+            id,
+            name,
+            brand,
+            price,
+            image_url
+          )
+        `)
+        .eq('pharmacy_id', selectedPharmacyId)
+        .gte('valid_until', now)
+        .order('created_at', { ascending: false });
+
       if (selectedPharmacyProducts && selectedPharmacyProducts.length > 0) {
         productsContext = `\n\nProduits disponibles dans la pharmacie sélectionnée (${pharmacy?.name}) :\n${selectedPharmacyProducts.map(p => 
-            `- ${p.name} (${p.brand}) - ${p.category} - ${p.price}€ - ${p.description || 'Aucune description'}`
+            `- ID: ${p.id} | ${p.name} (${p.brand}) - ${p.category} - ${p.price}€ - ${p.description || 'Aucune description'}`
           ).join('\n')}`;
+      }
+
+      if (activePromotions && activePromotions.length > 0) {
+        promotionsContext = `\n\nPromotions en cours dans la pharmacie sélectionnée (${pharmacy?.name}) :\n${activePromotions.map(promo => {
+          const product = promo.products;
+          const discountedPrice = promo.original_price ? 
+            (promo.original_price * (1 - (promo.discount_percentage || 0) / 100)).toFixed(2) : 
+            product?.price;
+          return `- ID Promotion: ${promo.id} | ${promo.title} - ${promo.description || ''} | ${product ? `Produit: ${product.name} (${product.brand})` : 'Produit général'} | Prix promo: ${discountedPrice}€ ${promo.original_price ? `(au lieu de ${promo.original_price}€)` : ''} | Réduction: ${promo.discount_percentage}% | Valide jusqu'au: ${new Date(promo.valid_until || '').toLocaleDateString('fr-FR')}`;
+        }).join('\n')}`;
       }
 
       // Get all other pharmacies with their products for alternative suggestions
@@ -193,6 +230,8 @@ TON CARACTÈRE ET APPROCHE :
 - Tu es COMPATISSANT et à l'écoute des préoccupations des clients
 - Tu es ÉTHIQUE et respectueux des limites de ton rôle
 - Tu adoptes un ton chaleureux, rassurant et professionnel
+- Tu es PROACTIF et capable de naviguer dans l'application pour aider les clients
+- Tu NE DIS JAMAIS "je ne sais pas" ou "contactez la pharmacie" - tu AGIS et TROUVES les informations
 
 TON IDENTITÉ PROFESSIONNELLE :
 Tu es un SPÉCIALISTE EN PRODUITS PARAPHARMACEUTIQUES UNIQUEMENT avec une expertise en :
@@ -225,7 +264,12 @@ MÉTHODOLOGIE DE CONSEIL (PARAPHARMACIE) :
 2. PERSONNALISATION RESPECTUEUSE : Adapte tes conseils au profil du client (âge, sensibilités, préférences)
 3. HUMILITÉ PROFESSIONNELLE : Si la situation nécessite l'avis d'un pharmacien ou médecin, oriente immédiatement vers eux
 4. PRIORISATION ABSOLUE : Tu dois TOUJOURS recommander UNIQUEMENT les produits parapharmaceutiques disponibles dans la pharmacie sélectionnée${pharmacyInfo ? ' (voir détails ci-dessous)' : ''}
-5. VENTE SUGGESTIVE ET PROACTIVE : Tu dois SYSTÉMATIQUEMENT suggérer des produits complémentaires et additionnels pertinents :
+5. NAVIGATION ET PROMOTIONS : 
+   - Quand un client demande les promotions en cours, tu DOIS lui afficher TOUTES les promotions actives de sa pharmacie
+   - Utilise le format "promotions" pour afficher les promotions avec leurs détails complets
+   - Tu PEUX ajouter des promotions au panier quand le client te le demande explicitement
+   - Pour ajouter au panier, utilise le format "add_to_cart" avec l'ID de la promotion
+6. VENTE SUGGESTIVE ET PROACTIVE : Tu dois SYSTÉMATIQUEMENT suggérer des produits complémentaires et additionnels pertinents :
    - Identifie des produits qui complètent ou renforcent l'efficacité du produit principal
    - Propose des alternatives dans différentes gammes de prix
    - Suggère des formats différents (voyage, familial, etc.)
@@ -233,13 +277,13 @@ MÉTHODOLOGIE DE CONSEIL (PARAPHARMACIE) :
    - Pense aux besoins connexes du client (si crème visage → suggère nettoyant, sérum, etc.)
    - Reste NATUREL et PERTINENT dans tes suggestions - chaque produit additionnel doit apporter une vraie valeur
    - Ne force JAMAIS la vente - reste au service du bien-être du client
-6. RECHERCHE ALTERNATIVE : Si un client cherche un produit parapharmaceutique spécifique qui n'est PAS disponible dans sa pharmacie sélectionnée, tu dois :
+7. RECHERCHE ALTERNATIVE : Si un client cherche un produit parapharmaceutique spécifique qui n'est PAS disponible dans sa pharmacie sélectionnée, tu dois :
    - Chercher ce produit dans les autres pharmacies de la base de données
    - Identifier la pharmacie la PLUS PROCHE où le produit est disponible
    - Indiquer clairement au client avec bienveillance : "Ce produit n'est pas disponible dans votre pharmacie, mais vous pouvez le trouver à [Nom Pharmacie] - [Adresse], située à [X] km de votre pharmacie actuelle"
    - Proposer également des produits parapharmaceutiques SIMILAIRES disponibles dans sa pharmacie sélectionnée comme alternatives
 
-FORMAT DE RÉPONSE - Deux types possibles :
+FORMAT DE RÉPONSE - Trois types possibles :
 
 A) QUESTIONS DIAGNOSTIQUES (pour affiner la compréhension) :
 {
@@ -253,6 +297,39 @@ A) QUESTIONS DIAGNOSTIQUES (pour affiner la compréhension) :
   ]
 }
 
+B) AFFICHAGE DES PROMOTIONS :
+{
+  "type": "promotions",
+  "message": "Voici les promotions en cours dans votre pharmacie !",
+  "promotions": [
+    {
+      "id": "ID exact de la promotion",
+      "title": "Titre de la promotion",
+      "description": "Description",
+      "product_name": "Nom du produit",
+      "product_brand": "Marque",
+      "original_price": "19.90€",
+      "discounted_price": "14.90€",
+      "discount_percentage": "25%",
+      "image_url": "URL de l'image",
+      "valid_until": "Date de fin"
+    }
+  ]
+}
+
+C) AJOUT AU PANIER :
+{
+  "type": "add_to_cart",
+  "message": "J'ajoute ce produit à votre panier !",
+  "item": {
+    "type": "promotion" ou "product",
+    "id": "ID exact de la promotion ou du produit",
+    "name": "Nom du produit",
+    "price": "14.90€",
+    "quantity": 1
+  ]
+}
+
 Questions pertinentes à poser selon le contexte :
 - Âge précis (surtout pour enfants/personnes âgées)
 - Symptômes exacts et leur durée
@@ -261,7 +338,7 @@ Questions pertinentes à poser selon le contexte :
 - Contexte (grossesse, allaitement, pathologies existantes)
 - Objectifs recherchés
 
-B) RECOMMANDATIONS CHALEUREUSES DE PRODUITS PARAPHARMACEUTIQUES :
+D) RECOMMANDATIONS CHALEUREUSES DE PRODUITS PARAPHARMACEUTIQUES :
 {
   "type": "products",
   "message": "Explication détaillée, bienveillante et accessible sur les produits parapharmaceutiques recommandés. INCLUS TOUJOURS des suggestions de produits complémentaires pertinents (ex: 'Pour maximiser les résultats, vous pourriez également envisager...' ou 'En complément, je vous suggère aussi...')",
@@ -325,7 +402,9 @@ Ton expertise en parapharmacie te permet de :
 - Expliquer les bénéfices et usages des produits parapharmaceutiques
 - Conseiller sur les routines de soins et d'hygiène
 - Recommander des compléments alimentaires et produits naturels appropriés
-- Orienter vers le pharmacien ou médecin quand la situation le nécessite${userContext}${pharmacyInfo}${productsContext}${alternativePharmaciesInfo}`;
+- Orienter vers le pharmacien ou médecin quand la situation le nécessite
+- AFFICHER les promotions en cours quand le client le demande
+- AJOUTER des produits et promotions au panier quand le client le demande${userContext}${pharmacyInfo}${productsContext}${promotionsContext}${alternativePharmaciesInfo}`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
