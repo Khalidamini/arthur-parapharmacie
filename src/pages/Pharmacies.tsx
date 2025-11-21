@@ -9,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import QRCode from 'qrcode';
 import Footer from '@/components/Footer';
+import { useCart } from '@/contexts/CartContext';
 
 interface Pharmacy {
   id: string;
@@ -34,31 +35,18 @@ const Pharmacies = () => {
   const [settingPharmacy, setSettingPharmacy] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'distance' | 'city' | 'name'>('distance');
   const [showFilters, setShowFilters] = useState(false);
+  const cart = useCart();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     loadPharmacies();
     getUserLocation();
-    loadCurrentPharmacy();
-  }, []);
-
-  const loadCurrentPharmacy = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data } = await (supabase as any)
-        .from('user_pharmacy_affiliation')
-        .select('pharmacy_id')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      
-      if (data) {
-        setCurrentPharmacyId(data.pharmacy_id);
-      }
+    // Utiliser le contexte pour obtenir la pharmacie sélectionnée
+    if (cart.selectedPharmacyId) {
+      setCurrentPharmacyId(cart.selectedPharmacyId);
     }
-  };
+  }, [cart.selectedPharmacyId]);
 
   const getUserLocation = () => {
     if (navigator.geolocation) {
@@ -168,7 +156,7 @@ const Pharmacies = () => {
     if (!user) {
       toast({
         title: "Non connecté",
-        description: "Vous devez être connecté pour définir une pharmacie référente",
+        description: "Vous devez être connecté pour sélectionner une pharmacie",
         variant: "destructive",
       });
       navigate('/auth');
@@ -177,28 +165,19 @@ const Pharmacies = () => {
 
     setSettingPharmacy(pharmacy.id);
     try {
-      // Ne pas modifier la pharmacie référente initiale :
-      // on ajoute simplement une nouvelle affiliation qui devient la pharmacie en cours
-      const { error } = await (supabase as any)
-        .from('user_pharmacy_affiliation')
-        .insert({
-          user_id: user.id,
-          pharmacy_id: pharmacy.id,
-          affiliation_type: 'permanent',
-        });
-
-      if (error) throw error;
+      // Mettre à jour la pharmacie sélectionnée dans le contexte (changement temporaire pour la session)
+      cart.setSelectedPharmacyId(pharmacy.id);
 
       setCurrentPharmacyId(pharmacy.id);
       toast({
-        title: "Pharmacie référente définie",
-        description: `${pharmacy.name} est maintenant votre pharmacie référente`,
+        title: "Pharmacie sélectionnée",
+        description: `${pharmacy.name} est maintenant sélectionnée pour cette session. Au prochain démarrage, vous retrouverez votre pharmacie référente initiale.`,
       });
     } catch (error) {
       console.error('Error setting reference pharmacy:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de définir la pharmacie référente",
+        description: "Impossible de sélectionner la pharmacie",
         variant: "destructive",
       });
     } finally {

@@ -10,6 +10,7 @@ import PromotionSlider from '@/components/PromotionSlider';
 import Footer from '@/components/Footer';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ChatSidebar } from '@/components/ChatSidebar';
+import { useCart } from '@/contexts/CartContext';
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -34,6 +35,7 @@ const Chat = () => {
   const [username, setUsername] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
+  const cart = useCart();
   const {
     toast
   } = useToast();
@@ -131,32 +133,21 @@ const Chat = () => {
   };
   const loadPromotions = async () => {
     try {
-      const {
-        data: {
-          user
-        }
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Récupérer la pharmacie référente en cours (la plus récente)
-      const {
-        data: affiliation
-      } = await supabase.from('user_pharmacy_affiliation')
-        .select('pharmacy_id')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (!affiliation) {
+      // Utiliser la pharmacie sélectionnée du contexte
+      const currentPharmacyId = cart.selectedPharmacyId;
+      if (!currentPharmacyId) {
         setPromotions([]);
         return;
       }
 
-      // Charger uniquement les promotions de la pharmacie référente
+      // Charger uniquement les promotions de la pharmacie sélectionnée
       const {
         data,
         error
-      } = await supabase.from('promotions').select('*').eq('pharmacy_id', affiliation.pharmacy_id).order('created_at', {
+      } = await supabase.from('promotions').select('*').eq('pharmacy_id', currentPharmacyId).order('created_at', {
         ascending: false
       });
       if (error) {
