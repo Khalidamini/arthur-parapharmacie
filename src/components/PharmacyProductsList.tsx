@@ -27,6 +27,7 @@ interface Product {
   stock_quantity: number;
   is_available: boolean;
   pharmacy_product_id: string;
+  is_featured: boolean;
 }
 
 interface PharmacyProductsListProps {
@@ -118,6 +119,7 @@ export default function PharmacyProductsList({ pharmacyId }: PharmacyProductsLis
         image_url: item.products.image_url,
         stock_quantity: item.stock_quantity,
         is_available: item.is_available,
+        is_featured: item.is_featured || false,
         pharmacy_product_id: item.id,
       })) || [];
 
@@ -143,6 +145,44 @@ export default function PharmacyProductsList({ pharmacyId }: PharmacyProductsLis
       valid_until: '',
     });
     setPromotionDialogOpen(true);
+  };
+
+  const toggleFeatured = async (product: Product) => {
+    try {
+      const newFeaturedStatus = !product.is_featured;
+      const { error } = await supabase
+        .from('pharmacy_products')
+        .update({ is_featured: newFeaturedStatus })
+        .eq('id', product.pharmacy_product_id);
+
+      if (error) throw error;
+
+      toast({
+        title: newFeaturedStatus ? "Produit mis en avant" : "Produit retiré des coups de cœur",
+        description: newFeaturedStatus 
+          ? `${product.name} est maintenant mis en avant`
+          : `${product.name} n'est plus mis en avant`,
+      });
+
+      // Log l'activité
+      await logActivity({
+        pharmacyId,
+        actionType: newFeaturedStatus ? 'product_featured' : 'product_unfeatured',
+        actionDetails: { productName: product.name },
+        entityType: 'product',
+        entityId: product.id,
+      });
+
+      // Reload products to reflect the change
+      loadProducts();
+    } catch (error) {
+      console.error('Error toggling featured status:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier le statut",
+        variant: "destructive",
+      });
+    }
   };
 
   const createPromotion = async () => {
@@ -250,14 +290,24 @@ export default function PharmacyProductsList({ pharmacyId }: PharmacyProductsLis
                 {product.is_available ? "Disponible" : "Indisponible"}
               </Badge>
             </div>
-            <Button
-              onClick={() => openPromotionDialog(product)}
-              variant="outline"
-              className="w-full"
-            >
-              <Tag className="mr-2 h-4 w-4" />
-              Créer une promotion
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                onClick={() => toggleFeatured(product)}
+                variant={product.is_featured ? "default" : "outline"}
+                className="w-full"
+              >
+                <Tag className="mr-2 h-4 w-4" />
+                {product.is_featured ? "En avant ✓" : "Mettre en avant"}
+              </Button>
+              <Button
+                onClick={() => openPromotionDialog(product)}
+                variant="outline"
+                className="w-full"
+              >
+                <Tag className="mr-2 h-4 w-4" />
+                Promotion
+              </Button>
+            </div>
           </div>
         ))}
       </div>

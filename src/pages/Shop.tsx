@@ -10,6 +10,7 @@ import { Search, ArrowLeft, ShoppingCart, ShoppingBag, Tag } from "lucide-react"
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
 import Footer from '@/components/Footer';
+import FeaturedProductsSlider from '@/components/FeaturedProductsSlider';
 
 interface Product {
   id: string;
@@ -21,6 +22,7 @@ interface Product {
   image_url: string;
   stock_quantity: number;
   is_available: boolean;
+  is_featured?: boolean;
 }
 
 const Shop = () => {
@@ -92,12 +94,13 @@ const Shop = () => {
       setPharmacyName(pharmacy.name);
       setPharmacyId(currentPharmacyId);
 
-      // Get products available in this pharmacy
+      // Get products available in this pharmacy with featured status
       const { data: pharmacyProducts, error: productsError } = await supabase
         .from("pharmacy_products")
         .select(`
           stock_quantity,
           is_available,
+          is_featured,
           products (
             id,
             name,
@@ -117,6 +120,7 @@ const Shop = () => {
         ...pp.products,
         stock_quantity: pp.stock_quantity,
         is_available: pp.is_available,
+        is_featured: pp.is_featured || false,
       }));
 
       setProducts(formattedProducts);
@@ -244,6 +248,27 @@ const Shop = () => {
             </Button>
           </div>
         </div>
+
+        {/* Featured Products Slider */}
+        {products.filter(p => p.is_featured).length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-3 flex items-center gap-2">
+              <Tag className="h-5 w-5 text-amber-500" />
+              Nos coups de cœur
+            </h2>
+            <FeaturedProductsSlider 
+              products={products.filter(p => p.is_featured).map(p => ({
+                id: p.id,
+                name: p.name,
+                brand: p.brand,
+                price: p.price,
+                category: p.category,
+                image_url: p.image_url,
+                description: p.description,
+              }))} 
+            />
+          </div>
+        )}
 
         {/* Search and Filters */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
