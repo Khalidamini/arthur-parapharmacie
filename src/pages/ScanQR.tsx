@@ -193,19 +193,11 @@ const ScanQR = () => {
     try {
       const finalAffiliationType = autoAffiliationType || affiliationType;
 
-      // Supprimer toutes les affiliations existantes de l'utilisateur
-      const {
-        error: deleteError
-      } = await (supabase as any).from('user_pharmacy_affiliation').delete().eq('user_id', user.id);
-      if (deleteError) throw deleteError;
-
-      // Créer la nouvelle affiliation
-      const {
-        error
-      } = await (supabase as any).from('user_pharmacy_affiliation').insert({
+      // Ne pas supprimer l'affiliation initiale : on ajoute une nouvelle affiliation
+      const { error } = await (supabase as any).from('user_pharmacy_affiliation').insert({
         user_id: user.id,
         pharmacy_id: pharmacy.id,
-        affiliation_type: finalAffiliationType
+        affiliation_type: finalAffiliationType,
       });
       if (error) throw error;
       setSuccess(true);

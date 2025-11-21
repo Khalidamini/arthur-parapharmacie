@@ -138,10 +138,15 @@ const Chat = () => {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Récupérer la pharmacie référente de l'utilisateur
+      // Récupérer la pharmacie référente en cours (la plus récente)
       const {
         data: affiliation
-      } = await supabase.from('user_pharmacy_affiliation').select('pharmacy_id').eq('user_id', user.id).maybeSingle();
+      } = await supabase.from('user_pharmacy_affiliation')
+        .select('pharmacy_id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
       if (!affiliation) {
         setPromotions([]);
         return;

@@ -61,12 +61,14 @@ const Shop = () => {
         return;
       }
 
-      // Get user's affiliated pharmacy
+      // Get user's current affiliated pharmacy (most recent)
       const { data: affiliation, error: affiliationError } = await supabase
         .from("user_pharmacy_affiliation")
         .select("pharmacy_id, pharmacies(name)")
         .eq("user_id", user.id)
-        .single();
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       if (affiliationError || !affiliation) {
         toast({
