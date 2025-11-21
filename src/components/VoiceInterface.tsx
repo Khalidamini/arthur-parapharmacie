@@ -11,9 +11,10 @@ interface VoiceInterfaceProps {
   onAddToCart?: (product: any) => void;
   onTranscript?: (text: string, isFinal: boolean) => void;
   onSpeakingChange?: (isSpeaking: boolean) => void;
+  onNavigate?: (page: string, message?: string, guidance?: string) => void;
 }
 
-const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddToCart, onTranscript, onSpeakingChange }: VoiceInterfaceProps) => {
+const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddToCart, onTranscript, onSpeakingChange, onNavigate }: VoiceInterfaceProps) => {
   const { toast } = useToast();
   const [isConnected, setIsConnected] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -73,6 +74,12 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
         if (data.type === 'add_to_cart' && data.product) {
           console.log('Adding product to cart:', data.product);
           onAddToCart?.(data.product);
+        }
+
+        // Handle navigation command from Arthur
+        if (data.type === 'navigate' && data.page) {
+          console.log('Navigation command:', data);
+          onNavigate?.(data.page, data.message, data.guidance);
         }
 
         // Handle transcript deltas for text display
