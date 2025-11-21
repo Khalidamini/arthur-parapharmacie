@@ -109,16 +109,20 @@ En cas de doute médical, oriente vers le pharmacien ou médecin.${systemInstruc
     clientSocket.onopen = () => {
       console.log('Client WebSocket connected');
       
-      // Connect to OpenAI using URL with auth
+      // Connect to OpenAI Realtime API with proper authentication
       console.log('Connecting to OpenAI Realtime API...');
       const openaiUrl = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17`;
-      openaiSocket = new WebSocket(openaiUrl);
+      openaiSocket = new WebSocket(openaiUrl, {
+        headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'OpenAI-Beta': 'realtime=v1'
+        }
+      });
 
-      // Send authorization after connection opens
       openaiSocket.onopen = () => {
-        console.log('Connected to OpenAI, sending auth...');
+        console.log('Connected to OpenAI, sending session config...');
         
-        // Send authentication via WebSocket message
+        // Send session configuration (without authorization field)
         openaiSocket.send(JSON.stringify({
           type: 'session.update',
           session: {
@@ -138,8 +142,7 @@ En cas de doute médical, oriente vers le pharmacien ou médecin.${systemInstruc
             },
             temperature: 0.8,
             max_response_output_tokens: 4096
-          },
-          authorization: `Bearer ${OPENAI_API_KEY}`
+          }
         }));
         console.log('Session configuration sent');
       };
