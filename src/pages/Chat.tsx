@@ -465,7 +465,7 @@ const Chat = () => {
 
           {/* Promotions Slider - fixe au-dessus de l'input */}
           {promotions.length > 0 && <div className="bg-card border-t border-border sticky bottom-16 z-10">
-              <div className="max-w-3xl w-full mx-auto px-3 py-2">
+              <div className="w-full px-2 sm:px-3 py-2 max-w-3xl mx-auto">
                 <PromotionSlider promotions={promotions} onSelectPromotion={handleSelectPromotion} />
               </div>
             </div>}
