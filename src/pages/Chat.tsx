@@ -470,34 +470,32 @@ const Chat = () => {
       <div className="flex min-h-screen w-full bg-gradient-subtle">
         <ChatSidebar />
 
-        <div className="flex flex-col flex-1 h-screen">
+        <div className="flex flex-col flex-1 w-full">
           {/* Header */}
           <div className="bg-card border-b border-border shadow-sm sticky top-0 z-10">
-            <div className="max-w-3xl w-full mx-auto px-3 py-3 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <SidebarTrigger className="flex-shrink-0 h-8 w-8" />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => navigate("/")}
-                  className="rounded-full flex-shrink-0 h-8 w-8"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                </Button>
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <img src="/icon-192.png" alt="Arthur Logo" className="h-8 w-8 rounded-full flex-shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <h1 className="font-semibold text-foreground text-sm truncate">Arthur</h1>
-                    <p className="text-xs text-muted-foreground truncate hidden sm:block">Assistant parapharmacie</p>
-                  </div>
+            <div className="max-w-4xl w-full mx-auto px-4 py-3 flex items-center gap-3">
+              <SidebarTrigger className="flex-shrink-0 h-9 w-9 lg:hidden" />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/")}
+                className="rounded-full flex-shrink-0 h-9 w-9"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <img src="/icon-192.png" alt="Arthur Logo" className="h-10 w-10 rounded-full flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <h1 className="font-semibold text-foreground text-base">Arthur</h1>
+                  <p className="text-xs text-muted-foreground truncate">Assistant parapharmacie</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto pb-80 sm:pb-72">
-            <div className="max-w-3xl w-full mx-auto px-3 py-4">
+          {/* Messages Container */}
+          <div className="flex-1 overflow-y-auto pb-[420px] sm:pb-[380px]">
+            <div className="max-w-4xl w-full mx-auto px-4 py-6">
               {/* Welcome Message */}
               {messages.length === 0 && (
                 <div className="text-center py-12 animate-in fade-in duration-500">
@@ -643,20 +641,20 @@ const Chat = () => {
             </div>
           </div>
 
-          {/* Input & Voice Interface - positionné au-dessus du footer mobile */}
-          <div className="fixed bottom-30 sm:bottom-20 left-0 right-0 bg-card shadow-lg z-30">
-            {/* Promotions Slider - juste au-dessus de l'input */}
+          {/* Input & Voice Interface - Fixed at bottom */}
+          <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-xl z-30 pb-20 sm:pb-16">
+            {/* Promotions Slider */}
             {promotions.length > 0 && (
-              <div className="border-t border-b border-border bg-card/95 backdrop-blur-sm mt-10">
-                <div className="w-full px-2 sm:px-3 py-2 max-w-3xl mx-auto">
+              <div className="border-b border-border bg-muted/30 backdrop-blur-sm">
+                <div className="w-full px-4 py-3 max-w-4xl mx-auto">
                   <PromotionSlider promotions={promotions} onSelectPromotion={handleSelectPromotion} />
                 </div>
               </div>
             )}
 
-            <div className="max-w-3xl w-full mx-auto px-3 py-3 border-t border-border">
-              {/* Voice Interface - compact version */}
-              <div className="mb-3">
+            <div className="max-w-4xl w-full mx-auto px-4 py-4">
+              {/* Voice Interface */}
+              <div className="mb-4">
                 <VoiceInterface
                   userId={userId}
                   selectedPharmacyId={cart.selectedPharmacyId}
@@ -667,30 +665,26 @@ const Chat = () => {
               </div>
 
               {/* Text Input */}
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <Input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && handleSend()}
-                  placeholder="Ou écrivez votre question..."
+                  placeholder="Écrivez votre question..."
                   disabled={loading}
-                  className="flex-1 rounded-full border-2 focus-visible:ring-primary text-sm"
+                  className="flex-1 rounded-full border-2 focus-visible:ring-primary h-12 px-5 text-base"
                 />
                 <Button
                   onClick={handleSend}
                   disabled={loading || !input.trim()}
-                  className="rounded-full bg-gradient-primary hover:opacity-90 transition-opacity px-6"
+                  className="rounded-full bg-gradient-primary hover:opacity-90 transition-opacity h-12 w-12 p-0 flex items-center justify-center"
                 >
-                  <Send className="h-4 w-4" />
+                  <Send className="h-5 w-5" />
                 </Button>
               </div>
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="fixed bottom-0 left-0 right-0 z-20">
-            <Footer />
-          </div>
         </div>
       </div>
     </SidebarProvider>

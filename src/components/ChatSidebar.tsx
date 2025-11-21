@@ -30,6 +30,7 @@ export function ChatSidebar() {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const currentConvId = searchParams.get('conversationId');
+  const { state, openMobile, setOpenMobile } = useSidebar();
 
   useEffect(() => {
     loadConversations();
@@ -92,9 +93,17 @@ export function ChatSidebar() {
   };
 
   const createNewConversation = () => {
-    // Naviguer vers /chat sans conversationId pour forcer une nouvelle conversation
-    // En ajoutant un timestamp pour forcer le rechargement
     navigate(`/chat?new=${Date.now()}`);
+    if (state === "expanded" && window.innerWidth < 1024) {
+      setOpenMobile(false);
+    }
+  };
+
+  const handleConversationClick = (convId: string) => {
+    navigate(`/chat?conversationId=${convId}`);
+    if (state === "expanded" && window.innerWidth < 1024) {
+      setOpenMobile(false);
+    }
   };
 
   const deleteConversation = async (convId: string, e: React.MouseEvent) => {
@@ -123,47 +132,46 @@ export function ChatSidebar() {
   const isActive = (convId: string) => currentConvId === convId;
 
   return (
-    <Sidebar className="w-64 md:w-72 bg-background border-r border-border">
-      <SidebarHeader className="p-3 border-b border-border bg-background">
+    <Sidebar className="border-r border-border" collapsible="icon">
+      <SidebarHeader className="p-4 border-b border-border">
         <Button
           onClick={createNewConversation}
-          className="w-full justify-start gap-2 text-sm"
-          variant="outline"
+          className="w-full justify-start gap-3 h-11"
         >
-          <Plus className="h-4 w-4" />
-          <span className="text-foreground">Nouvelle conversation</span>
+          <Plus className="h-5 w-5" />
+          <span className="font-medium">Nouvelle conversation</span>
         </Button>
       </SidebarHeader>
 
-      <SidebarContent className="bg-background overflow-y-auto">
+      <SidebarContent className="overflow-y-auto">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-muted-foreground px-3 py-2 text-xs">
+          <SidebarGroupLabel className="px-4 py-3 text-sm font-semibold">
             Historique
           </SidebarGroupLabel>
 
-          <SidebarGroupContent>
-            <SidebarMenu>
+          <SidebarGroupContent className="px-2">
+            <SidebarMenu className="space-y-1">
               {conversations.map((conv) => (
                 <SidebarMenuItem key={conv.id}>
                   <SidebarMenuButton
-                    onClick={() => navigate(`/chat?conversationId=${conv.id}`)}
-                    className={`group relative text-foreground text-sm ${
+                    onClick={() => handleConversationClick(conv.id)}
+                    className={`group relative h-auto py-3 px-3 ${
                       isActive(conv.id)
                         ? 'bg-accent text-accent-foreground font-medium'
-                        : 'hover:bg-accent/50 hover:text-accent-foreground'
+                        : 'hover:bg-accent/50'
                     }`}
                   >
-                    <MessageSquare className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span className="flex-1 truncate text-xs sm:text-sm">
+                    <MessageSquare className="h-5 w-5 flex-shrink-0" />
+                    <span className="flex-1 truncate text-sm">
                       {conv.title}
                     </span>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 flex-shrink-0"
+                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 flex-shrink-0"
                       onClick={(e) => deleteConversation(conv.id, e)}
                     >
-                      <Trash2 className="h-3 w-3 text-destructive" />
+                      <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
