@@ -283,7 +283,7 @@ const Promotions = () => {
                         brand: productBrand,
                         price: calculateDiscountedPrice(promotion.original_price, promotion.discount_percentage),
                         imageUrl: promotion.image_url || '',
-                        source: 'promotion',
+                        source: 'shop',
                         productId: promotion.product_id || undefined,
                       });
                       toast({
