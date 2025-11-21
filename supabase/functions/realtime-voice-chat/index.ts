@@ -73,6 +73,7 @@ ${profile.gender === 'femme' && profile.is_pregnant ? '- Enceinte : Oui\n' : ''}
             category,
             description,
             price,
+            image_url,
             pharmacy_products!inner(
               pharmacy_id,
               stock_quantity,
@@ -170,7 +171,8 @@ En cas de doute médical, oriente vers le pharmacien ou médecin.${systemInstruc
                           brand: { type: 'string' },
                           category: { type: 'string' },
                           price: { type: 'number' },
-                          description: { type: 'string' }
+                          description: { type: 'string' },
+                          image_url: { type: 'string' }
                         }
                       }
                     }
