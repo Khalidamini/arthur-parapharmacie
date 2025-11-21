@@ -177,6 +177,22 @@ En cas de doute médical, oriente vers le pharmacien ou médecin.${systemInstruc
                   },
                   required: ['products']
                 }
+              },
+              {
+                type: 'function',
+                name: 'add_to_cart',
+                description: 'Ajoute un produit au panier du client. Utilise cette fonction quand le client demande explicitement d\'ajouter un produit à son panier (par exemple "ajoute ce produit", "mets ça dans mon panier", etc.).',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    productId: { type: 'string', description: 'ID du produit' },
+                    name: { type: 'string', description: 'Nom du produit' },
+                    brand: { type: 'string', description: 'Marque du produit' },
+                    price: { type: 'number', description: 'Prix du produit' },
+                    imageUrl: { type: 'string', description: 'URL de l\'image du produit' }
+                  },
+                  required: ['productId', 'name', 'brand', 'price']
+                }
               }
             ],
             tool_choice: 'auto'
@@ -216,6 +232,32 @@ En cas de doute médical, oriente vers le pharmacien ou médecin.${systemInstruc
               }
             } catch (error) {
               console.error('Error handling display_products:', error);
+            }
+          }
+          
+          if (data.name === 'add_to_cart') {
+            try {
+              const args = JSON.parse(data.arguments);
+              
+              // Send function call result back to OpenAI
+              openaiSocket.send(JSON.stringify({
+                type: 'conversation.item.create',
+                item: {
+                  type: 'function_call_output',
+                  call_id: data.call_id,
+                  output: JSON.stringify({ success: true, message: 'Produit ajouté au panier avec succès' })
+                }
+              }));
+              
+              // Forward to client to add to cart
+              if (clientSocket.readyState === WebSocket.OPEN) {
+                clientSocket.send(JSON.stringify({
+                  type: 'add_to_cart',
+                  product: args
+                }));
+              }
+            } catch (error) {
+              console.error('Error handling add_to_cart:', error);
             }
           }
         }
