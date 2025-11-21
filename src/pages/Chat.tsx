@@ -463,20 +463,20 @@ const Chat = () => {
       <div className="flex min-h-screen w-full bg-gradient-subtle">
         <ChatSidebar />
         
-        <div className="flex flex-col flex-1 h-screen max-w-full lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl mx-auto">
+        <div className="flex flex-col flex-1 h-screen">
           {/* Header */}
           <div className="bg-card border-b border-border shadow-sm sticky top-0 z-10">
-            <div className="w-full px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                <SidebarTrigger className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-9" />
-                <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-full flex-shrink-0 h-8 w-8 sm:h-9 sm:w-9">
-                  <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+            <div className="max-w-3xl w-full mx-auto px-3 py-3 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <SidebarTrigger className="flex-shrink-0 h-8 w-8" />
+                <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-full flex-shrink-0 h-8 w-8">
+                  <ArrowLeft className="h-4 w-4" />
                 </Button>
-                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                  <img src="/icon-192.png" alt="Arthur Logo" className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 rounded-full flex-shrink-0" />
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <img src="/icon-192.png" alt="Arthur Logo" className="h-8 w-8 rounded-full flex-shrink-0" />
                   <div className="min-w-0 flex-1">
-                    <h1 className="font-semibold text-foreground text-sm sm:text-base lg:text-lg truncate">Arthur</h1>
-                    <p className="text-xs sm:text-sm text-muted-foreground truncate hidden sm:block">Assistant parapharmacie</p>
+                    <h1 className="font-semibold text-foreground text-sm truncate">Arthur</h1>
+                    <p className="text-xs text-muted-foreground truncate hidden sm:block">Assistant parapharmacie</p>
                   </div>
                 </div>
               </div>
@@ -485,17 +485,17 @@ const Chat = () => {
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto pb-80 sm:pb-72">
-            <div className="w-full px-3 sm:px-4 lg:px-8 xl:px-12 py-4 sm:py-6 lg:py-8">
+            <div className="max-w-3xl w-full mx-auto px-3 py-4">
 
               {/* Welcome Message */}
-              {messages.length === 0 && <div className="text-center py-12 lg:py-16 animate-in fade-in duration-500">
-                  <div className="inline-flex h-16 w-16 sm:h-20 sm:w-20 lg:h-24 lg:w-24 items-center justify-center mb-4 lg:mb-6">
-                    <img src="/icon-192.png" alt="Arthur Logo" className="h-16 w-16 sm:h-20 sm:w-20 lg:h-24 lg:w-24 rounded-full" />
+              {messages.length === 0 && <div className="text-center py-12 animate-in fade-in duration-500">
+                  <div className="inline-flex h-16 w-16 items-center justify-center mb-4">
+                    <img src="/icon-192.png" alt="Arthur Logo" className="h-16 w-16 rounded-full" />
                   </div>
-                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-2 lg:mb-3">
+                  <h2 className="text-2xl font-bold text-foreground mb-2">
                     Bonjour{username ? ` ${username}` : ''} ! Je suis Arthur
                   </h2>
-                  <p className="text-muted-foreground text-sm sm:text-base lg:text-lg max-w-md lg:max-w-2xl mx-auto">
+                  <p className="text-muted-foreground max-w-md mx-auto">
                     Votre assistant virtuel en parapharmacie. Posez-moi vos questions sur les produits de santé et de bien-être !
                   </p>
                 </div>}
@@ -591,14 +591,14 @@ const Chat = () => {
 
               {/* Display products from Arthur */}
               {displayedProducts.length > 0 && (
-                <div className="mb-4 lg:mb-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <div className="flex gap-3 lg:gap-4 justify-start mb-2">
-                    <div className="h-8 w-8 sm:h-9 sm:w-9 lg:h-10 lg:w-10 rounded-full bg-gradient-primary flex items-center justify-center flex-shrink-0">
-                      <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
+                <div className="mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="flex gap-3 justify-start mb-2">
+                    <div className="h-8 w-8 rounded-full bg-gradient-primary flex items-center justify-center flex-shrink-0">
+                      <MessageSquare className="h-4 w-4 text-primary-foreground" />
                     </div>
-                    <div className="bg-card border border-border rounded-2xl px-4 py-3 lg:px-6 lg:py-4 shadow-sm max-w-[85%] lg:max-w-[90%]">
-                      <p className="text-sm sm:text-base lg:text-lg font-medium mb-3 lg:mb-4">Voici les produits disponibles :</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
+                    <div className="bg-card border border-border rounded-2xl px-4 py-3 shadow-sm max-w-[85%]">
+                      <p className="text-sm font-medium mb-3">Voici les produits disponibles :</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {displayedProducts.map((product) => (
                           <ProductCard 
                             key={product.id} 
@@ -621,15 +621,15 @@ const Chat = () => {
             {/* Promotions Slider - juste au-dessus de l'input */}
             {promotions.length > 0 && (
               <div className="border-t border-b border-border bg-card/95 backdrop-blur-sm">
-                <div className="w-full px-2 sm:px-3 lg:px-6 py-2 lg:py-3 max-w-5xl xl:max-w-6xl 2xl:max-w-7xl mx-auto">
+                <div className="w-full px-2 sm:px-3 py-2 max-w-3xl mx-auto">
                   <PromotionSlider promotions={promotions} onSelectPromotion={handleSelectPromotion} />
                 </div>
               </div>
             )}
             
-            <div className="w-full px-3 sm:px-4 lg:px-6 py-3 lg:py-4 border-t border-border max-w-5xl xl:max-w-6xl 2xl:max-w-7xl mx-auto">
+            <div className="max-w-3xl w-full mx-auto px-3 py-3 border-t border-border">
               {/* Voice Interface - compact version */}
-              <div className="mb-3 lg:mb-4">
+              <div className="mb-3">
                 <VoiceInterface 
                   userId={userId} 
                   selectedPharmacyId={cart.selectedPharmacyId}
@@ -640,17 +640,17 @@ const Chat = () => {
               </div>
               
               {/* Text Input */}
-              <div className="flex gap-2 lg:gap-3">
-                <Input value={input} onChange={e => setInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSend()} placeholder="Ou écrivez votre question..." disabled={loading} className="flex-1 rounded-full border-2 focus-visible:ring-primary text-sm sm:text-base lg:text-lg" />
-                <Button onClick={handleSend} disabled={loading || !input.trim()} className="rounded-full bg-gradient-primary hover:opacity-90 transition-opacity px-4 sm:px-6 lg:px-8 h-10 sm:h-11 lg:h-12">
-                  <Send className="h-4 w-4 sm:h-5 sm:w-5" />
+              <div className="flex gap-2">
+                <Input value={input} onChange={e => setInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSend()} placeholder="Ou écrivez votre question..." disabled={loading} className="flex-1 rounded-full border-2 focus-visible:ring-primary text-sm" />
+                <Button onClick={handleSend} disabled={loading || !input.trim()} className="rounded-full bg-gradient-primary hover:opacity-90 transition-opacity px-6">
+                  <Send className="h-4 w-4" />
                 </Button>
               </div>
             </div>
           </div>
 
-          {/* Footer - only visible on mobile */}
-          <div className="fixed bottom-0 left-0 right-0 z-20 block sm:hidden">
+          {/* Footer */}
+          <div className="fixed bottom-0 left-0 right-0 z-20">
             <Footer />
           </div>
         </div>
