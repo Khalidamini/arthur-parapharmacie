@@ -177,20 +177,6 @@ Je vous conseils et trouve les produits qui correspondent à vos besoins.
               </div>
             </Button>
 
-            <Button onClick={() => navigate("/scan-qr")} variant="outline" className="w-full h-20 sm:h-24 border-2 hover:border-primary/50 transition-all group">
-              <div className="flex flex-col items-center gap-1 sm:gap-2">
-                <QrCode className="h-5 w-5 sm:h-6 sm:w-6 text-primary group-hover:scale-110 transition-transform" />
-                <span className="font-medium text-xs sm:text-sm text-center leading-tight">Scanner une pharmacie</span>
-              </div>
-            </Button>
-
-            <Button onClick={() => navigate("/recommendations")} variant="outline" className="w-full h-20 sm:h-24 border-2 hover:border-primary/50 transition-all group">
-              <div className="flex flex-col items-center gap-1 sm:gap-2">
-                <Tag className="h-5 w-5 sm:h-6 sm:w-6 text-primary group-hover:scale-110 transition-transform" />
-                <span className="font-medium text-xs sm:text-sm">Mon compte</span>
-              </div>
-            </Button>
-
             <Button onClick={() => navigate("/pharmacies")} variant="outline" className="w-full h-20 sm:h-24 border-2 hover:border-primary/50 transition-all group">
               <div className="flex flex-col items-center gap-1 sm:gap-2">
                 <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-primary group-hover:scale-110 transition-transform" />
