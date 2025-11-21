@@ -228,7 +228,8 @@ const Chat = () => {
             content: userMessage.content
           }],
           conversationId: convIdToUse,
-          userId
+          userId,
+          selectedPharmacyId: cart.selectedPharmacyId
         }
       });
       if (error) {
