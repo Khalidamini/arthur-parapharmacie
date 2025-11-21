@@ -159,12 +159,12 @@ Je vous conseils et trouve les produits qui correspondent à vos besoins.
 
           </p>
 
-          {/* Pharmacie référente */}
+          {/* Pharmacie sélectionnée */}
           {currentPharmacy && <div className="bg-pharmacy-referent backdrop-blur-sm border border-pharmacy-referent rounded-xl p-4 mb-8 max-w-md mx-auto">
               <div className="flex items-center gap-2 text-sm justify-center">
                 <MapPin className="h-4 w-4 text-pharmacy-referent-foreground" />
                 <p className="text-pharmacy-referent-foreground">
-                  Pharmacie référente : <span className="font-semibold text-pharmacy-referent-foreground">{currentPharmacy}</span>
+                  Pharmacie sélectionnée : <span className="font-semibold text-pharmacy-referent-foreground">{currentPharmacy}</span>
                 </p>
               </div>
             </div>}
