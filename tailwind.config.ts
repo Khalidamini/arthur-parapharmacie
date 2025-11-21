@@ -47,6 +47,10 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        "pharmacy-referent": {
+          DEFAULT: "hsl(var(--pharmacy-referent))",
+          foreground: "hsl(var(--pharmacy-referent-foreground))",
+        },
       },
       backgroundImage: {
         'gradient-primary': 'var(--gradient-primary)',
