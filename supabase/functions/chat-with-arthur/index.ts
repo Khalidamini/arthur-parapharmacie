@@ -16,9 +16,9 @@ serve(async (req) => {
     const { messages, conversationId, userId, selectedPharmacyId } = await req.json();
     console.log('Received request:', { messagesCount: messages.length, conversationId, userId, selectedPharmacyId });
 
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY is not configured');
+    const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY');
+    if (!DEEPSEEK_API_KEY) {
+      throw new Error('DEEPSEEK_API_KEY is not configured');
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -448,14 +448,14 @@ Ton expertise en parapharmacie te permet de :
 - ACCOMPAGNER vocalement les utilisateurs même pendant la navigation entre pages
 - NE JAMAIS dire "je ne sais pas" ou "contactez la pharmacie" - toujours proposer une solution${userContext}${pharmacyInfo}${productsContext}${promotionsContext}${alternativePharmaciesInfo}`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'deepseek-chat',
         messages: [
           { role: 'system', content: systemPrompt },
           ...fullMessages
@@ -467,17 +467,12 @@ Ton expertise en parapharmacie te permet de :
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, errorText);
+      console.error('DeepSeek API error:', response.status, errorText);
       
       if (response.status === 429) {
-        const errorData = await response.json().catch(() => ({}));
-        const isQuotaError = errorData?.error?.code === 'insufficient_quota';
-        
         return new Response(
           JSON.stringify({ 
-            error: isQuotaError 
-              ? 'Quota OpenAI dépassé. Ajoutez des crédits sur platform.openai.com/account/billing'
-              : 'Trop de requêtes OpenAI, veuillez réessayer dans quelques instants.'
+            error: 'Trop de requêtes DeepSeek, veuillez réessayer dans quelques instants.'
           }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -485,7 +480,7 @@ Ton expertise en parapharmacie te permet de :
       
       if (response.status === 401) {
         return new Response(
-          JSON.stringify({ error: 'Clé API OpenAI invalide. Vérifiez votre configuration.' }),
+          JSON.stringify({ error: 'Clé API DeepSeek invalide. Vérifiez votre configuration.' }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
