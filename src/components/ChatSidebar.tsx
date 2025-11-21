@@ -30,7 +30,7 @@ export function ChatSidebar() {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const currentConvId = searchParams.get('conversationId');
-  const { state, openMobile, setOpenMobile } = useSidebar();
+  const { state, setOpenMobile } = useSidebar();
 
   useEffect(() => {
     loadConversations();
@@ -132,7 +132,7 @@ export function ChatSidebar() {
   const isActive = (convId: string) => currentConvId === convId;
 
   return (
-    <Sidebar className="border-r border-border" collapsible="icon">
+    <Sidebar className="border-r border-border" collapsible="offcanvas">
       <SidebarHeader className="p-4 border-b border-border">
         <Button
           onClick={createNewConversation}
