@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, Building2, Clock, Check } from "lucide-react";
+import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, Building2, Clock, Check, TrendingDown, Package } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import Footer from '@/components/Footer';
 import { format } from 'date-fns';
@@ -27,6 +27,18 @@ export default function Cart() {
         new Date(b.completedAt || b.updatedAt).getTime() - new Date(a.completedAt || a.updatedAt).getTime()
       )
     : [];
+
+  // Calculer les statistiques globales des paniers actifs
+  const totalItemsCount = filteredActiveCarts.reduce((sum, cart) => 
+    sum + cart.items.reduce((s, item) => s + item.quantity, 0), 0
+  );
+  const arthurTotal = filteredActiveCarts.reduce((sum, cart) => 
+    sum + cart.items.filter(item => item.source === 'arthur').reduce((s, item) => s + item.price * item.quantity, 0), 0
+  );
+  const shopTotal = filteredActiveCarts.reduce((sum, cart) => 
+    sum + cart.items.filter(item => item.source === 'shop').reduce((s, item) => s + item.price * item.quantity, 0), 0
+  );
+  const grandTotal = arthurTotal + shopTotal;
 
   const renderCartItems = (cart: any) => (
     <div className="space-y-3">
@@ -216,6 +228,40 @@ export default function Cart() {
             <h1 className="text-3xl font-bold">Mes Paniers</h1>
           </div>
         </div>
+
+        {/* Résumé global */}
+        {filteredActiveCarts.length > 0 && (
+          <Card className="mb-6 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Résumé de vos paniers
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center p-3 bg-background/50 rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-1">Articles</p>
+                  <p className="text-2xl font-bold text-primary">{totalItemsCount}</p>
+                </div>
+                {arthurTotal > 0 && (
+                  <div className="text-center p-3 bg-background/50 rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-1">Total Arthur</p>
+                    <p className="text-2xl font-bold">{arthurTotal.toFixed(2)} €</p>
+                  </div>
+                )}
+                <div className="text-center p-3 bg-background/50 rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-1">Total Boutique</p>
+                  <p className="text-2xl font-bold">{shopTotal.toFixed(2)} €</p>
+                </div>
+                <div className="text-center p-3 bg-primary text-primary-foreground rounded-lg">
+                  <p className="text-sm mb-1 opacity-90">Total Général</p>
+                  <p className="text-2xl font-bold">{grandTotal.toFixed(2)} €</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Tabs defaultValue="active" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6">
