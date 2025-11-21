@@ -152,20 +152,26 @@ class AudioQueue {
     const audioData = this.queue.shift()!;
 
     try {
-      const wavData = createWavFromPCM(audioData);
-      // Create a new ArrayBuffer copy to ensure it's not a SharedArrayBuffer
-      const buffer = new ArrayBuffer(wavData.byteLength);
-      new Uint8Array(buffer).set(wavData);
-      const audioBuffer = await this.audioContext.decodeAudioData(buffer);
-      
+      // Convertir le PCM16 brut en Float32 et jouer directement sans passer par decodeAudioData
+      const int16Data = new Int16Array(audioData.buffer, audioData.byteOffset, audioData.byteLength / 2);
+      const float32Data = new Float32Array(int16Data.length);
+
+      for (let i = 0; i < int16Data.length; i++) {
+        float32Data[i] = int16Data[i] / 0x8000;
+      }
+
+      const audioBuffer = this.audioContext.createBuffer(1, float32Data.length, 24000);
+      audioBuffer.copyToChannel(float32Data, 0);
+
       const source = this.audioContext.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(this.audioContext.destination);
-      
+
       source.onended = () => {
         console.log('Audio chunk finished playing');
         this.playNext();
       };
+
       source.start(0);
       console.log('Playing audio chunk');
     } catch (error) {
