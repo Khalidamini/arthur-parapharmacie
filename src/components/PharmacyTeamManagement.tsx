@@ -305,28 +305,28 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Gestion de l'équipe</CardTitle>
-              <CardDescription>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <CardTitle className="text-lg sm:text-xl">Gestion de l'équipe</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 Gérez les utilisateurs et leurs permissions
               </CardDescription>
             </div>
             {(userRole === 'owner' || userRole === 'admin') && (
-              <Button onClick={() => setInviteDialogOpen(true)}>
+              <Button onClick={() => setInviteDialogOpen(true)} className="w-full sm:w-auto shrink-0">
                 <UserPlus className="mr-2 h-4 w-4" />
-                Inviter un membre
+                <span className="sm:inline">Inviter</span>
               </Button>
             )}
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="border rounded-lg p-4 bg-muted/50">
-            <h4 className="font-semibold mb-2">Rôles disponibles :</h4>
-            <ul className="space-y-2 text-sm">
-              <li>• <strong>Propriétaire</strong> : Accès complet à toutes les fonctionnalités</li>
-              <li>• <strong>Administrateur</strong> : Gestion complète de la pharmacie</li>
-              <li>• <strong>Gestionnaire de promotions</strong> : Création et modification des promotions uniquement</li>
+          <div className="border rounded-lg p-3 sm:p-4 bg-muted/50">
+            <h4 className="font-semibold mb-2 text-sm sm:text-base">Rôles disponibles :</h4>
+            <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
+              <li>• <strong>Propriétaire</strong> : Accès complet</li>
+              <li>• <strong>Administrateur</strong> : Gestion complète</li>
+              <li>• <strong>Gestionnaire de promotions</strong> : Gestion promotions</li>
             </ul>
           </div>
 
@@ -335,135 +335,220 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
             </div>
           ) : teamMembers.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8 text-muted-foreground text-sm">
               Aucun membre dans l'équipe
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Téléphone</TableHead>
-                  <TableHead>Rôle</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Date d'ajout</TableHead>
-                  {(userRole === 'owner' || userRole === 'admin') && (
-                    <TableHead className="text-right">Actions</TableHead>
-                  )}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {teamMembers.map((member) => (
-                  <TableRow key={member.id}>
-                    <TableCell className="font-medium">
-                      {member.first_name && member.last_name 
-                        ? `${member.first_name} ${member.last_name}`
-                        : <span className="text-muted-foreground italic">Non renseigné</span>
-                      }
-                    </TableCell>
-                    <TableCell>{member.email}</TableCell>
-                    <TableCell>
-                      {member.phone || <span className="text-muted-foreground italic">Non renseigné</span>}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getRoleBadgeVariant(member.role)}>
-                        {getRoleLabel(member.role)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {member.must_change_password ? (
-                        <Badge variant="outline" className="text-amber-600">
-                          Mot de passe provisoire
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-green-600">
-                          Actif
-                        </Badge>
+            <>
+              {/* Vue desktop - Tableau */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nom</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Téléphone</TableHead>
+                      <TableHead>Rôle</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead>Date d'ajout</TableHead>
+                      {(userRole === 'owner' || userRole === 'admin') && (
+                        <TableHead className="text-right">Actions</TableHead>
                       )}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(member.created_at).toLocaleDateString('fr-FR')}
-                    </TableCell>
-                    {(userRole === 'owner' || userRole === 'admin') && (
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenEditRole(member)}
-                            disabled={member.role === 'owner'}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveMember(member.id, member.role)}
-                            disabled={member.role === 'owner'}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {teamMembers.map((member) => (
+                      <TableRow key={member.id}>
+                        <TableCell className="font-medium">
+                          {member.first_name && member.last_name 
+                            ? `${member.first_name} ${member.last_name}`
+                            : <span className="text-muted-foreground italic">Non renseigné</span>
+                          }
+                        </TableCell>
+                        <TableCell>{member.email}</TableCell>
+                        <TableCell>
+                          {member.phone || <span className="text-muted-foreground italic">Non renseigné</span>}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getRoleBadgeVariant(member.role)}>
+                            {getRoleLabel(member.role)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {member.must_change_password ? (
+                            <Badge variant="outline" className="text-amber-600">
+                              Mot de passe provisoire
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-green-600">
+                              Actif
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(member.created_at).toLocaleDateString('fr-FR')}
+                        </TableCell>
+                        {(userRole === 'owner' || userRole === 'admin') && (
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleOpenEditRole(member)}
+                                disabled={member.role === 'owner'}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveMember(member.id, member.role)}
+                                disabled={member.role === 'owner'}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Vue mobile - Cartes */}
+              <div className="md:hidden space-y-3">
+                {teamMembers.map((member) => (
+                  <Card key={member.id} className="border-l-4 border-l-primary/30">
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm truncate">
+                            {member.first_name && member.last_name 
+                              ? `${member.first_name} ${member.last_name}`
+                              : <span className="text-muted-foreground italic">Non renseigné</span>
+                            }
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">{member.email}</p>
                         </div>
-                      </TableCell>
-                    )}
-                  </TableRow>
+                        <Badge variant={getRoleBadgeVariant(member.role)} className="shrink-0 text-xs">
+                          {getRoleLabel(member.role)}
+                        </Badge>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="text-muted-foreground">Téléphone</span>
+                          <p className="font-medium truncate">
+                            {member.phone || <span className="text-muted-foreground italic">Non renseigné</span>}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Ajouté le</span>
+                          <p className="font-medium">
+                            {new Date(member.created_at).toLocaleDateString('fr-FR', { 
+                              day: '2-digit', 
+                              month: '2-digit', 
+                              year: '2-digit' 
+                            })}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2 border-t">
+                        {member.must_change_password ? (
+                          <Badge variant="outline" className="text-amber-600 text-xs">
+                            Mot de passe provisoire
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-green-600 text-xs">
+                            Actif
+                          </Badge>
+                        )}
+
+                        {(userRole === 'owner' || userRole === 'admin') && (
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenEditRole(member)}
+                              disabled={member.role === 'owner'}
+                              className="h-8 px-2"
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveMember(member.id, member.role)}
+                              disabled={member.role === 'owner'}
+                              className="h-8 px-2"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
 
       <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px] max-w-[95vw]">
           <DialogHeader>
-            <DialogTitle>Inviter un membre</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-base sm:text-lg">Inviter un membre</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Un compte sera créé avec un mot de passe provisoire. Le membre devra le changer lors de sa première connexion.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-3 sm:gap-4 py-3 sm:py-4">
             <div className="grid gap-2">
-              <Label htmlFor="email">Email du membre</Label>
+              <Label htmlFor="email" className="text-sm">Email du membre</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="membre@example.com"
                 value={inviteForm.email}
                 onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                className="text-sm"
               />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="role">Rôle</Label>
+              <Label htmlFor="role" className="text-sm">Rôle</Label>
               <Select
                 value={inviteForm.role}
                 onValueChange={(value) => setInviteForm({ ...inviteForm, role: value })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Administrateur</SelectItem>
-                  <SelectItem value="promotion_manager">Gestionnaire de promotions</SelectItem>
+                  <SelectItem value="admin" className="text-sm">Administrateur</SelectItem>
+                  <SelectItem value="promotion_manager" className="text-sm">Gestionnaire de promotions</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
               onClick={() => {
                 setInviteDialogOpen(false);
                 setInviteForm({ email: '', role: 'admin' });
               }}
+              className="w-full sm:w-auto text-sm"
             >
               Annuler
             </Button>
-            <Button onClick={handleInvite} disabled={inviting}>
+            <Button onClick={handleInvite} disabled={inviting} className="w-full sm:w-auto text-sm">
               {inviting ? 'Invitation...' : 'Inviter'}
             </Button>
           </DialogFooter>
@@ -471,43 +556,44 @@ const PharmacyTeamManagement = ({ pharmacyId, userRole }: PharmacyTeamManagement
       </Dialog>
 
       <Dialog open={editRoleDialogOpen} onOpenChange={setEditRoleDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px] max-w-[95vw]">
           <DialogHeader>
-            <DialogTitle>Modifier le rôle</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-base sm:text-lg">Modifier le rôle</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm break-words">
               Modifiez le rôle de {selectedMember?.email}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-3 sm:gap-4 py-3 sm:py-4">
             <div className="grid gap-2">
-              <Label htmlFor="new-role">Nouveau rôle</Label>
+              <Label htmlFor="new-role" className="text-sm">Nouveau rôle</Label>
               <Select
                 value={newRole}
                 onValueChange={(value: any) => setNewRole(value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Administrateur</SelectItem>
-                  <SelectItem value="promotion_manager">Gestionnaire de promotions</SelectItem>
+                  <SelectItem value="admin" className="text-sm">Administrateur</SelectItem>
+                  <SelectItem value="promotion_manager" className="text-sm">Gestionnaire de promotions</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
               onClick={() => {
                 setEditRoleDialogOpen(false);
                 setSelectedMember(null);
               }}
+              className="w-full sm:w-auto text-sm"
             >
               Annuler
             </Button>
-            <Button onClick={handleUpdateRole} disabled={updatingRole}>
+            <Button onClick={handleUpdateRole} disabled={updatingRole} className="w-full sm:w-auto text-sm">
               {updatingRole ? 'Modification...' : 'Modifier'}
             </Button>
           </DialogFooter>
