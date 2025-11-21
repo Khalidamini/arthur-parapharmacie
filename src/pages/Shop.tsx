@@ -11,7 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
 import Footer from '@/components/Footer';
 import FeaturedProductsSlider from '@/components/FeaturedProductsSlider';
-
 interface Product {
   id: string;
   name: string;
@@ -24,10 +23,11 @@ interface Product {
   is_available: boolean;
   is_featured?: boolean;
 }
-
 const Shop = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const cart = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -46,18 +46,19 @@ const Shop = () => {
       setSelectedProducts(new Set(JSON.parse(saved)));
     }
   }, []);
-
   useEffect(() => {
     fetchPharmacyProducts();
   }, []);
-
   useEffect(() => {
     filterAndSortProducts();
   }, [products, searchQuery, selectedCategory, sortBy]);
-
   const fetchPharmacyProducts = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
       if (!user) {
         navigate("/auth");
         return;
@@ -69,35 +70,33 @@ const Shop = () => {
         toast({
           title: "Aucune pharmacie affiliée",
           description: "Veuillez scanner le QR code d'une pharmacie pour continuer.",
-          variant: "destructive",
+          variant: "destructive"
         });
         navigate("/scan-qr");
         return;
       }
 
       // Get pharmacy details
-      const { data: pharmacy, error: pharmacyError } = await supabase
-        .from("pharmacies")
-        .select("name")
-        .eq("id", currentPharmacyId)
-        .single();
-
+      const {
+        data: pharmacy,
+        error: pharmacyError
+      } = await supabase.from("pharmacies").select("name").eq("id", currentPharmacyId).single();
       if (pharmacyError || !pharmacy) {
         toast({
           title: "Erreur",
           description: "Impossible de charger la pharmacie.",
-          variant: "destructive",
+          variant: "destructive"
         });
         return;
       }
-
       setPharmacyName(pharmacy.name);
       setPharmacyId(currentPharmacyId);
 
       // Get products available in this pharmacy with featured status
-      const { data: pharmacyProducts, error: productsError } = await supabase
-        .from("pharmacy_products")
-        .select(`
+      const {
+        data: pharmacyProducts,
+        error: productsError
+      } = await supabase.from("pharmacy_products").select(`
           stock_quantity,
           is_available,
           is_featured,
@@ -110,48 +109,37 @@ const Shop = () => {
             category,
             image_url
           )
-        `)
-        .eq("pharmacy_id", currentPharmacyId)
-        .eq("is_available", true);
-
+        `).eq("pharmacy_id", currentPharmacyId).eq("is_available", true);
       if (productsError) throw productsError;
-
       const formattedProducts = pharmacyProducts.map((pp: any) => ({
         ...pp.products,
         stock_quantity: pp.stock_quantity,
         is_available: pp.is_available,
-        is_featured: pp.is_featured || false,
+        is_featured: pp.is_featured || false
       }));
-
       setProducts(formattedProducts);
     } catch (error) {
       console.error("Error fetching products:", error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les produits.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   };
-
   const filterAndSortProducts = () => {
     let filtered = [...products];
 
     // Filter by search query
     if (searchQuery) {
-      filtered = filtered.filter(
-        (p) =>
-          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.description?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      filtered = filtered.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.brand.toLowerCase().includes(searchQuery.toLowerCase()) || p.description?.toLowerCase().includes(searchQuery.toLowerCase()));
     }
 
     // Filter by category
     if (selectedCategory !== "all") {
-      filtered = filtered.filter((p) => p.category === selectedCategory);
+      filtered = filtered.filter(p => p.category === selectedCategory);
     }
 
     // Sort
@@ -169,16 +157,12 @@ const Shop = () => {
           return 0;
       }
     });
-
     setFilteredProducts(filtered);
   };
-
   const toggleProductSelection = async (productId: string) => {
     const product = products.find(p => p.id === productId);
     if (!product) return;
-
     const isSelected = selectedProducts.has(productId);
-    
     if (!isSelected) {
       // Ajouter automatiquement au panier
       try {
@@ -189,37 +173,29 @@ const Shop = () => {
           price: product.price,
           imageUrl: product.image_url || '',
           source: 'shop',
-          productId: product.id,
+          productId: product.id
         }, pharmacyId || cart.selectedPharmacyId || undefined);
-        
         toast({
           title: "Ajouté au panier",
-          description: `${product.name} ajouté au panier`,
+          description: `${product.name} ajouté au panier`
         });
       } catch (e) {
         console.error('Error adding to cart', e);
-        toast({ 
-          title: 'Erreur', 
-          description: 'Impossible d\'ajouter au panier', 
-          variant: 'destructive' 
+        toast({
+          title: 'Erreur',
+          description: 'Impossible d\'ajouter au panier',
+          variant: 'destructive'
         });
       }
     }
   };
-
-
-  const categories = Array.from(new Set(products.map((p) => p.category)));
-
+  const categories = Array.from(new Set(products.map(p => p.category)));
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
+    return <div className="min-h-screen flex items-center justify-center">
         <p>Chargement...</p>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen bg-background p-4 pb-24">
+  return <div className="min-h-screen bg-background p-4 pb-24">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -238,11 +214,7 @@ const Shop = () => {
               <h1 className="text-3xl font-bold mb-2">Boutique</h1>
               <p className="text-muted-foreground">{pharmacyName}</p>
             </div>
-            <Button
-              size="lg"
-              onClick={() => navigate("/promotions")}
-              className="flex items-center gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg"
-            >
+            <Button size="lg" onClick={() => navigate("/promotions")} className="flex items-center gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg">
               <Tag className="h-5 w-5" />
               🎉 Promotions
             </Button>
@@ -250,36 +222,24 @@ const Shop = () => {
         </div>
 
         {/* Featured Products Slider */}
-        {products.filter(p => p.is_featured).length > 0 && (
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-3 flex items-center gap-2">
-              <Tag className="h-5 w-5 text-amber-500" />
-              Nos coups de cœur
-            </h2>
-            <FeaturedProductsSlider 
-              products={products.filter(p => p.is_featured).map(p => ({
-                id: p.id,
-                name: p.name,
-                brand: p.brand,
-                price: p.price,
-                category: p.category,
-                image_url: p.image_url,
-                description: p.description,
-              }))} 
-            />
-          </div>
-        )}
+        {products.filter(p => p.is_featured).length > 0 && <div className="mb-6">
+            
+            <FeaturedProductsSlider products={products.filter(p => p.is_featured).map(p => ({
+          id: p.id,
+          name: p.name,
+          brand: p.brand,
+          price: p.price,
+          category: p.category,
+          image_url: p.image_url,
+          description: p.description
+        }))} />
+          </div>}
 
         {/* Search and Filters */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher un produit..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+            <Input placeholder="Rechercher un produit..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10" />
           </div>
 
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
@@ -288,11 +248,9 @@ const Shop = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Toutes les catégories</SelectItem>
-              {categories.map((cat) => (
-                <SelectItem key={cat} value={cat}>
+              {categories.map(cat => <SelectItem key={cat} value={cat}>
                   {cat}
-                </SelectItem>
-              ))}
+                </SelectItem>)}
             </SelectContent>
           </Select>
 
@@ -312,26 +270,12 @@ const Shop = () => {
 
         {/* Products Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProducts.map((product) => (
-            <Card
-              key={product.id}
-              className="transition-all hover:shadow-lg"
-            >
+          {filteredProducts.map(product => <Card key={product.id} className="transition-all hover:shadow-lg">
               <CardHeader>
-                {product.image_url && (
-                  <img
-                    src={product.image_url}
-                    alt={product.name}
-                    className="w-full h-48 object-cover rounded-md mb-4"
-                    loading="lazy"
-                    decoding="async"
-                    referrerPolicy="no-referrer"
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = '/placeholder.svg';
-                    }}
-                  />
-                )}
+                {product.image_url && <img src={product.image_url} alt={product.name} className="w-full h-48 object-cover rounded-md mb-4" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={e => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = '/placeholder.svg';
+            }} />}
                 <CardTitle className="line-clamp-2">{product.name}</CardTitle>
                 <CardDescription className="line-clamp-2">
                   {product.brand}
@@ -343,43 +287,33 @@ const Shop = () => {
                 </p>
                 <div className="flex items-center gap-2 mb-2">
                   <Badge variant="secondary">{product.category}</Badge>
-                  {product.stock_quantity > 0 && (
-                    <Badge variant="outline">
+                  {product.stock_quantity > 0 && <Badge variant="outline">
                       Stock: {product.stock_quantity}
-                    </Badge>
-                  )}
+                    </Badge>}
                 </div>
                 <p className="text-2xl font-bold text-primary">
                   {product.price.toFixed(2)} €
                 </p>
               </CardContent>
               <CardFooter>
-                <Button
-                  className="w-full"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleProductSelection(product.id);
-                  }}
-                >
+                <Button className="w-full" onClick={e => {
+              e.stopPropagation();
+              toggleProductSelection(product.id);
+            }}>
                   <ShoppingCart className="mr-2 h-4 w-4" />
                   Ajouter au panier
                 </Button>
               </CardFooter>
-            </Card>
-          ))}
+            </Card>)}
         </div>
 
-        {filteredProducts.length === 0 && (
-          <div className="text-center py-12">
+        {filteredProducts.length === 0 && <div className="text-center py-12">
             <p className="text-muted-foreground">
               Aucun produit trouvé avec ces critères
             </p>
-          </div>
-        )}
+          </div>}
       </div>
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default Shop;
