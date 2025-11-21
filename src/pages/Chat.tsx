@@ -39,18 +39,22 @@ const Chat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
   const cart = useCart();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   useEffect(() => {
     const getUser = async () => {
       const {
-        data: { user },
+        data: {
+          user
+        }
       } = await supabase.auth.getUser();
       if (!user) {
         toast({
           title: "Connexion requise",
-          description: "Vous devez être connecté pour accéder au chat",
+          description: "Vous devez être connecté pour accéder au chat"
         });
         navigate("/auth");
         return;
@@ -58,7 +62,9 @@ const Chat = () => {
       setUserId(user.id);
 
       // Récupérer le nom d'utilisateur
-      const { data: profileData } = await supabase.from("profiles").select("username").eq("id", user.id).single();
+      const {
+        data: profileData
+      } = await supabase.from("profiles").select("username").eq("id", user.id).single();
       if (profileData?.username) {
         setUsername(profileData.username);
       }
@@ -77,7 +83,6 @@ const Chat = () => {
   useEffect(() => {
     const convId = searchParams.get("conversationId");
     const isNew = searchParams.get("new");
-
     if (isNew) {
       // Nouvelle conversation demandée - réinitialiser complètement l'état
       setConversationId(null);
@@ -85,7 +90,6 @@ const Chat = () => {
       setDisplayedProducts([]);
       return;
     }
-
     if (convId && convId !== conversationId) {
       // Conversation spécifiée dans l'URL : on la charge
       setConversationId(convId);
@@ -94,27 +98,25 @@ const Chat = () => {
       // Aucune conversation dans l'URL mais utilisateur connecté :
       // on recharge automatiquement la DERNIÈRE conversation de l'utilisateur
       const loadLastConversation = async () => {
-        const { data, error } = await supabase
-          .from("conversations")
-          .select("id")
-          .eq("user_id", userId)
-          .order("updated_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
+        const {
+          data,
+          error
+        } = await supabase.from("conversations").select("id").eq("user_id", userId).order("updated_at", {
+          ascending: false
+        }).limit(1).maybeSingle();
         if (error) {
           console.error("Error loading last conversation:", error);
           return;
         }
-
         if (data?.id) {
           setConversationId(data.id);
           // Mettre à jour l'URL pour refléter la conversation courante
-          navigate(`/chat?conversationId=${data.id}`, { replace: true });
+          navigate(`/chat?conversationId=${data.id}`, {
+            replace: true
+          });
           loadConversationMessages(data.id);
         }
       };
-
       loadLastConversation();
     }
   }, [searchParams, userId]);
@@ -123,49 +125,47 @@ const Chat = () => {
     if (messages.length > 0) {
       lastMessageRef.current?.scrollIntoView({
         behavior: "smooth",
-        block: "start",
+        block: "start"
       });
     }
   }, [messages]);
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({
-      behavior: "smooth",
+      behavior: "smooth"
     });
   };
   const loadConversationMessages = async (convId: string) => {
-    const { data, error } = await supabase
-      .from("messages")
-      .select("*")
-      .eq("conversation_id", convId)
-      .order("created_at", {
-        ascending: true,
-      });
+    const {
+      data,
+      error
+    } = await supabase.from("messages").select("*").eq("conversation_id", convId).order("created_at", {
+      ascending: true
+    });
     if (error) {
       console.error("Error loading messages:", error);
       return;
     }
-    const loadedMessages: Message[] = (data || []).map((msg) => ({
+    const loadedMessages: Message[] = (data || []).map(msg => ({
       id: msg.id,
       role: msg.role as "user" | "assistant",
-      content: msg.content,
+      content: msg.content
     }));
     setMessages(loadedMessages);
   };
   const createConversation = async (uid: string) => {
-    const { data, error } = await supabase
-      .from("conversations")
-      .insert({
-        user_id: uid,
-        title: "Conversation avec Arthur",
-      })
-      .select()
-      .single();
+    const {
+      data,
+      error
+    } = await supabase.from("conversations").insert({
+      user_id: uid,
+      title: "Conversation avec Arthur"
+    }).select().single();
     if (error) {
       console.error("Error creating conversation:", error);
       toast({
         title: "Erreur",
         description: "Impossible de créer la conversation",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -174,7 +174,9 @@ const Chat = () => {
   const loadPromotions = async () => {
     try {
       const {
-        data: { user },
+        data: {
+          user
+        }
       } = await supabase.auth.getUser();
       if (!user) return;
 
@@ -186,14 +188,12 @@ const Chat = () => {
       }
 
       // Charger uniquement les promotions non expirées de la pharmacie sélectionnée
-      const { data, error } = await supabase
-        .from("promotions")
-        .select("*")
-        .eq("pharmacy_id", currentPharmacyId)
-        .gte("valid_until", new Date().toISOString())
-        .order("created_at", {
-          ascending: false,
-        });
+      const {
+        data,
+        error
+      } = await supabase.from("promotions").select("*").eq("pharmacy_id", currentPharmacyId).gte("valid_until", new Date().toISOString()).order("created_at", {
+        ascending: false
+      });
       if (error) {
         console.error("Error loading promotions:", error);
         return;
@@ -206,10 +206,12 @@ const Chat = () => {
   const saveMessage = async (role: "user" | "assistant", content: string, convIdOverride?: string) => {
     const convId = convIdOverride ?? conversationId;
     if (!convId) return;
-    const { error } = await supabase.from("messages").insert({
+    const {
+      error
+    } = await supabase.from("messages").insert({
       conversation_id: convId,
       role,
-      content,
+      content
     });
     if (error) {
       console.error("Error saving message:", error);
@@ -217,12 +219,9 @@ const Chat = () => {
     }
 
     // Mettre à jour l'horodatage de la conversation
-    await supabase
-      .from("conversations")
-      .update({
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", convId);
+    await supabase.from("conversations").update({
+      updated_at: new Date().toISOString()
+    }).eq("id", convId);
   };
   const handleSend = async () => {
     if (!input.trim() || loading || !userId) return;
@@ -230,20 +229,19 @@ const Chat = () => {
     // Créer une conversation si elle n'existe pas encore
     let convIdToUse = conversationId as string | null;
     if (!convIdToUse) {
-      const { data, error } = await supabase
-        .from("conversations")
-        .insert({
-          user_id: userId,
-          title: "Conversation avec Arthur",
-        })
-        .select()
-        .single();
+      const {
+        data,
+        error
+      } = await supabase.from("conversations").insert({
+        user_id: userId,
+        title: "Conversation avec Arthur"
+      }).select().single();
       if (error) {
         console.error("Error creating conversation:", error);
         toast({
           title: "Erreur",
           description: "Impossible de créer la conversation",
-          variant: "destructive",
+          variant: "destructive"
         });
         return;
       }
@@ -251,31 +249,32 @@ const Chat = () => {
       setConversationId(data.id);
       // Mettre à jour l'URL avec le conversationId
       navigate(`/chat?conversationId=${data.id}`, {
-        replace: true,
+        replace: true
       });
     }
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: input.trim(),
+      content: input.trim()
     };
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages(prev => [...prev, userMessage]);
     setInput("");
     setLoading(true);
     await saveMessage("user", userMessage.content, convIdToUse || undefined);
     try {
-      const { data, error } = await supabase.functions.invoke("chat-with-arthur", {
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke("chat-with-arthur", {
         body: {
-          messages: [
-            {
-              role: "user",
-              content: userMessage.content,
-            },
-          ],
+          messages: [{
+            role: "user",
+            content: userMessage.content
+          }],
           conversationId: convIdToUse,
           userId,
-          selectedPharmacyId: cart.selectedPharmacyId,
-        },
+          selectedPharmacyId: cart.selectedPharmacyId
+        }
       });
       if (error) {
         // Gérer les erreurs spécifiques
@@ -284,7 +283,7 @@ const Chat = () => {
             title: "Crédits épuisés",
             description: "Ajoutez des crédits dans Settings → Workspace → Usage pour continuer.",
             variant: "destructive",
-            duration: 10000,
+            duration: 10000
           });
           return;
         }
@@ -293,7 +292,7 @@ const Chat = () => {
             title: "Quota OpenAI dépassé",
             description: "Ajoutez des crédits sur platform.openai.com/account/billing",
             variant: "destructive",
-            duration: 10000,
+            duration: 10000
           });
           return;
         }
@@ -302,26 +301,25 @@ const Chat = () => {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.message,
+        content: data.message
       };
-      setMessages((prev) => [...prev, assistantMessage]);
+      setMessages(prev => [...prev, assistantMessage]);
       await saveMessage("assistant", assistantMessage.content, convIdToUse || undefined);
 
       // Generate conversation title after first exchange
       if (messages.length === 0 && convIdToUse) {
         try {
-          const { data: titleData } = await supabase.functions.invoke("generate-conversation-title", {
+          const {
+            data: titleData
+          } = await supabase.functions.invoke("generate-conversation-title", {
             body: {
-              firstUserMessage: userMessage.content,
-            },
+              firstUserMessage: userMessage.content
+            }
           });
           if (titleData?.title) {
-            await supabase
-              .from("conversations")
-              .update({
-                title: titleData.title,
-              })
-              .eq("id", convIdToUse);
+            await supabase.from("conversations").update({
+              title: titleData.title
+            }).eq("id", convIdToUse);
           }
         } catch (error) {
           console.error("Error generating title:", error);
@@ -332,7 +330,7 @@ const Chat = () => {
       toast({
         title: "Erreur",
         description: error.message || "Impossible de contacter Arthur",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
@@ -340,104 +338,96 @@ const Chat = () => {
   };
   const handleSelectPromotion = async (promotion: Promotion) => {
     if (!userId) return;
-    const { error } = await supabase.from("recommendations").insert({
+    const {
+      error
+    } = await supabase.from("recommendations").insert({
       user_id: userId,
       conversation_id: conversationId,
       promotion_id: promotion.id,
       product_name: promotion.title,
-      notes: promotion.description,
+      notes: promotion.description
     });
     if (error) {
       console.error("Error saving recommendation:", error);
       toast({
         title: "Erreur",
         description: "Impossible d'ajouter la promotion à vos recommandations",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
     toast({
       title: "Promotion ajoutée",
-      description: "La promotion a été ajoutée à vos recommandations",
+      description: "La promotion a été ajoutée à vos recommandations"
     });
   };
-
   const handleDisplayProducts = (products: any[]) => {
     console.log("Displaying products in chat:", products);
     setDisplayedProducts(products);
   };
-
   const handleAddToCart = async (product: any) => {
     try {
-      await cart.addToCart(
-        {
-          id: product.productId,
-          productId: product.productId,
-          name: product.name,
-          brand: product.brand,
-          price: product.price,
-          imageUrl: product.imageUrl || "",
-          source: "arthur",
-          reason: "Ajouté par Arthur",
-        },
-        cart.selectedPharmacyId || "",
-      );
-
+      await cart.addToCart({
+        id: product.productId,
+        productId: product.productId,
+        name: product.name,
+        brand: product.brand,
+        price: product.price,
+        imageUrl: product.imageUrl || "",
+        source: "arthur",
+        reason: "Ajouté par Arthur"
+      }, cart.selectedPharmacyId || "");
       toast({
         title: "✅ Ajouté au panier",
-        description: `${product.name} (${product.brand})`,
+        description: `${product.name} (${product.brand})`
       });
     } catch (error) {
       toast({
         title: "Erreur",
         description: "Impossible d'ajouter au panier",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const handleTranscript = async (text: string, isFinal: boolean) => {
     if (!text.trim()) return;
-
     if (isFinal) {
       // S'assurer qu'une conversation existe (cas où l'utilisateur commence par la voix)
       let convIdToUse = conversationId as string | null;
       let isNewConversation = false;
-
       if (!convIdToUse && userId) {
-        const { data, error } = await supabase
-          .from("conversations")
-          .insert({
-            user_id: userId,
-            title: "Conversation avec Arthur",
-          })
-          .select()
-          .single();
-
+        const {
+          data,
+          error
+        } = await supabase.from("conversations").insert({
+          user_id: userId,
+          title: "Conversation avec Arthur"
+        }).select().single();
         if (error) {
           console.error("Error creating conversation from voice:", error);
           toast({
             title: "Erreur",
             description: "Impossible de créer la conversation pour l'historique",
-            variant: "destructive",
+            variant: "destructive"
           });
           return;
         }
-
         convIdToUse = data.id;
         setConversationId(data.id);
         isNewConversation = true;
         // Mettre à jour l'URL avec le conversationId
-        navigate(`/chat?conversationId=${data.id}`, { replace: true });
+        navigate(`/chat?conversationId=${data.id}`, {
+          replace: true
+        });
       }
 
       // Message final - ajouter à l'historique local
       const assistantMessage: Message = {
         id: `voice-${Date.now()}`,
         role: "assistant",
-        content: text,
+        content: text
       };
-      setMessages((prev) => [...prev, assistantMessage]);
+      setMessages(prev => [...prev, assistantMessage]);
 
       // Sauvegarder dans la base de données si on a une conversation
       if (convIdToUse) {
@@ -446,16 +436,17 @@ const Chat = () => {
         // Générer un titre si c'est une nouvelle conversation
         if (isNewConversation && messages.length === 0) {
           try {
-            const { data: titleData } = await supabase.functions.invoke("generate-conversation-title", {
-              body: { firstUserMessage: text },
+            const {
+              data: titleData
+            } = await supabase.functions.invoke("generate-conversation-title", {
+              body: {
+                firstUserMessage: text
+              }
             });
             if (titleData?.title) {
-              await supabase
-                .from("conversations")
-                .update({
-                  title: titleData.title,
-                })
-                .eq("id", convIdToUse);
+              await supabase.from("conversations").update({
+                title: titleData.title
+              }).eq("id", convIdToUse);
             }
           } catch (error) {
             console.error("Error generating title:", error);
@@ -464,9 +455,7 @@ const Chat = () => {
       }
     }
   };
-
-  return (
-    <SidebarProvider>
+  return <SidebarProvider>
       <div className="flex min-h-screen w-full bg-gradient-subtle">
         <ChatSidebar />
 
@@ -475,12 +464,7 @@ const Chat = () => {
           <div className="bg-card border-b border-border shadow-sm sticky top-0 z-10">
             <div className="max-w-4xl w-full mx-auto px-4 py-3 flex items-center gap-3">
               <SidebarTrigger className="flex-shrink-0 h-9 w-9 lg:hidden" />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate("/")}
-                className="rounded-full flex-shrink-0 h-9 w-9"
-              >
+              <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="rounded-full flex-shrink-0 h-9 w-9">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -497,8 +481,7 @@ const Chat = () => {
           <div className="flex-1 overflow-y-auto pb-[420px] sm:pb-[380px]">
             <div className="max-w-4xl w-full mx-auto px-4 py-6">
               {/* Welcome Message */}
-              {messages.length === 0 && (
-                <div className="text-center py-12 animate-in fade-in duration-500">
+              {messages.length === 0 && <div className="text-center animate-in fade-in duration-500 mt-0 mb-0 py-0">
                   <div className="inline-flex h-16 w-16 items-center justify-center mb-4">
                     <img src="/icon-192.png" alt="Arthur Logo" className="h-16 w-16 rounded-full" />
                   </div>
@@ -509,118 +492,99 @@ const Chat = () => {
                     Votre assistant virtuel en parapharmacie. Posez-moi vos questions sur les produits de santé et de
                     bien-être !
                   </p>
-                </div>
-              )}
+                </div>}
 
               {/* Chat Messages */}
-              {messages.map((message, index) => (
-                <div key={message.id} ref={index === messages.length - 1 ? lastMessageRef : null}>
-                  <ChatMessage
-                    role={message.role}
-                    content={message.content}
-                    onOptionSelect={(selected) => {
-                      setInput(selected);
-                      // Envoyer automatiquement le message après avoir sélectionné une option
-                      setTimeout(async () => {
-                        if (!selected.trim() || loading) return;
-                        const userMessage: Message = {
-                          id: Date.now().toString(),
+              {messages.map((message, index) => <div key={message.id} ref={index === messages.length - 1 ? lastMessageRef : null}>
+                  <ChatMessage role={message.role} content={message.content} onOptionSelect={selected => {
+                setInput(selected);
+                // Envoyer automatiquement le message après avoir sélectionné une option
+                setTimeout(async () => {
+                  if (!selected.trim() || loading) return;
+                  const userMessage: Message = {
+                    id: Date.now().toString(),
+                    role: "user",
+                    content: selected.trim()
+                  };
+                  setMessages(prev => [...prev, userMessage]);
+                  setInput("");
+                  setLoading(true);
+                  await saveMessage("user", userMessage.content);
+                  try {
+                    const {
+                      data,
+                      error
+                    } = await supabase.functions.invoke("chat-with-arthur", {
+                      body: {
+                        messages: [{
                           role: "user",
-                          content: selected.trim(),
-                        };
-                        setMessages((prev) => [...prev, userMessage]);
-                        setInput("");
-                        setLoading(true);
-                        await saveMessage("user", userMessage.content);
-                        try {
-                          const { data, error } = await supabase.functions.invoke("chat-with-arthur", {
-                            body: {
-                              messages: [
-                                {
-                                  role: "user",
-                                  content: userMessage.content,
-                                },
-                              ],
-                              conversationId,
-                              userId,
-                            },
-                          });
-                          if (error) throw error;
-                          const assistantMessage: Message = {
-                            id: (Date.now() + 1).toString(),
-                            role: "assistant",
-                            content: data.message,
-                          };
-                          setMessages((prev) => [...prev, assistantMessage]);
-                          await saveMessage("assistant", assistantMessage.content);
+                          content: userMessage.content
+                        }],
+                        conversationId,
+                        userId
+                      }
+                    });
+                    if (error) throw error;
+                    const assistantMessage: Message = {
+                      id: (Date.now() + 1).toString(),
+                      role: "assistant",
+                      content: data.message
+                    };
+                    setMessages(prev => [...prev, assistantMessage]);
+                    await saveMessage("assistant", assistantMessage.content);
 
-                          // Generate conversation title after first exchange
-                          if (messages.length === 0) {
-                            try {
-                              const { data: titleData } = await supabase.functions.invoke(
-                                "generate-conversation-title",
-                                {
-                                  body: {
-                                    firstUserMessage: userMessage.content,
-                                  },
-                                },
-                              );
-                              if (titleData?.title && conversationId) {
-                                await supabase
-                                  .from("conversations")
-                                  .update({
-                                    title: titleData.title,
-                                  })
-                                  .eq("id", conversationId);
-                              }
-                            } catch (error) {
-                              console.error("Error generating title:", error);
-                            }
+                    // Generate conversation title after first exchange
+                    if (messages.length === 0) {
+                      try {
+                        const {
+                          data: titleData
+                        } = await supabase.functions.invoke("generate-conversation-title", {
+                          body: {
+                            firstUserMessage: userMessage.content
                           }
-                        } catch (error: any) {
-                          console.error("Error sending message:", error);
-                          toast({
-                            title: "Erreur",
-                            description: error.message || "Impossible de contacter Arthur",
-                            variant: "destructive",
-                          });
-                        } finally {
-                          setLoading(false);
+                        });
+                        if (titleData?.title && conversationId) {
+                          await supabase.from("conversations").update({
+                            title: titleData.title
+                          }).eq("id", conversationId);
                         }
-                      }, 100);
-                    }}
-                  />
-                </div>
-              ))}
+                      } catch (error) {
+                        console.error("Error generating title:", error);
+                      }
+                    }
+                  } catch (error: any) {
+                    console.error("Error sending message:", error);
+                    toast({
+                      title: "Erreur",
+                      description: error.message || "Impossible de contacter Arthur",
+                      variant: "destructive"
+                    });
+                  } finally {
+                    setLoading(false);
+                  }
+                }, 100);
+              }} />
+                </div>)}
 
-              {loading && (
-                <div className="flex gap-3 justify-start mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              {loading && <div className="flex gap-3 justify-start mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="h-8 w-8 rounded-full bg-gradient-primary flex items-center justify-center">
                     <div className="h-2 w-2 bg-primary-foreground rounded-full animate-pulse"></div>
                   </div>
                   <div className="bg-card border border-border rounded-2xl px-4 py-3 shadow-sm">
                     <div className="flex gap-1">
                       <div className="h-2 w-2 bg-muted-foreground/50 rounded-full animate-bounce"></div>
-                      <div
-                        className="h-2 w-2 bg-muted-foreground/50 rounded-full animate-bounce"
-                        style={{
-                          animationDelay: "0.1s",
-                        }}
-                      ></div>
-                      <div
-                        className="h-2 w-2 bg-muted-foreground/50 rounded-full animate-bounce"
-                        style={{
-                          animationDelay: "0.2s",
-                        }}
-                      ></div>
+                      <div className="h-2 w-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{
+                    animationDelay: "0.1s"
+                  }}></div>
+                      <div className="h-2 w-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{
+                    animationDelay: "0.2s"
+                  }}></div>
                     </div>
                   </div>
-                </div>
-              )}
+                </div>}
 
               {/* Display products from Arthur */}
-              {displayedProducts.length > 0 && (
-                <div className="mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              {displayedProducts.length > 0 && <div className="mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="flex gap-3 justify-start mb-2">
                     <div className="h-8 w-8 rounded-full bg-gradient-primary flex items-center justify-center flex-shrink-0">
                       <MessageSquare className="h-4 w-4 text-primary-foreground" />
@@ -628,14 +592,11 @@ const Chat = () => {
                     <div className="bg-card border border-border rounded-2xl px-4 py-3 shadow-sm max-w-[85%]">
                       <p className="text-sm font-medium mb-3">Voici les produits disponibles :</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {displayedProducts.map((product) => (
-                          <ProductCard key={product.id} product={product} pharmacyId={cart.selectedPharmacyId || ""} />
-                        ))}
+                        {displayedProducts.map(product => <ProductCard key={product.id} product={product} pharmacyId={cart.selectedPharmacyId || ""} />)}
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
+                </div>}
 
               <div ref={messagesEndRef} />
             </div>
@@ -644,41 +605,22 @@ const Chat = () => {
           {/* Input & Voice Interface - Fixed above footer */}
           <div className="fixed bottom-16 sm:bottom-20 left-0 right-0 bg-card border-t border-border shadow-xl z-30">
             {/* Promotions Slider */}
-            {promotions.length > 0 && (
-              <div className="border-b border-border bg-muted/30 backdrop-blur-sm">
+            {promotions.length > 0 && <div className="border-b border-border bg-muted/30 backdrop-blur-sm">
                 <div className="w-full px-4 py-3 max-w-4xl mx-auto">
                   <PromotionSlider promotions={promotions} onSelectPromotion={handleSelectPromotion} />
                 </div>
-              </div>
-            )}
+              </div>}
 
             <div className="max-w-4xl w-full mx-auto px-4 py-4">
               {/* Voice Interface */}
               <div className="mb-4">
-                <VoiceInterface
-                  userId={userId}
-                  selectedPharmacyId={cart.selectedPharmacyId}
-                  onDisplayProducts={handleDisplayProducts}
-                  onAddToCart={handleAddToCart}
-                  onTranscript={handleTranscript}
-                />
+                <VoiceInterface userId={userId} selectedPharmacyId={cart.selectedPharmacyId} onDisplayProducts={handleDisplayProducts} onAddToCart={handleAddToCart} onTranscript={handleTranscript} />
               </div>
 
               {/* Text Input */}
               <div className="flex gap-3">
-                <Input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleSend()}
-                  placeholder="Écrivez votre question..."
-                  disabled={loading}
-                  className="flex-1 rounded-full border-2 focus-visible:ring-primary h-12 px-5 text-base"
-                />
-                <Button
-                  onClick={handleSend}
-                  disabled={loading || !input.trim()}
-                  className="rounded-full bg-gradient-primary hover:opacity-90 transition-opacity h-12 w-12 p-0 flex items-center justify-center"
-                >
+                <Input value={input} onChange={e => setInput(e.target.value)} onKeyPress={e => e.key === "Enter" && handleSend()} placeholder="Écrivez votre question..." disabled={loading} className="flex-1 rounded-full border-2 focus-visible:ring-primary h-12 px-5 text-base" />
+                <Button onClick={handleSend} disabled={loading || !input.trim()} className="rounded-full bg-gradient-primary hover:opacity-90 transition-opacity h-12 w-12 p-0 flex items-center justify-center">
                   <Send className="h-5 w-5" />
                 </Button>
               </div>
@@ -691,7 +633,6 @@ const Chat = () => {
           </div>
         </div>
       </div>
-    </SidebarProvider>
-  );
+    </SidebarProvider>;
 };
 export default Chat;
