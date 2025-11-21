@@ -70,8 +70,14 @@ const Chat = () => {
       }
     };
     getUser();
-    loadPromotions();
   }, []);
+
+  // Charger les promotions quand la pharmacie sélectionnée change
+  useEffect(() => {
+    if (cart.selectedPharmacyId) {
+      loadPromotions();
+    }
+  }, [cart.selectedPharmacyId]);
 
   // Surveiller les changements de conversationId dans l'URL
   useEffect(() => {
