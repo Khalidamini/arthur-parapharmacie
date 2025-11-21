@@ -47,10 +47,35 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [activeCarts, setActiveCarts] = useState<Cart[]>([]);
   const [cartHistory, setCartHistory] = useState<Cart[]>([]);
   const [selectedPharmacyId, setSelectedPharmacyId] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    loadSelectedPharmacy();
-    loadCarts();
+    // Charger l'utilisateur initial
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+      if (user) {
+        loadSelectedPharmacy();
+        loadCarts();
+      }
+    });
+
+    // Écouter les changements d'authentification
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        // Utilisateur connecté - charger les données
+        loadSelectedPharmacy();
+        loadCarts();
+      } else {
+        // Utilisateur déconnecté - réinitialiser tout
+        setActiveCarts([]);
+        setCartHistory([]);
+        setSelectedPharmacyId(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const loadSelectedPharmacy = async () => {
@@ -311,12 +336,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     ? activeCarts.filter(cart => cart.pharmacyId === selectedPharmacyId)
     : activeCarts;
 
-  const totalItems = filteredCarts.reduce((sum, cart) =>
+  // Retourner 0 si l'utilisateur n'est pas connecté
+  const totalItems = user ? filteredCarts.reduce((sum, cart) =>
     sum + cart.items.reduce((s, item) => s + item.quantity, 0), 0
-  );
-  const totalPrice = filteredCarts.reduce((sum, cart) =>
+  ) : 0;
+  
+  const totalPrice = user ? filteredCarts.reduce((sum, cart) =>
     sum + cart.items.reduce((s, item) => s + item.price * item.quantity, 0), 0
-  );
+  ) : 0;
 
   return (
     <CartContext.Provider
