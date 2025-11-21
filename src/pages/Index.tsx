@@ -5,6 +5,7 @@ import { MessageSquare, Tag, QrCode, MapPin, Heart, Shield, Sparkles } from "luc
 import { supabase } from "@/integrations/supabase/client";
 import UserLayout from "@/layouts/UserLayout";
 import PromotionSlider from "@/components/PromotionSlider";
+import { useCart } from "@/contexts/CartContext";
 interface Promotion {
   id: string;
   title: string;
@@ -16,11 +17,11 @@ interface Promotion {
 }
 const Index = () => {
   const navigate = useNavigate();
+  const cart = useCart();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState<string | null>(null);
   const [currentPharmacy, setCurrentPharmacy] = useState<string | null>(null);
-  const [currentPharmacyId, setCurrentPharmacyId] = useState<string | null>(null);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   useEffect(() => {
     const checkAuth = async () => {
@@ -59,18 +60,6 @@ const Index = () => {
               console.error("Error creating pending affiliation:", error);
             }
           }
-
-          // Charger la première pharmacie référente (pharmacie initiale)
-          const {
-            data
-          } = await (supabase as any).from("user_pharmacy_affiliation").select("pharmacy_id, pharmacies(name)").eq("user_id", user.id).order("created_at", {
-            ascending: true
-          }).limit(1).maybeSingle();
-          if (data) {
-            setCurrentPharmacy(data.pharmacies?.name || null);
-            setCurrentPharmacyId(data.pharmacy_id);
-            await loadPromotions(data.pharmacy_id);
-          }
         }
       } catch (error) {
         console.error("Error loading data:", error);
@@ -94,23 +83,28 @@ const Index = () => {
             setUsername(profileData.username);
           }
         });
-
-        // Recharger la première pharmacie référente (pharmacie initiale)
-        (supabase as any).from("user_pharmacy_affiliation").select("pharmacy_id, pharmacies(name)").eq("user_id", session.user.id).order("created_at", {
-          ascending: true
-        }).limit(1).maybeSingle().then(({
-          data
-        }: any) => {
-          if (data) {
-            setCurrentPharmacy(data.pharmacies?.name || null);
-            setCurrentPharmacyId(data.pharmacy_id);
-            loadPromotions(data.pharmacy_id);
-          }
-        });
       }
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    // Charger la pharmacie sélectionnée via le contexte
+    if (cart.selectedPharmacyId) {
+      const loadSelectedPharmacy = async () => {
+        const { data } = await (supabase as any)
+          .from("pharmacies")
+          .select("name")
+          .eq("id", cart.selectedPharmacyId)
+          .single();
+        if (data) {
+          setCurrentPharmacy(data.name);
+          await loadPromotions(cart.selectedPharmacyId);
+        }
+      };
+      loadSelectedPharmacy();
+    }
+  }, [cart.selectedPharmacyId]);
   const loadPromotions = async (pharmacyId: string) => {
     try {
       const {
@@ -170,7 +164,7 @@ Je vous conseils et trouve les produits qui correspondent à vos besoins.
             </div>}
 
           {/* Slider de promotions */}
-          {currentPharmacyId && promotions.length > 0 && <div className="max-w-3xl mx-auto px-3 sm:px-4 mb-8">
+          {cart.selectedPharmacyId && promotions.length > 0 && <div className="max-w-3xl mx-auto px-3 sm:px-4 mb-8">
               <PromotionSlider promotions={promotions} onSelectPromotion={handleSelectPromotion} />
             </div>}
 
