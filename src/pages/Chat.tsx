@@ -388,6 +388,7 @@ const Chat = () => {
     if (isFinal) {
       // S'assurer qu'une conversation existe (cas où l'utilisateur commence par la voix)
       let convIdToUse = conversationId as string | null;
+      let isNewConversation = false;
 
       if (!convIdToUse && userId) {
         const { data, error } = await supabase.from('conversations').insert({
@@ -407,6 +408,7 @@ const Chat = () => {
 
         convIdToUse = data.id;
         setConversationId(data.id);
+        isNewConversation = true;
         // Mettre à jour l'URL avec le conversationId
         navigate(`/chat?conversationId=${data.id}`, { replace: true });
       }
@@ -422,6 +424,22 @@ const Chat = () => {
       // Sauvegarder dans la base de données si on a une conversation
       if (convIdToUse) {
         await saveMessage('assistant', text, convIdToUse);
+
+        // Générer un titre si c'est une nouvelle conversation
+        if (isNewConversation && messages.length === 0) {
+          try {
+            const { data: titleData } = await supabase.functions.invoke('generate-conversation-title', {
+              body: { firstUserMessage: text }
+            });
+            if (titleData?.title) {
+              await supabase.from('conversations').update({
+                title: titleData.title
+              }).eq('id', convIdToUse);
+            }
+          } catch (error) {
+            console.error('Error generating title:', error);
+          }
+        }
       }
     }
   };
