@@ -208,7 +208,7 @@ Je vous conseils et trouve les produits qui correspondent à vos besoins.
       </section>
 
       {/* Features Section */}
-      <section className="max-w-3xl mx-auto px-3 sm:px-4 py-12 sm:py-20 pb-24 sm:pb-28">
+      <section className="max-w-3xl mx-auto px-3 sm:px-4 sm:py-20 pb-24 sm:pb-28 py-[30px]">
         <div className="grid gap-6 sm:gap-8 md:grid-cols-3">
           <div className="bg-card p-4 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-border shadow-md hover:shadow-lg transition-all hover:border-primary/30 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-accent flex items-center justify-center mb-3 sm:mb-4">
