@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Html5Qrcode } from "html5-qrcode";
 import Footer from '@/components/Footer';
-
 interface Pharmacy {
   id: string;
   name: string;
@@ -21,7 +20,6 @@ interface Pharmacy {
   email: string;
   qr_code: string;
 }
-
 const ScanQR = () => {
   const [searchParams] = useSearchParams();
   const qrCode = searchParams.get('code');
@@ -32,17 +30,17 @@ const ScanQR = () => {
   const [success, setSuccess] = useState(false);
   const [scanning, setScanning] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   useEffect(() => {
     if (!qrCode) return;
     // Si un code est fourni via l'URL (QR externe), on redirige vers l'inscription
     navigate(`/auth?code=${encodeURIComponent(qrCode)}`);
   }, [qrCode, navigate]);
-
   useEffect(() => {
     return () => {
       if (scannerRef.current) {
@@ -55,28 +53,23 @@ const ScanQR = () => {
   // déclenche l'affiliation automatique pour les nouveaux utilisateurs
   useEffect(() => {
     if (!qrCode || !pharmacy) return;
-
     handleAffiliation('temporary');
   }, [qrCode, pharmacy]);
-
   const findPharmacy = async (code: string) => {
     setLoading(true);
     try {
-      const { data, error } = await (supabase as any)
-        .from('pharmacies')
-        .select('*')
-        .eq('qr_code', code)
-        .single();
-
+      const {
+        data,
+        error
+      } = await (supabase as any).from('pharmacies').select('*').eq('qr_code', code).single();
       if (error) throw error;
-
       if (data) {
         setPharmacy(data as Pharmacy);
       } else {
         toast({
           title: "QR Code invalide",
           description: "Aucune pharmacie trouvée avec ce code",
-          variant: "destructive",
+          variant: "destructive"
         });
       }
     } catch (error) {
@@ -84,20 +77,18 @@ const ScanQR = () => {
       toast({
         title: "Erreur",
         description: "Impossible de trouver la pharmacie",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (manualCode) {
       await findPharmacy(manualCode);
     }
   };
-
   const startScanning = async () => {
     setScanning(true);
     try {
@@ -107,40 +98,44 @@ const ScanQR = () => {
       }
       // Preflight permission to trigger prompt early
       try {
-        await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: 'environment' } } });
+        await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: {
+              exact: 'environment'
+            }
+          }
+        });
       } catch {
-        await navigator.mediaDevices.getUserMedia({ video: true });
+        await navigator.mediaDevices.getUserMedia({
+          video: true
+        });
       }
-
       const scanner = new Html5Qrcode("qr-reader");
       scannerRef.current = scanner;
-
-      await scanner.start(
-        { facingMode: "environment" },
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 }
-        },
-        (decodedText) => {
-          stopScanning();
-          setManualCode(decodedText);
-          findPharmacy(decodedText);
-        },
-        undefined
-      );
+      await scanner.start({
+        facingMode: "environment"
+      }, {
+        fps: 10,
+        qrbox: {
+          width: 250,
+          height: 250
+        }
+      }, decodedText => {
+        stopScanning();
+        setManualCode(decodedText);
+        findPharmacy(decodedText);
+      }, undefined);
     } catch (err) {
       console.error('Error starting scanner:', err);
       toast({
         title: "Accès caméra refusé",
         description: "Ouvrez dans un nouvel onglet, installez l'app (/install) ou importez une photo du QR code.",
-        variant: "destructive",
+        variant: "destructive"
       });
       setScanning(false);
     }
   };
-
   const selectPhoto = () => fileInputRef.current?.click();
-
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -162,13 +157,12 @@ const ScanQR = () => {
       toast({
         title: "Échec du scan de l'image",
         description: "Assurez-vous que le QR code est net et bien cadré.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       if (e.target) e.target.value = '';
     }
   };
-
   const stopScanning = () => {
     if (scannerRef.current) {
       scannerRef.current.stop().then(() => {
@@ -179,11 +173,13 @@ const ScanQR = () => {
       setScanning(false);
     }
   };
-
   const handleAffiliation = async (autoAffiliationType?: 'temporary' | 'permanent') => {
     if (!pharmacy) return;
-
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: {
+        user
+      }
+    } = await supabase.auth.getUser();
     if (!user) {
       // Si pas connecté, sauvegarder l'info et rediriger vers auth
       localStorage.setItem('pending_pharmacy_affiliation', JSON.stringify({
@@ -193,36 +189,30 @@ const ScanQR = () => {
       navigate('/auth');
       return;
     }
-
     setLoading(true);
     try {
       const finalAffiliationType = autoAffiliationType || affiliationType;
-      
-      // Supprimer toutes les affiliations existantes de l'utilisateur
-      const { error: deleteError } = await (supabase as any)
-        .from('user_pharmacy_affiliation')
-        .delete()
-        .eq('user_id', user.id);
 
+      // Supprimer toutes les affiliations existantes de l'utilisateur
+      const {
+        error: deleteError
+      } = await (supabase as any).from('user_pharmacy_affiliation').delete().eq('user_id', user.id);
       if (deleteError) throw deleteError;
 
       // Créer la nouvelle affiliation
-      const { error } = await (supabase as any)
-        .from('user_pharmacy_affiliation')
-        .insert({
-          user_id: user.id,
-          pharmacy_id: pharmacy.id,
-          affiliation_type: finalAffiliationType
-        });
-
+      const {
+        error
+      } = await (supabase as any).from('user_pharmacy_affiliation').insert({
+        user_id: user.id,
+        pharmacy_id: pharmacy.id,
+        affiliation_type: finalAffiliationType
+      });
       if (error) throw error;
-
       setSuccess(true);
       toast({
         title: "Affiliation réussie",
-        description: `${pharmacy.name} est maintenant votre pharmacie référente ${finalAffiliationType === 'temporary' ? 'temporaire' : 'définitive'}`,
+        description: `${pharmacy.name} est maintenant votre pharmacie référente ${finalAffiliationType === 'temporary' ? 'temporaire' : 'définitive'}`
       });
-
       setTimeout(() => {
         navigate('/');
       }, 2000);
@@ -231,23 +221,16 @@ const ScanQR = () => {
       toast({
         title: "Erreur",
         description: "Impossible de créer l'affiliation",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   };
-
-  return (
-    <div className="min-h-screen bg-gradient-subtle pb-24">
+  return <div className="min-h-screen bg-gradient-subtle pb-24">
       <div className="bg-card border-b border-border shadow-sm">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/')}
-            className="rounded-full"
-          >
+          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-full">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-xl font-bold text-foreground">Scanner un QR Code</h1>
@@ -255,8 +238,7 @@ const ScanQR = () => {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-8">
-        {!pharmacy ? (
-          <Card>
+        {!pharmacy ? <Card>
             <CardHeader>
               <CardTitle>Scannez ou entrez le code QR de votre pharmacie</CardTitle>
               <CardDescription>
@@ -264,24 +246,14 @@ const ScanQR = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {!scanning ? (
-                <>
+              {!scanning ? <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <Button
-                      type="button"
-                      onClick={startScanning}
-                      className="w-full bg-gradient-primary"
-                    >
+                    <Button type="button" onClick={startScanning} className="w-full bg-gradient-primary">
                       <Camera className="h-5 w-5 mr-2" />
                       Scanner avec la caméra
                     </Button>
 
-                    <Button
-                      type="button"
-                      onClick={selectPhoto}
-                      variant="outline"
-                      className="w-full"
-                    >
+                    <Button type="button" onClick={selectPhoto} variant="outline" className="w-full">
                       <ImageIcon className="h-5 w-5 mr-2" />
                       Importer une photo
                     </Button>
@@ -300,42 +272,21 @@ const ScanQR = () => {
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="qr-code">Entrer le code manuellement</Label>
-                      <Input
-                        id="qr-code"
-                        value={manualCode}
-                        onChange={(e) => setManualCode(e.target.value)}
-                        placeholder="Entrez le code QR"
-                        disabled={loading}
-                      />
+                      <Input id="qr-code" value={manualCode} onChange={e => setManualCode(e.target.value)} placeholder="Entrez le code QR" disabled={loading} />
                     </div>
-                    <Button
-                      type="submit"
-                      disabled={!manualCode || loading}
-                      variant="outline"
-                      className="w-full"
-                    >
+                    <Button type="submit" disabled={!manualCode || loading} variant="outline" className="w-full">
                       {loading ? 'Recherche...' : 'Valider'}
                     </Button>
                   </form>
-                </>
-              ) : (
-                <div className="space-y-4">
+                </> : <div className="space-y-4">
                   <div id="qr-reader" ref={scannerContainerRef} className="w-full rounded-lg overflow-hidden" />
-                  <Button
-                    type="button"
-                    onClick={stopScanning}
-                    variant="outline"
-                    className="w-full"
-                  >
+                  <Button type="button" onClick={stopScanning} variant="outline" className="w-full">
                     <X className="h-5 w-5 mr-2" />
                     Annuler le scan
                   </Button>
-                </div>
-              )}
+                </div>}
             </CardContent>
-          </Card>
-        ) : success ? (
-          <Card className="border-2 border-primary">
+          </Card> : success ? <Card className="border-2 border-primary">
             <CardContent className="pt-6 text-center">
               <div className="h-16 w-16 rounded-full bg-primary mx-auto mb-4 flex items-center justify-center">
                 <Check className="h-8 w-8 text-primary-foreground" />
@@ -347,9 +298,7 @@ const ScanQR = () => {
                 Vous allez être redirigé...
               </p>
             </CardContent>
-          </Card>
-        ) : (
-          <Card>
+          </Card> : <Card>
             <CardHeader>
               <CardTitle>Pharmacie trouvée</CardTitle>
               <CardDescription>
@@ -367,38 +316,21 @@ const ScanQR = () => {
                       <p>{pharmacy.postal_code} {pharmacy.city}</p>
                     </div>
                   </div>
-                  {pharmacy.phone && (
-                    <div className="flex items-center gap-2">
+                  {pharmacy.phone && <div className="flex items-center gap-2">
                       <Phone className="h-4 w-4" />
                       <p>{pharmacy.phone}</p>
-                    </div>
-                  )}
-                  {pharmacy.email && (
-                    <div className="flex items-center gap-2">
+                    </div>}
+                  {pharmacy.email && <div className="flex items-center gap-2">
                       <Mail className="h-4 w-4" />
                       <p>{pharmacy.email}</p>
-                    </div>
-                  )}
+                    </div>}
                 </div>
               </div>
 
               <div className="space-y-3">
                 <Label>Type d'affiliation</Label>
-                <RadioGroup
-                  value={affiliationType}
-                  onValueChange={(value) => setAffiliationType(value as 'temporary' | 'permanent')}
-                >
-                  <div className="flex items-center space-x-2 p-3 rounded-lg border border-border hover:bg-accent cursor-pointer">
-                    <RadioGroupItem value="temporary" id="temporary" />
-                    <Label htmlFor="temporary" className="cursor-pointer flex-1">
-                      <div>
-                        <p className="font-medium">Temporaire</p>
-                        <p className="text-sm text-muted-foreground">
-                          Cette pharmacie sera votre référente pour cette session
-                        </p>
-                      </div>
-                    </Label>
-                  </div>
+                <RadioGroup value={affiliationType} onValueChange={value => setAffiliationType(value as 'temporary' | 'permanent')}>
+                  
                   <div className="flex items-center space-x-2 p-3 rounded-lg border border-border hover:bg-accent cursor-pointer">
                     <RadioGroupItem value="permanent" id="permanent" />
                     <Label htmlFor="permanent" className="cursor-pointer flex-1">
@@ -414,28 +346,17 @@ const ScanQR = () => {
               </div>
 
               <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setPharmacy(null)}
-                  className="flex-1"
-                >
+                <Button variant="outline" onClick={() => setPharmacy(null)} className="flex-1">
                   Annuler
                 </Button>
-                <Button
-                  onClick={() => handleAffiliation()}
-                  disabled={loading}
-                  className="flex-1 bg-gradient-primary"
-                >
+                <Button onClick={() => handleAffiliation()} disabled={loading} className="flex-1 bg-gradient-primary">
                   {loading ? 'Affiliation...' : 'Confirmer'}
                 </Button>
               </div>
             </CardContent>
-          </Card>
-        )}
+          </Card>}
       </div>
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default ScanQR;
