@@ -361,60 +361,19 @@ const Chat = () => {
   const handleTranscript = (text: string, isFinal: boolean) => {
     if (!text.trim()) return;
 
-    setMessages(prev => {
-      const lastMessage = prev[prev.length - 1];
+    if (isFinal) {
+      // Message final - ajouter à l'historique
+      const assistantMessage: Message = {
+        id: `voice-${Date.now()}`,
+        role: 'assistant',
+        content: text
+      };
+      setMessages(prev => [...prev, assistantMessage]);
       
-      if (isFinal) {
-        // Message final, on crée ou finalise le message assistant
-        if (lastMessage?.role === 'assistant' && !lastMessage.id.startsWith('final-')) {
-          // Remplacer le message temporaire par le message final
-          return [
-            ...prev.slice(0, -1),
-            {
-              id: `final-${Date.now()}`,
-              role: 'assistant' as const,
-              content: text
-            }
-          ];
-        } else {
-          // Ajouter un nouveau message final
-          return [
-            ...prev,
-            {
-              id: `final-${Date.now()}`,
-              role: 'assistant' as const,
-              content: text
-            }
-          ];
-        }
-      } else {
-        // Message temporaire (delta), on accumule
-        if (lastMessage?.role === 'assistant' && !lastMessage.id.startsWith('final-')) {
-          // Mettre à jour le message assistant en cours
-          return [
-            ...prev.slice(0, -1),
-            {
-              ...lastMessage,
-              content: lastMessage.content + text
-            }
-          ];
-        } else {
-          // Créer un nouveau message assistant temporaire
-          return [
-            ...prev,
-            {
-              id: `temp-${Date.now()}`,
-              role: 'assistant' as const,
-              content: text
-            }
-          ];
-        }
+      // Sauvegarder dans la base de données
+      if (conversationId) {
+        saveMessage('assistant', text);
       }
-    });
-
-    // Sauvegarder le message final dans la base de données
-    if (isFinal && conversationId) {
-      saveMessage('assistant', text);
     }
   };
 

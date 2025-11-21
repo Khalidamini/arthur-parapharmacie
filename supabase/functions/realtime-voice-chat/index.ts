@@ -225,6 +225,11 @@ En cas de doute médical, oriente vers le pharmacien ou médecin.${systemInstruc
                 }
               }));
               
+              // Request a new response from OpenAI to continue speaking
+              openaiSocket.send(JSON.stringify({
+                type: 'response.create'
+              }));
+              
               // Also forward to client for UI display
               if (clientSocket.readyState === WebSocket.OPEN) {
                 clientSocket.send(JSON.stringify({
@@ -249,6 +254,11 @@ En cas de doute médical, oriente vers le pharmacien ou médecin.${systemInstruc
                   call_id: data.call_id,
                   output: JSON.stringify({ success: true, message: 'Produit ajouté au panier avec succès' })
                 }
+              }));
+              
+              // Request a new response from OpenAI to continue speaking
+              openaiSocket.send(JSON.stringify({
+                type: 'response.create'
               }));
               
               // Forward to client to add to cart
