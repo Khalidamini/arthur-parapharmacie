@@ -11,6 +11,7 @@ import Footer from '@/components/Footer';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ChatSidebar } from '@/components/ChatSidebar';
 import { useCart } from '@/contexts/CartContext';
+import VoiceInterface from '@/components/VoiceInterface';
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -471,9 +472,16 @@ const Chat = () => {
               </div>
             </div>}
 
-          {/* Input */}
+          {/* Input & Voice Interface */}
           <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-lg z-20">
-            <div className="max-w-3xl w-full mx-auto px-3 py-3">
+            <div className="max-w-3xl w-full mx-auto px-3 py-3 space-y-3">
+              {/* Voice Interface */}
+              <VoiceInterface 
+                userId={userId}
+                selectedPharmacyId={cart.selectedPharmacyId}
+              />
+              
+              {/* Text Input */}
               <div className="flex gap-2">
                 <Input 
                   value={input} 
