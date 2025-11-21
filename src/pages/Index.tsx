@@ -164,8 +164,8 @@ Je vous conseils et trouve les produits qui correspondent à vos besoins.
               <div className="flex items-center gap-2 text-sm justify-center">
                 
                 <p className="text-slate-50">
-                  Pharmacie référente :
-Pharmacie Saint-Michel <span className="font-semibold text-amber-200 text-base text-center">{currentPharmacy}</span>
+                  Pharmacie référente : 
+ Pharmacie Saint-Michel <span className="font-semibold text-amber-200 text-base text-center">{currentPharmacy}</span>
                 </p>
               </div>
             </div>}
