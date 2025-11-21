@@ -458,16 +458,18 @@ const Chat = () => {
             </div>
           </div>
 
-          {/* Promotions Slider - au-dessus de la zone de saisie */}
-          {promotions.length > 0 && <div className="bg-card border-t border-border">
-              <div className="w-full px-2 sm:px-3 py-2 max-w-3xl mx-auto pb-[12px]">
-                <PromotionSlider promotions={promotions} onSelectPromotion={handleSelectPromotion} />
-              </div>
-            </div>}
-
           {/* Input & Voice Interface - positionné au-dessus du footer mobile */}
-          <div className="fixed bottom-16 sm:bottom-20 left-0 right-0 bg-card border-t border-border shadow-lg z-30 mb-[41px]">
-            <div className="max-w-3xl w-full mx-auto px-3 py-3 mb-px">
+          <div className="fixed bottom-16 sm:bottom-20 left-0 right-0 bg-card shadow-lg z-30">
+            {/* Promotions Slider - juste au-dessus de l'input */}
+            {promotions.length > 0 && (
+              <div className="border-t border-b border-border bg-card/95 backdrop-blur-sm">
+                <div className="w-full px-2 sm:px-3 py-2 max-w-3xl mx-auto">
+                  <PromotionSlider promotions={promotions} onSelectPromotion={handleSelectPromotion} />
+                </div>
+              </div>
+            )}
+            
+            <div className="max-w-3xl w-full mx-auto px-3 py-3 border-t border-border">
               {/* Voice Interface - compact version */}
               <div className="mb-3">
                 <VoiceInterface userId={userId} selectedPharmacyId={cart.selectedPharmacyId} />
