@@ -78,7 +78,7 @@ const VoiceInterface = ({ userId, selectedPharmacyId }: VoiceInterfaceProps) => 
           console.error('Server error:', data.error);
           toast({
             title: "Erreur",
-            description: data.error,
+            description: data.error?.message || "Une erreur est survenue",
             variant: "destructive",
           });
         }
