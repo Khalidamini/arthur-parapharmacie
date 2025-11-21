@@ -685,6 +685,10 @@ const Chat = () => {
             </div>
           </div>
 
+          {/* Footer Menu */}
+          <div className="fixed bottom-0 left-0 right-0 z-20">
+            <Footer />
+          </div>
         </div>
       </div>
     </SidebarProvider>
