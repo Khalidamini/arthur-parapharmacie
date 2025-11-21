@@ -58,9 +58,11 @@ const Chat = () => {
         return;
       }
       setUserId(user.id);
-      
+
       // Récupérer le nom d'utilisateur
-      const { data: profileData } = await supabase.from('profiles').select('username').eq('id', user.id).single();
+      const {
+        data: profileData
+      } = await supabase.from('profiles').select('username').eq('id', user.id).single();
       if (profileData?.username) {
         setUsername(profileData.username);
       }
@@ -134,7 +136,11 @@ const Chat = () => {
   };
   const loadPromotions = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       // Utiliser la pharmacie sélectionnée du contexte
@@ -328,20 +334,11 @@ const Chat = () => {
             <div className="max-w-3xl w-full mx-auto px-3 py-3 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0 flex-1">
                 <SidebarTrigger className="flex-shrink-0 h-8 w-8" />
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => navigate('/')} 
-                  className="rounded-full flex-shrink-0 h-8 w-8"
-                >
+                <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-full flex-shrink-0 h-8 w-8">
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
                 <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <img 
-                    src="/icon-192.png" 
-                    alt="Arthur Logo" 
-                    className="h-8 w-8 rounded-full flex-shrink-0"
-                  />
+                  <img src="/icon-192.png" alt="Arthur Logo" className="h-8 w-8 rounded-full flex-shrink-0" />
                   <div className="min-w-0 flex-1">
                     <h1 className="font-semibold text-foreground text-sm truncate">Arthur</h1>
                     <p className="text-xs text-muted-foreground truncate hidden sm:block">Assistant parapharmacie</p>
@@ -358,11 +355,7 @@ const Chat = () => {
               {/* Welcome Message */}
               {messages.length === 0 && <div className="text-center py-12 animate-in fade-in duration-500">
                   <div className="inline-flex h-16 w-16 items-center justify-center mb-4">
-                    <img 
-                      src="/icon-192.png" 
-                      alt="Arthur Logo" 
-                      className="h-16 w-16 rounded-full"
-                    />
+                    <img src="/icon-192.png" alt="Arthur Logo" className="h-16 w-16 rounded-full" />
                   </div>
                   <h2 className="text-2xl font-bold text-foreground mb-2">
                     Bonjour{username ? ` ${username}` : ''} ! Je suis Arthur
@@ -466,35 +459,23 @@ const Chat = () => {
           </div>
 
           {/* Promotions Slider - au-dessus de la zone de saisie */}
-          {promotions.length > 0 && (
-            <div className="bg-card border-t border-border">
-              <div className="w-full px-2 sm:px-3 py-2 max-w-3xl mx-auto">
+          {promotions.length > 0 && <div className="bg-card border-t border-border">
+              <div className="w-full px-2 sm:px-3 py-2 max-w-3xl mx-auto pb-[12px]">
                 <PromotionSlider promotions={promotions} onSelectPromotion={handleSelectPromotion} />
               </div>
-            </div>
-          )}
+            </div>}
 
           {/* Input & Voice Interface - positionné au-dessus du footer mobile */}
-          <div className="fixed bottom-16 sm:bottom-20 left-0 right-0 bg-card border-t border-border shadow-lg z-30">
-            <div className="max-w-3xl w-full mx-auto px-3 py-3">
+          <div className="fixed bottom-16 sm:bottom-20 left-0 right-0 bg-card border-t border-border shadow-lg z-30 mb-[41px]">
+            <div className="max-w-3xl w-full mx-auto px-3 py-3 mb-px">
               {/* Voice Interface - compact version */}
               <div className="mb-3">
-                <VoiceInterface 
-                  userId={userId}
-                  selectedPharmacyId={cart.selectedPharmacyId}
-                />
+                <VoiceInterface userId={userId} selectedPharmacyId={cart.selectedPharmacyId} />
               </div>
               
               {/* Text Input */}
               <div className="flex gap-2">
-                <Input 
-                  value={input} 
-                  onChange={e => setInput(e.target.value)} 
-                  onKeyPress={e => e.key === 'Enter' && handleSend()} 
-                  placeholder="Ou écrivez votre question..." 
-                  disabled={loading} 
-                  className="flex-1 rounded-full border-2 focus-visible:ring-primary text-sm" 
-                />
+                <Input value={input} onChange={e => setInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSend()} placeholder="Ou écrivez votre question..." disabled={loading} className="flex-1 rounded-full border-2 focus-visible:ring-primary text-sm" />
                 <Button onClick={handleSend} disabled={loading || !input.trim()} className="rounded-full bg-gradient-primary hover:opacity-90 transition-opacity px-6">
                   <Send className="h-4 w-4" />
                 </Button>
