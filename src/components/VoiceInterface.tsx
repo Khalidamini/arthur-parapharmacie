@@ -7,9 +7,10 @@ import { AudioRecorder, encodeAudioForAPI, playAudioData, clearAudioQueue } from
 interface VoiceInterfaceProps {
   userId: string | null;
   selectedPharmacyId: string | null;
+  onDisplayProducts?: (products: any[]) => void;
 }
 
-const VoiceInterface = ({ userId, selectedPharmacyId }: VoiceInterfaceProps) => {
+const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts }: VoiceInterfaceProps) => {
   const { toast } = useToast();
   const [isConnected, setIsConnected] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -53,6 +54,12 @@ const VoiceInterface = ({ userId, selectedPharmacyId }: VoiceInterfaceProps) => 
       wsRef.current.onmessage = async (event) => {
         const data = JSON.parse(event.data);
         console.log('Received message type:', data.type);
+
+        // Handle product display request from Arthur
+        if (data.type === 'display_products' && data.products) {
+          console.log('Displaying products:', data.products);
+          onDisplayProducts?.(data.products);
+        }
 
         if (data.type === 'response.audio.delta') {
           setIsSpeaking(true);

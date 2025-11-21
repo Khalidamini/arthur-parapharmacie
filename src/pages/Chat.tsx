@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import ChatMessage from '@/components/ChatMessage';
 import PromotionSlider from '@/components/PromotionSlider';
+import ProductCard from '@/components/ProductCard';
 import Footer from '@/components/Footer';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ChatSidebar } from '@/components/ChatSidebar';
@@ -34,6 +35,7 @@ const Chat = () => {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
+  const [displayedProducts, setDisplayedProducts] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
   const cart = useCart();
@@ -324,6 +326,12 @@ const Chat = () => {
       description: "La promotion a été ajoutée à vos recommandations"
     });
   };
+
+  const handleDisplayProducts = (products: any[]) => {
+    console.log('Displaying products in chat:', products);
+    setDisplayedProducts(products);
+  };
+
   return <SidebarProvider>
       <div className="flex min-h-screen w-full bg-gradient-subtle">
         <ChatSidebar />
@@ -454,6 +462,29 @@ const Chat = () => {
                   </div>
                 </div>}
 
+              {/* Display products from Arthur */}
+              {displayedProducts.length > 0 && (
+                <div className="mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="flex gap-3 justify-start mb-2">
+                    <div className="h-8 w-8 rounded-full bg-gradient-primary flex items-center justify-center flex-shrink-0">
+                      <MessageSquare className="h-4 w-4 text-primary-foreground" />
+                    </div>
+                    <div className="bg-card border border-border rounded-2xl px-4 py-3 shadow-sm max-w-[85%]">
+                      <p className="text-sm font-medium mb-3">Voici les produits disponibles :</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {displayedProducts.map((product) => (
+                          <ProductCard 
+                            key={product.id} 
+                            product={product}
+                            pharmacyId={cart.selectedPharmacyId || ''}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div ref={messagesEndRef} />
             </div>
           </div>
@@ -472,7 +503,11 @@ const Chat = () => {
             <div className="max-w-3xl w-full mx-auto px-3 py-3 border-t border-border">
               {/* Voice Interface - compact version */}
               <div className="mb-3">
-                <VoiceInterface userId={userId} selectedPharmacyId={cart.selectedPharmacyId} />
+                <VoiceInterface 
+                  userId={userId} 
+                  selectedPharmacyId={cart.selectedPharmacyId}
+                  onDisplayProducts={handleDisplayProducts}
+                />
               </div>
               
               {/* Text Input */}
