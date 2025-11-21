@@ -37,6 +37,11 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
       console.log('Initializing audio context...');
       audioContextRef.current = new AudioContext({ sampleRate: 24000 });
       
+      // Resume audio context if suspended
+      if (audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume();
+      }
+      
       console.log('Connecting to voice chat...');
       const wsUrl = `wss://gtjmebionytcomoldgjl.supabase.co/functions/v1/realtime-voice-chat?userId=${userId || ''}&selectedPharmacyId=${selectedPharmacyId || ''}`;
       console.log('WebSocket URL:', wsUrl);
@@ -85,6 +90,12 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
         if (data.type === 'response.audio.delta') {
           setIsSpeaking(true);
           onSpeakingChange?.(true);
+          
+          // Resume audio context if suspended
+          if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+            await audioContextRef.current.resume();
+          }
+          
           const binaryString = atob(data.delta);
           const bytes = new Uint8Array(binaryString.length);
           for (let i = 0; i < binaryString.length; i++) {
@@ -203,24 +214,37 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
 
   return (
     <div className="flex items-center justify-between w-full gap-2 px-2 py-2 bg-muted/50 rounded-lg">
+      {/* Voice Visualizer - inline next to mic */}
+      {isConnected && isSpeaking && (
+        <div className="flex items-center gap-2 flex-1 animate-in fade-in slide-in-from-left-2 duration-300">
+          <div className="flex items-center gap-1 h-8">
+            {[40, 60, 80, 60, 40].map((_, index) => (
+              <div
+                key={index}
+                className="w-1 bg-primary rounded-full transition-all duration-150 ease-in-out animate-pulse"
+                style={{
+                  height: `${Math.random() * 60 + 20}%`,
+                  opacity: 0.6 + (Math.random() * 0.4),
+                  animationDelay: `${index * 0.1}s`
+                }}
+              />
+            ))}
+          </div>
+          <span className="text-xs text-primary font-medium">Arthur parle...</span>
+        </div>
+      )}
+      
       {/* Status indicator */}
-      {isConnected && (
+      {isConnected && !isSpeaking && (
         <div className="flex items-center gap-2 text-xs flex-shrink-0">
-          {isSpeaking && (
-            <div className="flex items-center gap-1 text-primary animate-pulse">
-              <Volume2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Arthur parle</span>
-            </div>
-          )}
-          
-          {isListening && !isSpeaking && (
+          {isListening && (
             <div className="flex items-center gap-1 text-green-600 animate-pulse">
               <Mic className="h-4 w-4" />
               <span className="hidden sm:inline">Vous parlez</span>
             </div>
           )}
           
-          {!isListening && !isSpeaking && (
+          {!isListening && (
             <div className="flex items-center gap-1 text-muted-foreground">
               <Mic className="h-4 w-4" />
               <span className="hidden sm:inline">En écoute</span>

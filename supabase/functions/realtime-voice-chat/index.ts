@@ -87,7 +87,7 @@ ${profile.gender === 'femme' && profile.is_pregnant ? '- Enceinte : Oui\n' : ''}
 
         if (products && products.length > 0) {
           systemInstructions += `\n\nProduits disponibles :\n${products.map(p => 
-            `- ${p.name} (${p.brand}) - ${p.category} - ${p.price}€`
+            `- ${p.name} (${p.brand}) - ${p.category} - ${p.price}€${p.image_url ? ` - Image: ${p.image_url}` : ''}`
           ).join('\n')}`;
         }
       }
