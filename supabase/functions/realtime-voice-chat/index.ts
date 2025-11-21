@@ -3,7 +3,6 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-const OPENAI_WS_URL = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17";
 
 serve(async (req) => {
   try {
@@ -19,7 +18,7 @@ serve(async (req) => {
     }
 
     const { socket: clientSocket, response } = Deno.upgradeWebSocket(req);
-    let openaiSocket: WebSocket | null = null;
+    let openaiSocket: WebSocket;
     let sessionConfigured = false;
 
     // Get user context from query params
@@ -103,83 +102,59 @@ TON CARACTÈRE :
 - COMPATISSANT et à l'écoute
 - Ton CHALEUREUX et RASSURANT
 
-TU ES SPÉCIALISTE EN PARAPHARMACIE UNIQUEMENT :
-- Produits de soins et d'hygiène
-- Compléments alimentaires
-- Cosmétiques
-- Aromathérapie
-
-LIMITES STRICTES :
-- Tu NE prescris JAMAIS de médicaments
-- Tu NE fais JAMAIS de diagnostic médical
-- Tu NE remplaces JAMAIS le pharmacien ou médecin
-- Tu recommandes UNIQUEMENT les produits parapharmaceutiques disponibles dans la pharmacie sélectionnée
-
-VENTE SUGGESTIVE :
-- Suggère des produits complémentaires pertinents
-- Propose des routines complètes
-- Reste naturel - ne force jamais la vente
+TU ES SPÉCIALISTE EN PARAPHARMACIE UNIQUEMENT. Tu NE prescris JAMAIS de médicaments, tu NE fais JAMAIS de diagnostic médical, tu NE remplaces JAMAIS le pharmacien ou médecin. Tu recommandes UNIQUEMENT les produits parapharmaceutiques disponibles dans la pharmacie sélectionnée. Tu suggères des produits complémentaires pertinents de façon naturelle.
 
 En cas de doute médical, oriente vers le pharmacien ou médecin.${systemInstructions}`;
 
     clientSocket.onopen = () => {
       console.log('Client WebSocket connected');
       
-      // Connect to OpenAI
+      // Connect to OpenAI using URL with auth
       console.log('Connecting to OpenAI Realtime API...');
-      openaiSocket = new WebSocket(OPENAI_WS_URL, {
-        headers: {
-          "Authorization": `Bearer ${OPENAI_API_KEY}`,
-          "OpenAI-Beta": "realtime=v1"
-        }
-      });
+      const openaiUrl = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17`;
+      openaiSocket = new WebSocket(openaiUrl);
 
+      // Send authorization after connection opens
       openaiSocket.onopen = () => {
-        console.log('Connected to OpenAI Realtime API');
+        console.log('Connected to OpenAI, sending auth...');
+        
+        // Send authentication via WebSocket message
+        openaiSocket.send(JSON.stringify({
+          type: 'session.update',
+          session: {
+            modalities: ['text', 'audio'],
+            instructions: baseInstructions,
+            voice: 'shimmer',
+            input_audio_format: 'pcm16',
+            output_audio_format: 'pcm16',
+            input_audio_transcription: {
+              model: 'whisper-1'
+            },
+            turn_detection: {
+              type: 'server_vad',
+              threshold: 0.5,
+              prefix_padding_ms: 300,
+              silence_duration_ms: 1000
+            },
+            temperature: 0.8,
+            max_response_output_tokens: 4096
+          },
+          authorization: `Bearer ${OPENAI_API_KEY}`
+        }));
+        console.log('Session configuration sent');
       };
 
-      openaiSocket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
+      openaiSocket.onmessage = (event: MessageEvent) => {
+        const data = JSON.parse(event.data as string);
         console.log('OpenAI message type:', data.type);
-
-        // Configure session after receiving session.created
-        if (data.type === 'session.created' && !sessionConfigured) {
-          console.log('Configuring session...');
-          sessionConfigured = true;
-          
-          const sessionConfig = {
-            type: 'session.update',
-            session: {
-              modalities: ['text', 'audio'],
-              instructions: baseInstructions,
-              voice: 'shimmer',
-              input_audio_format: 'pcm16',
-              output_audio_format: 'pcm16',
-              input_audio_transcription: {
-                model: 'whisper-1'
-              },
-              turn_detection: {
-                type: 'server_vad',
-                threshold: 0.5,
-                prefix_padding_ms: 300,
-                silence_duration_ms: 1000
-              },
-              temperature: 0.8,
-              max_response_output_tokens: 4096
-            }
-          };
-          
-          openaiSocket!.send(JSON.stringify(sessionConfig));
-          console.log('Session configuration sent');
-        }
 
         // Forward all OpenAI messages to client
         if (clientSocket.readyState === WebSocket.OPEN) {
-          clientSocket.send(event.data);
+          clientSocket.send(event.data as string);
         }
       };
 
-      openaiSocket.onerror = (error) => {
+      openaiSocket.onerror = (error: Event) => {
         console.error('OpenAI WebSocket error:', error);
         if (clientSocket.readyState === WebSocket.OPEN) {
           clientSocket.send(JSON.stringify({ 
@@ -197,14 +172,14 @@ En cas de doute médical, oriente vers le pharmacien ou médecin.${systemInstruc
       };
     };
 
-    clientSocket.onmessage = (event) => {
+    clientSocket.onmessage = (event: MessageEvent) => {
       console.log('Client message received');
       if (openaiSocket && openaiSocket.readyState === WebSocket.OPEN) {
-        openaiSocket.send(event.data);
+        openaiSocket.send(event.data as string);
       }
     };
 
-    clientSocket.onerror = (error) => {
+    clientSocket.onerror = (error: Event) => {
       console.error('Client WebSocket error:', error);
     };
 
