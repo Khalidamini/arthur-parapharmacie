@@ -332,6 +332,32 @@ const Chat = () => {
     setDisplayedProducts(products);
   };
 
+  const handleAddToCart = async (product: any) => {
+    try {
+      await cart.addToCart({
+        id: product.productId,
+        productId: product.productId,
+        name: product.name,
+        brand: product.brand,
+        price: product.price,
+        imageUrl: product.imageUrl || '',
+        source: 'arthur',
+        reason: 'Ajouté par Arthur'
+      }, cart.selectedPharmacyId || '');
+
+      toast({
+        title: "✅ Ajouté au panier",
+        description: `${product.name} (${product.brand})`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'ajouter au panier",
+        variant: "destructive"
+      });
+    }
+  };
+
   return <SidebarProvider>
       <div className="flex min-h-screen w-full bg-gradient-subtle">
         <ChatSidebar />
@@ -507,6 +533,7 @@ const Chat = () => {
                   userId={userId} 
                   selectedPharmacyId={cart.selectedPharmacyId}
                   onDisplayProducts={handleDisplayProducts}
+                  onAddToCart={handleAddToCart}
                 />
               </div>
               

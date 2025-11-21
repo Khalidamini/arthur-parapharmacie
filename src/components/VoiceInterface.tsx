@@ -8,9 +8,10 @@ interface VoiceInterfaceProps {
   userId: string | null;
   selectedPharmacyId: string | null;
   onDisplayProducts?: (products: any[]) => void;
+  onAddToCart?: (product: any) => void;
 }
 
-const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts }: VoiceInterfaceProps) => {
+const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddToCart }: VoiceInterfaceProps) => {
   const { toast } = useToast();
   const [isConnected, setIsConnected] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -59,6 +60,12 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts }: Voice
         if (data.type === 'display_products' && data.products) {
           console.log('Displaying products:', data.products);
           onDisplayProducts?.(data.products);
+        }
+
+        // Handle add to cart request from Arthur
+        if (data.type === 'add_to_cart' && data.product) {
+          console.log('Adding product to cart:', data.product);
+          onAddToCart?.(data.product);
         }
 
         if (data.type === 'response.audio.delta') {
