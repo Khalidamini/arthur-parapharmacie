@@ -143,11 +143,11 @@ const Chat = () => {
         return;
       }
 
-      // Charger uniquement les promotions de la pharmacie sélectionnée
+      // Charger uniquement les promotions non expirées de la pharmacie sélectionnée
       const {
         data,
         error
-      } = await supabase.from('promotions').select('*').eq('pharmacy_id', currentPharmacyId).order('created_at', {
+      } = await supabase.from('promotions').select('*').eq('pharmacy_id', currentPharmacyId).gte('valid_until', new Date().toISOString()).order('created_at', {
         ascending: false
       });
       if (error) {

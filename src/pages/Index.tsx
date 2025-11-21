@@ -110,7 +110,7 @@ const Index = () => {
       const {
         data,
         error
-      } = await supabase.from("promotions").select("*").eq("pharmacy_id", pharmacyId).order("created_at", {
+      } = await supabase.from("promotions").select("*").eq("pharmacy_id", pharmacyId).gte("valid_until", new Date().toISOString()).order("created_at", {
         ascending: false
       });
       if (error) {
