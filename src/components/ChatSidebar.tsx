@@ -92,9 +92,9 @@ export function ChatSidebar() {
   };
 
   const createNewConversation = () => {
-    // Ne pas créer de conversation en base de données
-    // La conversation sera créée automatiquement lors de l'envoi du premier message
-    navigate('/chat');
+    // Naviguer vers /chat sans conversationId pour forcer une nouvelle conversation
+    // En ajoutant un timestamp pour forcer le rechargement
+    navigate(`/chat?new=${Date.now()}`);
   };
 
   const deleteConversation = async (convId: string, e: React.MouseEvent) => {
