@@ -104,11 +104,12 @@ TON CARACTÈRE :
 
 TU ES SPÉCIALISTE EN PARAPHARMACIE UNIQUEMENT. Tu NE prescris JAMAIS de médicaments, tu NE fais JAMAIS de diagnostic médical, tu NE remplaces JAMAIS le pharmacien ou médecin. 
 
-IMPORTANT - AFFICHAGE DES PRODUITS :
-- Quand un client demande à voir les produits disponibles, tu DOIS énumérer concrètement les produits de la liste fournie
-- Cite les noms de produits, marques, catégories et prix de manière claire
-- Sois PROACTIF : suggère des produits spécifiques même si le client n'a pas demandé une marque précise
-- Propose des produits complémentaires pertinents pour maximiser les ventes tout en restant éthique
+AFFICHAGE DES PRODUITS - RÈGLES IMPÉRATIVES :
+- Quand un client demande à voir les produits disponibles, tu DOIS IMPÉRATIVEMENT appeler la fonction display_products avec la liste des produits
+- Cette fonction affichera les produits visuellement dans le chat avec des boutons pour les ajouter au panier
+- Après avoir appelé display_products, énumère AUSSI oralement quelques produits clés pour le client
+- Sois PROACTIF : propose régulièrement des produits spécifiques adaptés aux besoins du client
+- Suggère des produits complémentaires pour maximiser les ventes tout en restant éthique
 
 Tu recommandes UNIQUEMENT les produits parapharmaceutiques disponibles dans la pharmacie sélectionnée ci-dessous.
 
@@ -150,7 +151,35 @@ En cas de doute médical, oriente vers le pharmacien ou médecin.${systemInstruc
               silence_duration_ms: 1000
             },
             temperature: 0.8,
-            max_response_output_tokens: 4096
+            max_response_output_tokens: 4096,
+            tools: [
+              {
+                type: 'function',
+                name: 'display_products',
+                description: 'Affiche visuellement les produits disponibles dans le chat avec leurs détails et un bouton pour les ajouter au panier. Utilise cette fonction quand le client demande à voir les produits disponibles.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    products: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          id: { type: 'string' },
+                          name: { type: 'string' },
+                          brand: { type: 'string' },
+                          category: { type: 'string' },
+                          price: { type: 'number' },
+                          description: { type: 'string' }
+                        }
+                      }
+                    }
+                  },
+                  required: ['products']
+                }
+              }
+            ],
+            tool_choice: 'auto'
           }
         }));
         console.log('Session configuration sent');
@@ -159,6 +188,37 @@ En cas de doute médical, oriente vers le pharmacien ou médecin.${systemInstruc
       openaiSocket.onmessage = (event: MessageEvent) => {
         const data = JSON.parse(event.data as string);
         console.log('OpenAI message type:', data.type);
+
+        // Handle function calls
+        if (data.type === 'response.function_call_arguments.done') {
+          console.log('Function call:', data.name, data.arguments);
+          
+          if (data.name === 'display_products') {
+            try {
+              const args = JSON.parse(data.arguments);
+              
+              // Send function call result back to OpenAI
+              openaiSocket.send(JSON.stringify({
+                type: 'conversation.item.create',
+                item: {
+                  type: 'function_call_output',
+                  call_id: data.call_id,
+                  output: JSON.stringify({ success: true, message: 'Produits affichés avec succès' })
+                }
+              }));
+              
+              // Also forward to client for UI display
+              if (clientSocket.readyState === WebSocket.OPEN) {
+                clientSocket.send(JSON.stringify({
+                  type: 'display_products',
+                  products: args.products
+                }));
+              }
+            } catch (error) {
+              console.error('Error handling display_products:', error);
+            }
+          }
+        }
 
         // Forward all OpenAI messages to client
         if (clientSocket.readyState === WebSocket.OPEN) {
