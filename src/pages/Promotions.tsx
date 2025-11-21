@@ -86,7 +86,7 @@ const Promotions = () => {
 
       setPharmacyName(pharmacy.name);
 
-      // Get promotions for this pharmacy with product details
+      // Get promotions for this pharmacy with product details (only non-expired)
       const { data: promotionsData, error: promotionsError } = await supabase
         .from("promotions")
         .select(`
@@ -98,6 +98,7 @@ const Promotions = () => {
           )
         `)
         .eq("pharmacy_id", currentPharmacyId)
+        .gte("valid_until", new Date().toISOString())
         .order("created_at", { ascending: false });
 
       if (promotionsError) throw promotionsError;
