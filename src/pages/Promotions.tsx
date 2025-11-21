@@ -271,10 +271,35 @@ const Promotions = () => {
               <CardFooter>
                 <Button
                   className="w-full"
-                  onClick={() => navigate("/shop")}
+                  onClick={async () => {
+                    if (promotion.product_id && promotion.products) {
+                      try {
+                        await cart.addToCart({
+                          id: promotion.product_id,
+                          name: promotion.products.name,
+                          brand: promotion.products.brand,
+                          price: calculateDiscountedPrice(promotion.original_price, promotion.discount_percentage),
+                          imageUrl: promotion.image_url || '',
+                          source: 'promotion',
+                          productId: promotion.product_id,
+                        });
+                        toast({
+                          title: "Produit ajouté",
+                          description: `${promotion.products.name} a été ajouté à votre panier`,
+                        });
+                      } catch (error) {
+                        toast({
+                          title: "Erreur",
+                          description: "Impossible d'ajouter au panier",
+                          variant: "destructive",
+                        });
+                      }
+                    }
+                  }}
+                  disabled={!promotion.product_id}
                 >
                   <Tag className="mr-2 h-4 w-4" />
-                  Voir en boutique
+                  Ajouter au panier
                 </Button>
               </CardFooter>
             </Card>
