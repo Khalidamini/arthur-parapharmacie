@@ -169,6 +169,11 @@ Je vous conseils et trouve les produits qui correspondent à vos besoins.
               </div>
             </div>}
 
+          {/* Slider de promotions */}
+          {currentPharmacyId && promotions.length > 0 && <div className="max-w-3xl mx-auto px-3 sm:px-4 mb-8">
+              <PromotionSlider promotions={promotions} onSelectPromotion={handleSelectPromotion} />
+            </div>}
+
           {/* Actions principales */}
           <div className="grid grid-cols-2 gap-3 sm:gap-4 max-w-3xl mx-auto mb-8 sm:mb-12 px-4">
             <Button onClick={() => navigate("/chat")} className="w-full h-20 sm:h-24 bg-gradient-primary border-2 border-primary hover:opacity-90 transition-all group">
@@ -237,10 +242,6 @@ Je vous conseils et trouve les produits qui correspondent à vos besoins.
         </div>
       </section>
 
-      {/* Slider de promotions juste au-dessus du footer */}
-      {currentPharmacyId && promotions.length > 0 && <div className="max-w-3xl mx-auto px-3 sm:px-4 pb-6">
-          <PromotionSlider promotions={promotions} onSelectPromotion={handleSelectPromotion} />
-        </div>}
     </UserLayout>;
 };
 export default Index;
