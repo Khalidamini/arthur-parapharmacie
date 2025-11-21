@@ -82,12 +82,21 @@ const Chat = () => {
   // Surveiller les changements de conversationId dans l'URL
   useEffect(() => {
     const convId = searchParams.get('conversationId');
+    const isNew = searchParams.get('new');
+
+    if (isNew) {
+      // Nouvelle conversation demandée - réinitialiser complètement l'état
+      setConversationId(null);
+      setMessages([]);
+      setDisplayedProducts([]);
+      return;
+    }
 
     if (convId && convId !== conversationId) {
       // Conversation spécifiée dans l'URL : on la charge
       setConversationId(convId);
       loadConversationMessages(convId);
-    } else if (!convId && userId && !conversationId) {
+    } else if (!convId && !isNew && userId && !conversationId) {
       // Aucune conversation dans l'URL mais utilisateur connecté :
       // on recharge automatiquement la DERNIÈRE conversation de l'utilisateur
       const loadLastConversation = async () => {
@@ -114,7 +123,7 @@ const Chat = () => {
 
       loadLastConversation();
     }
-  }, [searchParams, userId, conversationId]);
+  }, [searchParams, userId]);
   useEffect(() => {
     // Scroll vers le haut du dernier message plutôt que vers le bas
     if (messages.length > 0) {
