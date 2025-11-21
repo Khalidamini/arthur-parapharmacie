@@ -10,9 +10,10 @@ interface VoiceInterfaceProps {
   onDisplayProducts?: (products: any[]) => void;
   onAddToCart?: (product: any) => void;
   onTranscript?: (text: string, isFinal: boolean) => void;
+  onSpeakingChange?: (isSpeaking: boolean) => void;
 }
 
-const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddToCart, onTranscript }: VoiceInterfaceProps) => {
+const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddToCart, onTranscript, onSpeakingChange }: VoiceInterfaceProps) => {
   const { toast } = useToast();
   const [isConnected, setIsConnected] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -83,6 +84,7 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
 
         if (data.type === 'response.audio.delta') {
           setIsSpeaking(true);
+          onSpeakingChange?.(true);
           const binaryString = atob(data.delta);
           const bytes = new Uint8Array(binaryString.length);
           for (let i = 0; i < binaryString.length; i++) {
@@ -95,6 +97,7 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
         } else if (data.type === 'response.audio.done') {
           console.log('Audio response complete');
           setIsSpeaking(false);
+          onSpeakingChange?.(false);
         } else if (data.type === 'input_audio_buffer.speech_started') {
           console.log('User started speaking');
           setIsListening(true);

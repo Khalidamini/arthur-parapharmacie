@@ -13,6 +13,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ChatSidebar } from '@/components/ChatSidebar';
 import { useCart } from '@/contexts/CartContext';
 import VoiceInterface from '@/components/VoiceInterface';
+import VoiceVisualizer from '@/components/VoiceVisualizer';
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -36,6 +37,7 @@ const Chat = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [displayedProducts, setDisplayedProducts] = useState<any[]>([]);
+  const [isArthurSpeaking, setIsArthurSpeaking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
   const cart = useCart();
@@ -422,6 +424,9 @@ const Chat = () => {
       <div className="flex min-h-screen w-full bg-gradient-subtle">
         <ChatSidebar />
         
+        {/* Voice Visualizer */}
+        <VoiceVisualizer isSpeaking={isArthurSpeaking} />
+        
         <div className="flex flex-col flex-1 h-screen">
           {/* Header */}
           <div className="bg-card border-b border-border shadow-sm sticky top-0 z-10">
@@ -595,6 +600,7 @@ const Chat = () => {
                   onDisplayProducts={handleDisplayProducts}
                   onAddToCart={handleAddToCart}
                   onTranscript={handleTranscript}
+                  onSpeakingChange={setIsArthurSpeaking}
                 />
               </div>
               
