@@ -5,6 +5,7 @@ import { MessageSquare, Tag, QrCode, MapPin, Heart, Shield, Sparkles } from "luc
 import { supabase } from "@/integrations/supabase/client";
 import UserLayout from "@/layouts/UserLayout";
 import PromotionSlider from "@/components/PromotionSlider";
+import OnboardingTutorial from "@/components/OnboardingTutorial";
 import { useCart } from "@/contexts/CartContext";
 interface Promotion {
   id: string;
@@ -221,6 +222,9 @@ Je vous conseils et trouve les produits qui correspondent à vos besoins.
           </div>
         </div>
       </section>
+
+      {/* Onboarding Tutorial */}
+      {user && <OnboardingTutorial userId={user.id} />}
 
     </UserLayout>;
 };
