@@ -164,7 +164,7 @@ Je vous conseils et trouve les produits qui correspondent à vos besoins.
               <div className="flex items-center gap-2 text-sm justify-center">
                 <MapPin className="h-4 w-4 text-primary" />
                 <p className="text-muted-foreground">
-                  Pharmacie référente :  Pharmacie Saint-Michel <span className="font-semibold text-foreground">{currentPharmacy}</span>
+                  Pharmacie référente : <span className="font-semibold text-foreground">{currentPharmacy}</span>
                 </p>
               </div>
             </div>}
