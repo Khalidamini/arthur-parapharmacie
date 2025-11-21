@@ -377,6 +377,7 @@ export type Database = {
           created_at: string | null
           id: string
           is_available: boolean | null
+          is_featured: boolean | null
           pharmacy_id: string
           product_id: string
           stock_quantity: number | null
@@ -386,6 +387,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_available?: boolean | null
+          is_featured?: boolean | null
           pharmacy_id: string
           product_id: string
           stock_quantity?: number | null
@@ -395,6 +397,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_available?: boolean | null
+          is_featured?: boolean | null
           pharmacy_id?: string
           product_id?: string
           stock_quantity?: number | null
