@@ -13,8 +13,8 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, conversationId, userId } = await req.json();
-    console.log('Received request:', { messagesCount: messages.length, conversationId, userId });
+    const { messages, conversationId, userId, selectedPharmacyId } = await req.json();
+    console.log('Received request:', { messagesCount: messages.length, conversationId, userId, selectedPharmacyId });
 
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     if (!OPENAI_API_KEY) {
@@ -60,32 +60,127 @@ Adapte tes recommandations en fonction de ces informations.`;
       }
     }
 
-    // Fetch available products from database for context
-    const { data: products } = await supabase
-      .from('products')
-      .select(`
-        id,
-        name,
-        brand,
-        category,
-        description,
-        price,
-        pharmacy_products!inner(
-          pharmacy_id,
-          stock_quantity,
-          is_available
-        )
-      `)
-      .eq('pharmacy_products.is_available', true)
-      .gt('pharmacy_products.stock_quantity', 0)
-      .limit(50);
+    // Fetch available products from the selected pharmacy
+    let productsContext = '';
+    let pharmacyInfo = '';
+    let alternativePharmaciesInfo = '';
 
-    // Format products for AI context
-    const productsContext = products && products.length > 0 
-      ? `\n\nProduits disponibles en pharmacie :\n${products.map(p => 
-          `- ${p.name} (${p.brand}) - ${p.category} - ${p.price}€ - ${p.description || 'Aucune description'}`
-        ).join('\n')}`
-      : '';
+    if (selectedPharmacyId) {
+      // Get selected pharmacy details
+      const { data: pharmacy } = await supabase
+        .from('pharmacies')
+        .select('id, name, address, city, latitude, longitude')
+        .eq('id', selectedPharmacyId)
+        .single();
+
+      if (pharmacy) {
+        pharmacyInfo = `\n\nPharmacie sélectionnée : ${pharmacy.name} - ${pharmacy.address}, ${pharmacy.city}`;
+      }
+
+      // Get products available in the selected pharmacy
+      const { data: selectedPharmacyProducts } = await supabase
+        .from('products')
+        .select(`
+          id,
+          name,
+          brand,
+          category,
+          description,
+          price,
+          pharmacy_products!inner(
+            pharmacy_id,
+            stock_quantity,
+            is_available
+          )
+        `)
+        .eq('pharmacy_products.pharmacy_id', selectedPharmacyId)
+        .eq('pharmacy_products.is_available', true)
+        .gt('pharmacy_products.stock_quantity', 0)
+        .limit(100);
+
+      if (selectedPharmacyProducts && selectedPharmacyProducts.length > 0) {
+        productsContext = `\n\nProduits disponibles dans la pharmacie sélectionnée (${pharmacy?.name}) :\n${selectedPharmacyProducts.map(p => 
+            `- ${p.name} (${p.brand}) - ${p.category} - ${p.price}€ - ${p.description || 'Aucune description'}`
+          ).join('\n')}`;
+      }
+
+      // Get all other pharmacies with their products for alternative suggestions
+      const { data: allPharmacies } = await supabase
+        .from('pharmacies')
+        .select(`
+          id,
+          name,
+          address,
+          city,
+          latitude,
+          longitude,
+          pharmacy_products(
+            product_id,
+            is_available,
+            stock_quantity
+          )
+        `)
+        .neq('id', selectedPharmacyId);
+
+      if (allPharmacies && allPharmacies.length > 0 && pharmacy) {
+        // Calculate distances and format alternative pharmacies info
+        const pharmaciesWithDistance = allPharmacies.map(p => {
+          const distance = calculateDistance(
+            pharmacy.latitude,
+            pharmacy.longitude,
+            p.latitude,
+            p.longitude
+          );
+          return {
+            ...p,
+            distance
+          };
+        }).sort((a, b) => a.distance - b.distance);
+
+        alternativePharmaciesInfo = `\n\nPharmacies alternatives (triées par proximité) :\n${pharmaciesWithDistance.map(p => 
+          `- ${p.name} - ${p.address}, ${p.city} (à ${p.distance.toFixed(1)} km)`
+        ).join('\n')}`;
+      }
+    } else {
+      // Fallback: get products from all pharmacies if no pharmacy is selected
+      const { data: products } = await supabase
+        .from('products')
+        .select(`
+          id,
+          name,
+          brand,
+          category,
+          description,
+          price,
+          pharmacy_products!inner(
+            pharmacy_id,
+            stock_quantity,
+            is_available
+          )
+        `)
+        .eq('pharmacy_products.is_available', true)
+        .gt('pharmacy_products.stock_quantity', 0)
+        .limit(50);
+
+      if (products && products.length > 0) {
+        productsContext = `\n\nProduits disponibles en pharmacie :\n${products.map(p => 
+            `- ${p.name} (${p.brand}) - ${p.category} - ${p.price}€ - ${p.description || 'Aucune description'}`
+          ).join('\n')}`;
+      }
+    }
+
+    // Helper function to calculate distance between two coordinates (Haversine formula)
+    function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+      const R = 6371; // Earth's radius in km
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
 
     const systemPrompt = `Tu es Arthur, un assistant virtuel expert en parapharmacie et conseiller en santé pour les pharmacies françaises.
 
@@ -121,8 +216,12 @@ MÉTHODOLOGIE DE CONSEIL :
 1. ÉCOUTE ACTIVE : Pose des questions pertinentes pour comprendre le contexte complet
 2. PERSONNALISATION : Adapte tes conseils au profil du patient (âge, sexe, grossesse, allergies, antécédents)
 3. SÉCURITÉ AVANT TOUT : En cas de doute ou de situation à risque, recommande une consultation médicale
-4. PRIORISATION : Privilégie TOUJOURS les produits disponibles dans la pharmacie référente${productsContext ? ' (voir liste ci-dessous)' : ''}
-5. ALTERNATIVES : Si produits non disponibles, suggère des alternatives que le pharmacien peut commander
+4. PRIORISATION ABSOLUE : Tu dois TOUJOURS recommander UNIQUEMENT les produits disponibles dans la pharmacie sélectionnée${pharmacyInfo ? ' (voir détails ci-dessous)' : ''}
+5. RECHERCHE ALTERNATIVE : Si un client cherche un produit spécifique qui n'est PAS disponible dans sa pharmacie sélectionnée, tu dois :
+   - Chercher ce produit dans les autres pharmacies de la base de données
+   - Identifier la pharmacie la PLUS PROCHE où le produit est disponible
+   - Indiquer clairement au client : "Ce produit n'est pas disponible dans votre pharmacie, mais vous pouvez le trouver à [Nom Pharmacie] - [Adresse], située à [X] km de votre pharmacie actuelle"
+   - Proposer également des produits SIMILAIRES disponibles dans sa pharmacie sélectionnée comme alternatives
 
 FORMAT DE RÉPONSE - Deux types possibles :
 
@@ -186,7 +285,8 @@ RÈGLES IMPÉRATIVES :
 - Utilise ton expertise médicale pour poser les BONNES questions diagnostiques
 - EXACTEMENT 3 produits dans les recommandations
 - Explications PROFESSIONNELLES et DÉTAILLÉES basées sur ta connaissance pharmacologique
-- PRIORISE les produits de la liste de la pharmacie référente
+- RECOMMANDE UNIQUEMENT les produits disponibles dans la pharmacie sélectionnée du client (voir liste ci-dessous)
+- Si un produit spécifique demandé n'existe pas dans la pharmacie sélectionnée, cherche-le dans les pharmacies alternatives et indique la plus proche où il est disponible
 - URLS D'IMAGES : Tu DOIS fournir des URLs HTTPS réelles et fonctionnelles pointant vers les images officielles des produits sur les sites des fabricants (Bioderma, La Roche-Posay, Vichy, Avène, Nuxe, etc.) ou sur des pharmacies en ligne françaises (1001pharmacies.com, pharmacie-principale.fr, etc.)
 - ADAPTE selon le profil patient complet
 - PERFECTIONNE-TOI en tenant compte de l'historique des conversations
@@ -198,7 +298,7 @@ Ton expertise te permet de :
 - Expliquer les mécanismes d'action des produits
 - Conseiller sur les posologies et modes d'utilisation
 - Prévenir les effets indésirables
-- Recommander des mesures d'hygiène et de prévention complémentaires${userContext}${productsContext}`;
+- Recommander des mesures d'hygiène et de prévention complémentaires${userContext}${pharmacyInfo}${productsContext}${alternativePharmaciesInfo}`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
