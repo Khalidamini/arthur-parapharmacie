@@ -61,16 +61,9 @@ const Shop = () => {
         return;
       }
 
-      // Get user's current affiliated pharmacy (most recent)
-      const { data: affiliation, error: affiliationError } = await supabase
-        .from("user_pharmacy_affiliation")
-        .select("pharmacy_id, pharmacies(name)")
-        .eq("user_id", user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (affiliationError || !affiliation) {
+      // Utiliser la pharmacie sélectionnée du contexte
+      const currentPharmacyId = cart.selectedPharmacyId;
+      if (!currentPharmacyId) {
         toast({
           title: "Aucune pharmacie affiliée",
           description: "Veuillez scanner le QR code d'une pharmacie pour continuer.",
@@ -80,9 +73,24 @@ const Shop = () => {
         return;
       }
 
-      setPharmacyName(affiliation.pharmacies.name);
-      setPharmacyId(affiliation.pharmacy_id);
-      cart.setSelectedPharmacyId(affiliation.pharmacy_id);
+      // Get pharmacy details
+      const { data: pharmacy, error: pharmacyError } = await supabase
+        .from("pharmacies")
+        .select("name")
+        .eq("id", currentPharmacyId)
+        .single();
+
+      if (pharmacyError || !pharmacy) {
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger la pharmacie.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setPharmacyName(pharmacy.name);
+      setPharmacyId(currentPharmacyId);
 
       // Get products available in this pharmacy
       const { data: pharmacyProducts, error: productsError } = await supabase
@@ -100,7 +108,7 @@ const Shop = () => {
             image_url
           )
         `)
-        .eq("pharmacy_id", affiliation.pharmacy_id)
+        .eq("pharmacy_id", currentPharmacyId)
         .eq("is_available", true);
 
       if (productsError) throw productsError;

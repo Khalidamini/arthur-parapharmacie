@@ -83,12 +83,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Charger la pharmacie référente en cours (la plus récente)
+      // Charger la pharmacie référente INITIALE (première inscription)
       const { data } = await supabase
         .from('user_pharmacy_affiliation')
         .select('pharmacy_id')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: true })
         .limit(1)
         .maybeSingle();
 
