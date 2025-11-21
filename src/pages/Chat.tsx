@@ -352,7 +352,7 @@ const Chat = () => {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto pb-64 md:pb-56">
+          <div className="flex-1 overflow-y-auto pb-80 sm:pb-72">
             <div className="max-w-3xl w-full mx-auto px-3 py-4">
 
               {/* Welcome Message */}
@@ -474,8 +474,8 @@ const Chat = () => {
             </div>
           )}
 
-          {/* Input & Voice Interface */}
-          <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-lg z-20">
+          {/* Input & Voice Interface - positionné au-dessus du footer mobile */}
+          <div className="fixed bottom-16 sm:bottom-20 left-0 right-0 bg-card border-t border-border shadow-lg z-30">
             <div className="max-w-3xl w-full mx-auto px-3 py-3">
               {/* Voice Interface - compact version */}
               <div className="mb-3">
@@ -501,8 +501,6 @@ const Chat = () => {
               </div>
             </div>
           </div>
-          
-          <Footer />
         </div>
       </div>
     </SidebarProvider>;
