@@ -389,6 +389,36 @@ const Chat = () => {
       });
     }
   };
+  
+  const handleNavigate = (page: string, message?: string, guidance?: string) => {
+    console.log('Navigating to:', page, message, guidance);
+    
+    if (message) {
+      toast({
+        title: "Arthur vous guide",
+        description: message,
+      });
+    }
+    
+    // Navigate to the specified page
+    navigate(page);
+    
+    // If there's guidance, add it as an assistant message
+    if (guidance) {
+      const assistantMessage: Message = {
+        id: `nav-${Date.now()}`,
+        role: "assistant",
+        content: guidance
+      };
+      setMessages(prev => [...prev, assistantMessage]);
+      
+      // Save to database if we have a conversation
+      if (conversationId) {
+        saveMessage("assistant", guidance, conversationId);
+      }
+    }
+  };
+  
   const handleTranscript = async (text: string, isFinal: boolean) => {
     if (!text.trim()) return;
     if (isFinal) {
@@ -614,7 +644,7 @@ const Chat = () => {
             <div className="max-w-4xl w-full mx-auto px-4 py-4">
               {/* Voice Interface */}
               <div className="mb-4">
-                <VoiceInterface userId={userId} selectedPharmacyId={cart.selectedPharmacyId} onDisplayProducts={handleDisplayProducts} onAddToCart={handleAddToCart} onTranscript={handleTranscript} />
+                <VoiceInterface userId={userId} selectedPharmacyId={cart.selectedPharmacyId} onDisplayProducts={handleDisplayProducts} onAddToCart={handleAddToCart} onTranscript={handleTranscript} onNavigate={handleNavigate} />
               </div>
 
               {/* Text Input */}
