@@ -48,15 +48,31 @@ const Pharmacies = () => {
   const [settingPharmacy, setSettingPharmacy] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"distance" | "city" | "name">("distance");
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedPharmacyName, setSelectedPharmacyName] = useState<string | null>(null);
   const cart = useCart();
   const navigate = useNavigate();
   const { toast } = useToast();
   useEffect(() => {
     loadPharmacies();
     getUserLocation();
+  }, []);
+
+  useEffect(() => {
     // Utiliser le contexte pour obtenir la pharmacie sélectionnée
     if (cart.selectedPharmacyId) {
       setCurrentPharmacyId(cart.selectedPharmacyId);
+      // Charger le nom de la pharmacie sélectionnée
+      const loadSelectedPharmacyName = async () => {
+        const { data } = await (supabase as any)
+          .from("pharmacies")
+          .select("name")
+          .eq("id", cart.selectedPharmacyId)
+          .single();
+        if (data) {
+          setSelectedPharmacyName(data.name);
+        }
+      };
+      loadSelectedPharmacyName();
     }
   }, [cart.selectedPharmacyId]);
   const getUserLocation = () => {
@@ -163,6 +179,7 @@ const Pharmacies = () => {
       // Mettre à jour la pharmacie sélectionnée dans le contexte (changement temporaire pour la session)
       cart.setSelectedPharmacyId(pharmacy.id);
       setCurrentPharmacyId(pharmacy.id);
+      setSelectedPharmacyName(pharmacy.name);
       toast({
         title: "Pharmacie sélectionnée",
         description: `${pharmacy.name} est maintenant sélectionnée pour cette session. Au prochain démarrage, vous retrouverez votre pharmacie référente initiale.`,
@@ -207,6 +224,17 @@ const Pharmacies = () => {
               Trier
             </Button>
           </div>
+
+          {selectedPharmacyName && (
+            <div className="bg-pharmacy-referent rounded-lg p-3 mb-4">
+              <div className="flex items-center gap-2 justify-center">
+                <Star className="h-4 w-4 text-pharmacy-referent-foreground fill-pharmacy-referent-foreground" />
+                <p className="text-sm font-medium text-pharmacy-referent-foreground">
+                  Pharmacie sélectionnée : {selectedPharmacyName}
+                </p>
+              </div>
+            </div>
+          )}
 
           {showFilters && (
             <Card className="bg-card/80 backdrop-blur-sm">
