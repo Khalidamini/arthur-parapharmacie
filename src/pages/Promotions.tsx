@@ -285,7 +285,7 @@ const Promotions = () => {
                         imageUrl: promotion.image_url || '',
                         source: 'shop',
                         productId: promotion.product_id || undefined,
-                      });
+                      }, cart.selectedPharmacyId || undefined);
                       toast({
                         title: "Produit ajouté",
                         description: `${productName} a été ajouté à votre panier`,
