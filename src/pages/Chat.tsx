@@ -358,11 +358,36 @@ const Chat = () => {
     }
   };
 
-  const handleTranscript = (text: string, isFinal: boolean) => {
+  const handleTranscript = async (text: string, isFinal: boolean) => {
     if (!text.trim()) return;
 
     if (isFinal) {
-      // Message final - ajouter à l'historique
+      // S'assurer qu'une conversation existe (cas où l'utilisateur commence par la voix)
+      let convIdToUse = conversationId as string | null;
+
+      if (!convIdToUse && userId) {
+        const { data, error } = await supabase.from('conversations').insert({
+          user_id: userId,
+          title: 'Conversation avec Arthur'
+        }).select().single();
+
+        if (error) {
+          console.error('Error creating conversation from voice:', error);
+          toast({
+            title: "Erreur",
+            description: "Impossible de créer la conversation pour l'historique",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        convIdToUse = data.id;
+        setConversationId(data.id);
+        // Mettre à jour l'URL avec le conversationId
+        navigate(`/chat?conversationId=${data.id}`, { replace: true });
+      }
+
+      // Message final - ajouter à l'historique local
       const assistantMessage: Message = {
         id: `voice-${Date.now()}`,
         role: 'assistant',
@@ -370,9 +395,9 @@ const Chat = () => {
       };
       setMessages(prev => [...prev, assistantMessage]);
       
-      // Sauvegarder dans la base de données
-      if (conversationId) {
-        saveMessage('assistant', text);
+      // Sauvegarder dans la base de données si on a une conversation
+      if (convIdToUse) {
+        await saveMessage('assistant', text, convIdToUse);
       }
     }
   };
