@@ -510,6 +510,8 @@ export type Database = {
           is_pregnant: boolean | null
           last_name: string | null
           medical_history: string | null
+          onboarding_completed: boolean | null
+          onboarding_completed_at: string | null
           phone: string | null
           qr_code_number: string
           updated_at: string | null
@@ -526,6 +528,8 @@ export type Database = {
           is_pregnant?: boolean | null
           last_name?: string | null
           medical_history?: string | null
+          onboarding_completed?: boolean | null
+          onboarding_completed_at?: string | null
           phone?: string | null
           qr_code_number: string
           updated_at?: string | null
@@ -542,6 +546,8 @@ export type Database = {
           is_pregnant?: boolean | null
           last_name?: string | null
           medical_history?: string | null
+          onboarding_completed?: boolean | null
+          onboarding_completed_at?: string | null
           phone?: string | null
           qr_code_number?: string
           updated_at?: string | null
