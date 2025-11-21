@@ -112,7 +112,13 @@ AFFICHAGE DES PRODUITS - RÈGLES IMPÉRATIVES :
 - Sois PROACTIF : propose régulièrement des produits spécifiques adaptés aux besoins du client
 - Suggère des produits complémentaires pour maximiser les ventes tout en restant éthique
 
-Tu recommandes UNIQUEMENT les produits parapharmaceutiques disponibles dans la pharmacie sélectionnée ci-dessous.
+RECHERCHE MULTI-PHARMACIES :
+- Si un produit n'est PAS disponible dans la pharmacie sélectionnée, utilise AUTOMATIQUEMENT la fonction search_all_pharmacies
+- Tu peux aussi l'utiliser quand le client te demande explicitement où trouver un produit
+- Informe le client oralement du nom et de l'adresse de la pharmacie où le produit est disponible
+- Sois clair et précis dans tes indications d'adresse
+
+Tu recommandes PRIORITAIREMENT les produits disponibles dans la pharmacie sélectionnée ci-dessous.
 
 En cas de doute médical, oriente vers le pharmacien ou médecin.${systemInstructions}`;
 
@@ -195,6 +201,21 @@ En cas de doute médical, oriente vers le pharmacien ou médecin.${systemInstruc
                   },
                   required: ['productId', 'name', 'brand', 'price']
                 }
+              },
+              {
+                type: 'function',
+                name: 'search_all_pharmacies',
+                description: 'Recherche un produit dans TOUTES les pharmacies disponibles. Utilise cette fonction quand le client cherche un produit qui n\'est pas disponible dans sa pharmacie sélectionnée ou quand il demande explicitement où trouver un produit.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    productName: { 
+                      type: 'string', 
+                      description: 'Nom du produit recherché' 
+                    }
+                  },
+                  required: ['productName']
+                }
               }
             ],
             tool_choice: 'auto'
@@ -203,7 +224,7 @@ En cas de doute médical, oriente vers le pharmacien ou médecin.${systemInstruc
         console.log('Session configuration sent');
       };
 
-      openaiSocket.onmessage = (event: MessageEvent) => {
+      openaiSocket.onmessage = async (event: MessageEvent) => {
         const data = JSON.parse(event.data as string);
         console.log('OpenAI message type:', data.type);
 
@@ -270,6 +291,103 @@ En cas de doute médical, oriente vers le pharmacien ou médecin.${systemInstruc
               }
             } catch (error) {
               console.error('Error handling add_to_cart:', error);
+            }
+          }
+
+          if (data.name === 'search_all_pharmacies') {
+            try {
+              const args = JSON.parse(data.arguments);
+              console.log('Searching for product across all pharmacies:', args.productName);
+              
+              // Initialize Supabase client
+              const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+              const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+              const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+              // Search for products matching the name across all pharmacies
+              const { data: results, error } = await supabase
+                .from('products')
+                .select(`
+                  id,
+                  name,
+                  brand,
+                  category,
+                  description,
+                  price,
+                  image_url,
+                  pharmacy_products!inner(
+                    pharmacy_id,
+                    stock_quantity,
+                    is_available,
+                    pharmacies!inner(
+                      name,
+                      address,
+                      city,
+                      postal_code
+                    )
+                  )
+                `)
+                .ilike('name', `%${args.productName}%`)
+                .eq('pharmacy_products.is_available', true)
+                .gt('pharmacy_products.stock_quantity', 0);
+
+              if (error) {
+                console.error('Error searching pharmacies:', error);
+                throw error;
+              }
+
+              console.log(`Found ${results?.length || 0} products in pharmacies`);
+
+              // Format results for Arthur
+              const pharmacyResults = results?.map(product => ({
+                productName: product.name,
+                brand: product.brand,
+                price: product.price,
+                pharmacyName: (product.pharmacy_products as any)[0]?.pharmacies?.name,
+                pharmacyAddress: (product.pharmacy_products as any)[0]?.pharmacies?.address,
+                pharmacyCity: (product.pharmacy_products as any)[0]?.pharmacies?.city
+              })) || [];
+
+              // Send function call result back to OpenAI
+              openaiSocket.send(JSON.stringify({
+                type: 'conversation.item.create',
+                item: {
+                  type: 'function_call_output',
+                  call_id: data.call_id,
+                  output: JSON.stringify({ 
+                    success: true, 
+                    results: pharmacyResults,
+                    message: pharmacyResults.length > 0 
+                      ? `Trouvé ${pharmacyResults.length} résultat(s)` 
+                      : 'Aucun produit trouvé'
+                  })
+                }
+              }));
+              
+              // Request a new response from OpenAI to continue speaking
+              openaiSocket.send(JSON.stringify({
+                type: 'response.create'
+              }));
+              
+            } catch (error) {
+              console.error('Error handling search_all_pharmacies:', error);
+              
+              // Send error back to OpenAI
+              openaiSocket.send(JSON.stringify({
+                type: 'conversation.item.create',
+                item: {
+                  type: 'function_call_output',
+                  call_id: data.call_id,
+                  output: JSON.stringify({ 
+                    success: false, 
+                    message: 'Erreur lors de la recherche dans les pharmacies'
+                  })
+                }
+              }));
+              
+              openaiSocket.send(JSON.stringify({
+                type: 'response.create'
+              }));
             }
           }
         }
