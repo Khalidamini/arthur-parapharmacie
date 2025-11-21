@@ -160,11 +160,12 @@ Je vous conseils et trouve les produits qui correspondent à vos besoins.
           </p>
 
           {/* Pharmacie référente */}
-          {currentPharmacy && <div className="bg-card/50 backdrop-blur-sm border border-border rounded-xl p-4 mb-8 max-w-md mx-auto">
+          {currentPharmacy && <div className="backdrop-blur-sm border border-border rounded-xl p-4 mb-8 max-w-md mx-auto bg-emerald-500">
               <div className="flex items-center gap-2 text-sm justify-center">
-                <MapPin className="h-4 w-4 text-primary" />
-                <p className="text-muted-foreground">
-                  Pharmacie référente : Pharmacie Saint-Michel <span className="font-semibold text-foreground">{currentPharmacy}</span>
+                
+                <p className="text-slate-50">
+                  Pharmacie référente : 
+ Pharmacie Saint-Michel <span className="font-semibold text-amber-200 text-base text-center">{currentPharmacy}</span>
                 </p>
               </div>
             </div>}
