@@ -465,12 +465,14 @@ const Chat = () => {
             </div>
           </div>
 
-          {/* Promotions Slider - fixe au-dessus de l'input */}
-          {promotions.length > 0 && <div className="bg-card border-t border-border sticky bottom-32 z-10">
+          {/* Promotions Slider - au-dessus de la zone de saisie */}
+          {promotions.length > 0 && (
+            <div className="bg-card border-t border-border">
               <div className="w-full px-2 sm:px-3 py-2 max-w-3xl mx-auto">
                 <PromotionSlider promotions={promotions} onSelectPromotion={handleSelectPromotion} />
               </div>
-            </div>}
+            </div>
+          )}
 
           {/* Input & Voice Interface */}
           <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-lg z-20">
