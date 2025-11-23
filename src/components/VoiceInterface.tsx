@@ -40,6 +40,14 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
   const conversationIdRef = useRef<string | null>(null);
 
   useEffect(() => {
+    // Load saved preferences from localStorage
+    const savedVoice = localStorage.getItem('arthur-voice-preference');
+    const savedRate = localStorage.getItem('arthur-speech-rate');
+    
+    if (savedRate) {
+      setSpeechRate(parseFloat(savedRate));
+    }
+    
     // Load available voices
     const loadVoices = () => {
       if ('speechSynthesis' in window) {
@@ -50,16 +58,22 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
         );
         setAvailableVoices(frenchVoices);
         
-        // Auto-select first male voice or first French voice
-        if (frenchVoices.length > 0 && !selectedVoice) {
-          const maleVoice = frenchVoices.find(voice => 
-            voice.name.toLowerCase().includes('male') || 
-            voice.name.toLowerCase().includes('homme') ||
-            voice.name.toLowerCase().includes('thomas') ||
-            voice.name.toLowerCase().includes('daniel') ||
-            voice.name.toLowerCase().includes('henri')
-          );
-          setSelectedVoice((maleVoice || frenchVoices[0]).name);
+        // Use saved voice if available, otherwise auto-select
+        if (frenchVoices.length > 0) {
+          if (savedVoice && frenchVoices.some(v => v.name === savedVoice)) {
+            setSelectedVoice(savedVoice);
+          } else if (!selectedVoice) {
+            const maleVoice = frenchVoices.find(voice => 
+              voice.name.toLowerCase().includes('male') || 
+              voice.name.toLowerCase().includes('homme') ||
+              voice.name.toLowerCase().includes('thomas') ||
+              voice.name.toLowerCase().includes('daniel') ||
+              voice.name.toLowerCase().includes('henri')
+            );
+            const defaultVoice = (maleVoice || frenchVoices[0]).name;
+            setSelectedVoice(defaultVoice);
+            localStorage.setItem('arthur-voice-preference', defaultVoice);
+          }
         }
       }
     };
@@ -75,6 +89,18 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
       disconnect();
     };
   }, []);
+
+  // Save voice preference when changed
+  useEffect(() => {
+    if (selectedVoice) {
+      localStorage.setItem('arthur-voice-preference', selectedVoice);
+    }
+  }, [selectedVoice]);
+
+  // Save speech rate when changed
+  useEffect(() => {
+    localStorage.setItem('arthur-speech-rate', speechRate.toString());
+  }, [speechRate]);
 
   const connect = async () => {
     try {
