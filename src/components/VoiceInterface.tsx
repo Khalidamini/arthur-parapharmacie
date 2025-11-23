@@ -1,8 +1,22 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, MicOff } from 'lucide-react';
+import { Mic, MicOff, Settings } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
 
 interface VoiceInterfaceProps {
   userId: string | null;
@@ -19,10 +33,44 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
   const [isConnected, setIsConnected] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState<string>('');
+  const [speechRate, setSpeechRate] = useState<number>(1.3);
   const recognitionRef = useRef<any>(null);
   const conversationIdRef = useRef<string | null>(null);
 
   useEffect(() => {
+    // Load available voices
+    const loadVoices = () => {
+      if ('speechSynthesis' in window) {
+        const voices = window.speechSynthesis.getVoices();
+        // Filter for French male voices
+        const frenchVoices = voices.filter(voice => 
+          voice.lang.startsWith('fr')
+        );
+        setAvailableVoices(frenchVoices);
+        
+        // Auto-select first male voice or first French voice
+        if (frenchVoices.length > 0 && !selectedVoice) {
+          const maleVoice = frenchVoices.find(voice => 
+            voice.name.toLowerCase().includes('male') || 
+            voice.name.toLowerCase().includes('homme') ||
+            voice.name.toLowerCase().includes('thomas') ||
+            voice.name.toLowerCase().includes('daniel') ||
+            voice.name.toLowerCase().includes('henri')
+          );
+          setSelectedVoice((maleVoice || frenchVoices[0]).name);
+        }
+      }
+    };
+
+    loadVoices();
+    
+    // Voices might load asynchronously
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+
     return () => {
       disconnect();
     };
@@ -172,44 +220,17 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
     
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'fr-FR';
-    utterance.rate = 1.3; // Faster speech for more dynamism
+    utterance.rate = speechRate; // Use user-selected rate
     utterance.pitch = 0.85; // Lower pitch for male voice
     utterance.volume = 1.0;
     
-    // Load voices and try to select a male French voice
-    const setVoice = () => {
-      const voices = window.speechSynthesis.getVoices();
-      
-      // Try to find a male French voice
-      const maleVoice = voices.find(voice => 
-        voice.lang.startsWith('fr') && 
-        (voice.name.toLowerCase().includes('male') || 
-         voice.name.toLowerCase().includes('homme') ||
-         voice.name.toLowerCase().includes('thomas') ||
-         voice.name.toLowerCase().includes('daniel') ||
-         voice.name.toLowerCase().includes('henri'))
-      );
-      
-      if (maleVoice) {
-        utterance.voice = maleVoice;
-        console.log('Using male voice:', maleVoice.name);
-      } else {
-        // Fallback: use first available French voice
-        const frenchVoice = voices.find(voice => voice.lang.startsWith('fr'));
-        if (frenchVoice) {
-          utterance.voice = frenchVoice;
-          console.log('Using French voice:', frenchVoice.name);
-        }
+    // Use selected voice
+    if (selectedVoice) {
+      const voice = availableVoices.find(v => v.name === selectedVoice);
+      if (voice) {
+        utterance.voice = voice;
+        console.log('Using voice:', voice.name, 'at rate:', speechRate);
       }
-    };
-    
-    // Voices may not be loaded yet
-    if (window.speechSynthesis.getVoices().length > 0) {
-      setVoice();
-    } else {
-      window.speechSynthesis.onvoiceschanged = () => {
-        setVoice();
-      };
     }
     
     utterance.onend = () => {
@@ -284,6 +305,59 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
           )}
         </div>
       )}
+
+      {/* Voice settings */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className="flex-shrink-0 h-8 w-8 p-0"
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80" align="end">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="voice-select">Voix masculine</Label>
+              <Select value={selectedVoice} onValueChange={setSelectedVoice}>
+                <SelectTrigger id="voice-select">
+                  <SelectValue placeholder="Sélectionnez une voix" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableVoices.map((voice) => (
+                    <SelectItem key={voice.name} value={voice.name}>
+                      {voice.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="speed-slider">Vitesse</Label>
+                <span className="text-sm text-muted-foreground">{speechRate.toFixed(1)}x</span>
+              </div>
+              <Slider
+                id="speed-slider"
+                min={0.5}
+                max={2}
+                step={0.1}
+                value={[speechRate]}
+                onValueChange={(value) => setSpeechRate(value[0])}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Lent (0.5x)</span>
+                <span>Normal (1.0x)</span>
+                <span>Rapide (2.0x)</span>
+              </div>
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
 
       {/* Control button */}
       {!isConnected ? (
