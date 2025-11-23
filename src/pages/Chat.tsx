@@ -482,7 +482,7 @@ const Chat = () => {
       }
     }
   };
-  return <SidebarProvider>
+  return <SidebarProvider defaultOpen={false}>
       <div className="flex min-h-screen w-full bg-gradient-subtle">
         <ChatSidebar />
 
