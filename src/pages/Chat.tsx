@@ -629,34 +629,60 @@ const Chat = () => {
             </div>
           </div>
 
-          {/* Input & Voice Interface - Fixed above footer */}
-          <div className="fixed bottom-16 sm:bottom-20 left-0 right-0 bg-card border-t border-border shadow-xl z-30">
-            {/* Promotions Slider */}
-            {promotions.length > 0 && <div className="border-b border-border bg-muted/30 backdrop-blur-sm">
-                <div className="w-full px-4 py-3 max-w-4xl mx-auto">
-                  <PromotionSlider promotions={promotions} onSelectPromotion={handleSelectPromotion} />
+          {/* Input, Voice Interface & Footer - grouped container */}
+          <div className="fixed bottom-0 left-0 right-0 z-30">
+            {/* Input & Voice Interface - directly above footer */}
+            <div className="bg-card border-t border-border shadow-xl">
+              {/* Promotions Slider */}
+              {promotions.length > 0 && (
+                <div className="border-b border-border bg-muted/30 backdrop-blur-sm">
+                  <div className="w-full px-4 py-3 max-w-4xl mx-auto">
+                    <PromotionSlider
+                      promotions={promotions}
+                      onSelectPromotion={handleSelectPromotion}
+                    />
+                  </div>
                 </div>
-              </div>}
+              )}
 
-            <div className="max-w-4xl w-full mx-auto px-4 py-4 pb-[7px]">
-              {/* Voice Interface */}
-              <div className="mb-4">
-                <VoiceInterface userId={userId} selectedPharmacyId={cart.selectedPharmacyId} onDisplayProducts={handleDisplayProducts} onAddToCart={handleAddToCart} onTranscript={handleTranscript} onNavigate={handleNavigate} />
-              </div>
+              <div className="max-w-4xl w-full mx-auto px-4 py-4 pb-[7px]">
+                {/* Voice Interface */}
+                <div className="mb-4">
+                  <VoiceInterface
+                    userId={userId}
+                    selectedPharmacyId={cart.selectedPharmacyId}
+                    onDisplayProducts={handleDisplayProducts}
+                    onAddToCart={handleAddToCart}
+                    onTranscript={handleTranscript}
+                    onNavigate={handleNavigate}
+                  />
+                </div>
 
-              {/* Text Input */}
-              <div className="flex gap-3">
-                <Input value={input} onChange={e => setInput(e.target.value)} onKeyPress={e => e.key === "Enter" && handleSend()} placeholder="Écrivez votre question..." disabled={loading} className="flex-1 rounded-full border-2 focus-visible:ring-primary h-12 px-5 text-base" />
-                <Button onClick={handleSend} disabled={loading || !input.trim()} className="rounded-full bg-gradient-primary hover:opacity-90 transition-opacity h-12 w-12 p-0 flex items-center justify-center">
-                  <Send className="h-5 w-5" />
-                </Button>
+                {/* Text Input */}
+                <div className="flex gap-3">
+                  <Input
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyPress={e => e.key === "Enter" && handleSend()}
+                    placeholder="Écrivez votre question..."
+                    disabled={loading}
+                    className="flex-1 rounded-full border-2 focus-visible:ring-primary h-12 px-5 text-base"
+                  />
+                  <Button
+                    onClick={handleSend}
+                    disabled={loading || !input.trim()}
+                    className="rounded-full bg-gradient-primary hover:opacity-90 transition-opacity h-12 w-12 p-0 flex items-center justify-center"
+                  >
+                    <Send className="h-5 w-5" />
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Footer Menu */}
-          <div className="fixed bottom-0 left-0 right-0 z-20">
-            <Footer />
+            {/* Footer Menu - directly under input area, no gap */}
+            <div className="relative z-20">
+              <Footer />
+            </div>
           </div>
         </div>
       </div>
