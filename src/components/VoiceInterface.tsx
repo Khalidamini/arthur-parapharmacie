@@ -20,7 +20,6 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const recognitionRef = useRef<any>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const conversationIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -146,7 +145,7 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
         onTranscript?.(text, true);
         
         // Convert to speech
-        await speakText(text);
+        speakText(text);
       }
 
     } catch (error) {
@@ -159,35 +158,72 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
     }
   };
 
-  const speakText = async (text: string) => {
-    try {
-      setIsSpeaking(true);
-      onSpeakingChange?.(true);
-
-      // Call text-to-speech function
-      const { data, error } = await supabase.functions.invoke('text-to-speech', {
-        body: { text, lang: 'fr' }
-      });
-
-      if (error) throw error;
-
-      // Play audio
-      const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
-      audioRef.current = audio;
-
-      audio.onended = () => {
-        setIsSpeaking(false);
-        onSpeakingChange?.(false);
-        audioRef.current = null;
+  const speakText = (text: string) => {
+    if (!text || !('speechSynthesis' in window)) {
+      console.log('Speech synthesis not available');
+      return;
+    }
+    
+    setIsSpeaking(true);
+    onSpeakingChange?.(true);
+    
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'fr-FR';
+    utterance.rate = 1.3; // Faster speech for more dynamism
+    utterance.pitch = 0.85; // Lower pitch for male voice
+    utterance.volume = 1.0;
+    
+    // Load voices and try to select a male French voice
+    const setVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
+      
+      // Try to find a male French voice
+      const maleVoice = voices.find(voice => 
+        voice.lang.startsWith('fr') && 
+        (voice.name.toLowerCase().includes('male') || 
+         voice.name.toLowerCase().includes('homme') ||
+         voice.name.toLowerCase().includes('thomas') ||
+         voice.name.toLowerCase().includes('daniel') ||
+         voice.name.toLowerCase().includes('henri'))
+      );
+      
+      if (maleVoice) {
+        utterance.voice = maleVoice;
+        console.log('Using male voice:', maleVoice.name);
+      } else {
+        // Fallback: use first available French voice
+        const frenchVoice = voices.find(voice => voice.lang.startsWith('fr'));
+        if (frenchVoice) {
+          utterance.voice = frenchVoice;
+          console.log('Using French voice:', frenchVoice.name);
+        }
+      }
+    };
+    
+    // Voices may not be loaded yet
+    if (window.speechSynthesis.getVoices().length > 0) {
+      setVoice();
+    } else {
+      window.speechSynthesis.onvoiceschanged = () => {
+        setVoice();
       };
-
-      await audio.play();
-
-    } catch (error) {
-      console.error('Error speaking text:', error);
+    }
+    
+    utterance.onend = () => {
       setIsSpeaking(false);
       onSpeakingChange?.(false);
-    }
+    };
+    
+    utterance.onerror = (error) => {
+      console.error('Speech synthesis error:', error);
+      setIsSpeaking(false);
+      onSpeakingChange?.(false);
+    };
+    
+    window.speechSynthesis.speak(utterance);
   };
 
   const disconnect = () => {
@@ -198,9 +234,9 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
       recognitionRef.current = null;
     }
     
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
+    // Cancel any ongoing speech
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
     }
     
     setIsConnected(false);
