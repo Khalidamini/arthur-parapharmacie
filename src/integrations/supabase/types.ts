@@ -38,6 +38,42 @@ export type Database = {
         }
         Relationships: []
       }
+      arthur_response_cache: {
+        Row: {
+          context_type: string | null
+          created_at: string
+          hit_count: number
+          id: string
+          last_used_at: string
+          query_hash: string
+          query_normalized: string
+          response_text: string
+          updated_at: string
+        }
+        Insert: {
+          context_type?: string | null
+          created_at?: string
+          hit_count?: number
+          id?: string
+          last_used_at?: string
+          query_hash: string
+          query_normalized: string
+          response_text: string
+          updated_at?: string
+        }
+        Update: {
+          context_type?: string | null
+          created_at?: string
+          hit_count?: number
+          id?: string
+          last_used_at?: string
+          query_hash?: string
+          query_normalized?: string
+          response_text?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cart_items: {
         Row: {
           brand: string
@@ -514,6 +550,7 @@ export type Database = {
           onboarding_completed_at: string | null
           phone: string | null
           qr_code_number: string
+          skip_tutorial_at_startup: boolean | null
           updated_at: string | null
           username: string | null
         }
@@ -532,6 +569,7 @@ export type Database = {
           onboarding_completed_at?: string | null
           phone?: string | null
           qr_code_number: string
+          skip_tutorial_at_startup?: boolean | null
           updated_at?: string | null
           username?: string | null
         }
@@ -550,6 +588,7 @@ export type Database = {
           onboarding_completed_at?: string | null
           phone?: string | null
           qr_code_number?: string
+          skip_tutorial_at_startup?: boolean | null
           updated_at?: string | null
           username?: string | null
         }
