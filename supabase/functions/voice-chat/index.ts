@@ -102,7 +102,7 @@ RÈGLES :
         .eq('pharmacy_products.pharmacy_id', selectedPharmacyId)
         .eq('pharmacy_products.is_available', true)
         .gt('pharmacy_products.stock_quantity', 0)
-        .limit(100);
+        .limit(40);
 
       if (products && products.length > 0) {
         systemInstructions += `\n\nPRODUITS DISPO (${pharmacy?.name}) :\n${products.map(p => 
@@ -112,7 +112,7 @@ RÈGLES :
       }
     }
 
-    // Get conversation history
+    // Get conversation history (limited for cost optimization)
     const messages = [{ role: 'system', content: systemInstructions }];
     
     if (conversationId) {
@@ -121,7 +121,7 @@ RÈGLES :
         .select('role, content')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true })
-        .limit(10);
+        .limit(6);
 
       if (history) {
         messages.push(...history.map((m: any) => ({ role: m.role, content: m.content })));
@@ -210,7 +210,7 @@ RÈGLES :
       }
     ];
 
-    // Call OpenAI
+    // Call OpenAI with optimizations
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -218,12 +218,12 @@ RÈGLES :
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o-mini',
         messages,
         tools,
         tool_choice: 'auto',
         temperature: 0.7,
-        max_tokens: 150,
+        max_tokens: 120,
       }),
     });
 

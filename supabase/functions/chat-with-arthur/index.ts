@@ -64,14 +64,15 @@ serve(async (req) => {
       }
     }
 
-    // Fetch conversation history if conversationId is provided
+    // Fetch conversation history if conversationId is provided (limited for cost optimization)
     let fullMessages = messages;
     if (conversationId) {
       const { data: historyMessages, error } = await supabase
         .from('messages')
         .select('role, content')
         .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true })
+        .limit(8);
 
       if (error) {
         console.error('Error fetching conversation history:', error);
@@ -99,7 +100,7 @@ serve(async (req) => {
         pharmacyInfo = `\n\nPHARMACIE : ${pharmacy.name}|${pharmacy.address}, ${pharmacy.city}`;
       }
 
-      // Get products available in the selected pharmacy
+      // Get products available in the selected pharmacy (limited for cost optimization)
       const { data: selectedPharmacyProducts } = await supabase
         .from('products')
         .select(`
@@ -119,7 +120,7 @@ serve(async (req) => {
         .eq('pharmacy_products.pharmacy_id', selectedPharmacyId)
         .eq('pharmacy_products.is_available', true)
         .gt('pharmacy_products.stock_quantity', 0)
-        .limit(100);
+        .limit(35);
 
       // Get active promotions from the selected pharmacy
       const now = new Date().toISOString();
@@ -195,7 +196,7 @@ serve(async (req) => {
           };
         }).sort((a, b) => a.distance - b.distance);
 
-        alternativePharmaciesInfo = `\n\nAUTRES PHARMACIES (par distance) :\n${pharmaciesWithDistance.slice(0, 10).map(p => 
+        alternativePharmaciesInfo = `\n\nAUTRES PHARMACIES (par distance) :\n${pharmaciesWithDistance.slice(0, 5).map(p => 
           `${p.name}|${p.address}, ${p.city}|${p.distance.toFixed(1)}km`
         ).join('\n')}`;
       }
@@ -468,13 +469,13 @@ Ton expertise en parapharmacie te permet de :
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           ...fullMessages
         ],
         temperature: 0.7,
-        max_tokens: 1000,
+        max_tokens: 250,
       }),
     });
 
