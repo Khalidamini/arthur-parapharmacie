@@ -652,7 +652,50 @@ Ton expertise en parapharmacie te permet de :
     }
 
     const data = await response.json();
-    const assistantMessage = data.choices[0].message.content;
+    let assistantMessage = data.choices[0].message.content;
+
+    // Normaliser la réponse : toujours un JSON avec un type reconnu
+    try {
+      const parsed = typeof assistantMessage === 'string'
+        ? JSON.parse(assistantMessage)
+        : assistantMessage;
+
+      if (parsed && typeof parsed === 'object') {
+        if (parsed.type === 'products' && Array.isArray(parsed.products) && parsed.products.length > 0) {
+          // OK, format produits conforme
+          assistantMessage = JSON.stringify(parsed);
+        } else if (parsed.type === 'question' && Array.isArray(parsed.options) && parsed.options.length > 0) {
+          // OK, format question conforme
+          assistantMessage = JSON.stringify(parsed);
+        } else {
+          // Si le modèle ne respecte pas le schéma, on force une question de clarification
+          const fallbackQuestion = {
+            type: 'question',
+            question: "Pour bien vous conseiller, pouvez-vous préciser un peu plus votre besoin ?",
+            options: [
+              "Préciser la zone concernée (visage, corps, cuir chevelu...)",
+              "Indiquer depuis quand le problème est présent",
+              "Mentionner d'éventuelles allergies connues",
+              "Autre (je vais l'expliquer dans ma réponse)"
+            ]
+          };
+          assistantMessage = JSON.stringify(fallbackQuestion);
+        }
+      }
+    } catch (_e) {
+      console.error('Erreur de parsing de la réponse OpenAI, utilisation de la question de secours');
+      const fallbackQuestion = {
+        type: 'question',
+        question: "Pour bien vous conseiller, pouvez-vous préciser un peu plus votre besoin ?",
+        options: [
+          "Préciser la zone concernée (visage, corps, cuir chevelu...)",
+          "Indiquer depuis quand le problème est présent",
+          "Mentionner d'éventuelles allergies connues",
+          "Autre (je vais l'expliquer dans ma réponse)"
+        ]
+      };
+      assistantMessage = JSON.stringify(fallbackQuestion);
+    }
 
     console.log('Successfully generated response');
 
