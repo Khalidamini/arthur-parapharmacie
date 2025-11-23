@@ -142,7 +142,7 @@ const Index = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
-          <div className="flex justify-center items-center animate-pulse">
+          <div className="flex justify-center items-center">
             <PharmacyLogos size="xxl" />
           </div>
           <p className="text-muted-foreground">Chargement...</p>
@@ -156,7 +156,7 @@ const Index = () => {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-primary opacity-5"></div>
         <div className="max-w-3xl mx-auto px-4 text-center relative py-[34px]">
-          <div className="flex justify-center items-center mb-6 animate-in zoom-in duration-500">
+          <div className="flex justify-center items-center mb-6">
             <PharmacyLogos size="xxl" />
           </div>
           <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
