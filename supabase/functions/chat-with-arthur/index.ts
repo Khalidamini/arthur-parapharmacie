@@ -43,6 +43,7 @@ serve(async (req) => {
 
     // Fetch user profile for personalization
     let userContext = '';
+    let patientProfile: { is_pregnant?: boolean | null; allergies?: string | null } | null = null;
     if (userId && !isPharmacyStaff) {
       const { data: profile } = await supabase
         .from('profiles')
@@ -51,6 +52,11 @@ serve(async (req) => {
         .single();
 
       if (profile) {
+        patientProfile = {
+          is_pregnant: profile.is_pregnant,
+          allergies: profile.allergies,
+        };
+
         userContext = `\n\nInformations du patient :
 - Sexe : ${profile.gender || 'non renseigné'}
 - Âge : ${profile.age ? `${profile.age} ans` : 'non renseigné'}
@@ -723,38 +729,107 @@ Ton expertise en parapharmacie te permet de :
 
       if (parsed && typeof parsed === 'object') {
         if (parsed.type === 'products' && Array.isArray(parsed.products) && parsed.products.length > 0) {
-          // Compléter les images manquantes avec les photos officielles de la boutique
-          const productIds = parsed.products
-            .map((p: any) => p.id)
-            .filter((id: any) => typeof id === 'string');
+          // Filtrer les produits en fonction du profil patient (allergies, grossesse)
+          if (!isPharmacyStaff && patientProfile) {
+            const allergiesText = (patientProfile.allergies || '').toLowerCase();
+            const allergicToIron =
+              allergiesText.includes('allergique au fer') ||
+              allergiesText.includes('allergie au fer') ||
+              allergiesText.includes('apports en fer') ||
+              allergiesText.includes(' fer') ||
+              allergiesText.includes('fer ') ||
+              allergiesText.includes('iron');
 
-          if (productIds.length > 0) {
-            const { data: dbProducts, error: dbError } = await supabase
-              .from('products')
-              .select('id, image_url')
-              .in('id', productIds);
+            const isPregnant = patientProfile.is_pregnant === true;
 
-            if (dbError) {
-              console.error('Error fetching product images for recommendations:', dbError);
-            } else if (dbProducts) {
-              const imageById = new Map<string, string | null>();
-              for (const p of dbProducts as Array<{ id: string; image_url: string | null }>) {
-                imageById.set(p.id, p.image_url);
-              }
+            if (allergicToIron || isPregnant) {
+              const riskyPregnancyTerms = ['huile essentielle', 'huiles essentielles', 'rétinol', 'retinol'];
 
-              parsed.products = parsed.products.map((p: any) => {
-                const existing = p.image_url;
-                const fromDb = imageById.get(p.id);
-                return {
-                  ...p,
-                  image_url: existing || fromDb || null,
-                };
+              const originalProducts = parsed.products;
+              const safeProducts = originalProducts.filter((p: any) => {
+                const text = `${p.name ?? ''} ${p.reason ?? ''} ${p.category ?? ''}`.toLowerCase();
+
+                if (allergicToIron) {
+                  if (
+                    text.includes(' fer') ||
+                    text.includes('fer ') ||
+                    text.includes('fer+') ||
+                    text.includes('fer +') ||
+                    text.includes('fer-') ||
+                    text.includes('fer,') ||
+                    text.includes(' fer,') ||
+                    text.includes(' fer+') ||
+                    text.includes('iron')
+                  ) {
+                    return false;
+                  }
+                }
+
+                if (isPregnant) {
+                  if (riskyPregnancyTerms.some((term) => text.includes(term))) {
+                    return false;
+                  }
+                }
+
+                return true;
               });
+
+              if (safeProducts.length === 0) {
+                // Aucun produit jugé sûr : on ne prend aucun risque
+                assistantMessage = JSON.stringify({
+                  type: 'question',
+                  question:
+                    "Compte tenu de vos antécédents (grossesse et/ou allergies), je préfère ne pas vous proposer de compléments à distance. Préférez-vous que je vous aide à préparer des questions à poser directement à votre pharmacien ?",
+                  options: [
+                    'Oui, aidez-moi à préparer des questions pour mon pharmacien',
+                    'Je préfère voir directement mon pharmacien',
+                    "Autre (je vais préciser mon besoin)",
+                  ],
+                });
+
+                // On sort tôt pour ne pas continuer le traitement produits
+                parsed.type = 'question';
+              } else {
+                parsed.products = safeProducts;
+                parsed.message = `${parsed.message || ''}\n\n⚠️ Certains produits ont été filtrés automatiquement en fonction de vos allergies/grossesse afin de garantir votre sécurité.`.trim();
+              }
             }
           }
 
-          // OK, format produits conforme avec image_url complétée
-          assistantMessage = JSON.stringify(parsed);
+          if (parsed.type === 'products' && Array.isArray(parsed.products) && parsed.products.length > 0) {
+            // Compléter les images manquantes avec les photos officielles de la boutique
+            const productIds = parsed.products
+              .map((p: any) => p.id)
+              .filter((id: any) => typeof id === 'string');
+
+            if (productIds.length > 0) {
+              const { data: dbProducts, error: dbError } = await supabase
+                .from('products')
+                .select('id, image_url')
+                .in('id', productIds);
+
+              if (dbError) {
+                console.error('Error fetching product images for recommendations:', dbError);
+              } else if (dbProducts) {
+                const imageById = new Map<string, string | null>();
+                for (const p of dbProducts as Array<{ id: string; image_url: string | null }>) {
+                  imageById.set(p.id, p.image_url);
+                }
+
+                parsed.products = parsed.products.map((p: any) => {
+                  const existing = p.image_url;
+                  const fromDb = imageById.get(p.id);
+                  return {
+                    ...p,
+                    image_url: existing || fromDb || null,
+                  };
+                });
+              }
+            }
+
+            // OK, format produits conforme avec image_url complétée
+            assistantMessage = JSON.stringify(parsed);
+          }
         } else if (parsed.type === 'question' && Array.isArray(parsed.options) && parsed.options.length > 0) {
           // Accepter les questions seulement si Arthur n'en a pas déjà posé
           if (questionCount >= 1) {
