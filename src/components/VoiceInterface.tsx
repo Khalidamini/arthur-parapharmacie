@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, MicOff, Volume2 } from 'lucide-react';
-import { AudioRecorder, encodeAudioForAPI, playAudioData, clearAudioQueue } from '@/utils/RealtimeAudio';
+import { Mic, MicOff } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface VoiceInterfaceProps {
   userId: string | null;
@@ -19,9 +19,9 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
   const [isConnected, setIsConnected] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const wsRef = useRef<WebSocket | null>(null);
-  const recorderRef = useRef<AudioRecorder | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const recognitionRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const conversationIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     return () => {
@@ -31,131 +31,73 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
 
   const connect = async () => {
     try {
-      console.log('Requesting microphone access...');
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(track => track.stop()); // Stop immediately, just checking permission
+      // Check Web Speech API support
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       
-      console.log('Initializing audio context...');
-      audioContextRef.current = new AudioContext({ sampleRate: 24000 });
-      
-      // Resume audio context if suspended
-      if (audioContextRef.current.state === 'suspended') {
-        await audioContextRef.current.resume();
+      if (!SpeechRecognition) {
+        throw new Error('Votre navigateur ne supporte pas la reconnaissance vocale');
       }
-      
-      console.log('Connecting to voice chat...');
-      const wsUrl = `wss://gtjmebionytcomoldgjl.supabase.co/functions/v1/realtime-voice-chat?userId=${userId || ''}&selectedPharmacyId=${selectedPharmacyId || ''}`;
-      console.log('WebSocket URL:', wsUrl);
-      
-      wsRef.current = new WebSocket(wsUrl);
 
-      wsRef.current.onopen = () => {
-        console.log('WebSocket connected');
+      // Initialize speech recognition
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.lang = 'fr-FR';
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = false;
+
+      recognitionRef.current.onstart = () => {
+        console.log('Speech recognition started');
         setIsConnected(true);
-        startRecording();
-        
+        setIsListening(true);
         toast({
           title: "🎙️ Connexion établie",
           description: "Arthur vous écoute, parlez naturellement",
         });
       };
 
-      wsRef.current.onmessage = async (event) => {
-        const data = JSON.parse(event.data);
-        console.log('Received message type:', data.type);
-
-        // Handle product display request from Arthur
-        if (data.type === 'display_products' && data.products) {
-          console.log('Displaying products:', data.products);
-          onDisplayProducts?.(data.products);
-        }
-
-        // Handle add to cart request from Arthur
-        if (data.type === 'add_to_cart' && data.product) {
-          console.log('Adding product to cart:', data.product);
-          onAddToCart?.(data.product);
-        }
-
-        // Handle navigation command from Arthur
-        if (data.type === 'navigate' && data.page) {
-          console.log('Navigation command:', data);
-          onNavigate?.(data.page, data.message, data.guidance);
-        }
-
-        // Handle transcript deltas for text display
-        if (data.type === 'response.audio_transcript.delta') {
-          console.log('Transcript delta:', data.delta);
-          onTranscript?.(data.delta, false);
-        }
-
-        // Handle transcript done for final text
-        if (data.type === 'response.audio_transcript.done') {
-          console.log('Transcript done:', data.transcript);
-          onTranscript?.(data.transcript, true);
-        }
-
-        if (data.type === 'response.audio.delta') {
-          setIsSpeaking(true);
-          onSpeakingChange?.(true);
-          
-          // Resume audio context if suspended
-          if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
-            await audioContextRef.current.resume();
-          }
-          
-          const binaryString = atob(data.delta);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-          }
-          
-          if (audioContextRef.current) {
-            await playAudioData(audioContextRef.current, bytes);
-          }
-        } else if (data.type === 'response.audio.done') {
-          console.log('Audio response complete');
-          setIsSpeaking(false);
-          onSpeakingChange?.(false);
-        } else if (data.type === 'input_audio_buffer.speech_started') {
-          console.log('User started speaking');
+      recognitionRef.current.onresult = async (event: any) => {
+        const transcript = event.results[event.results.length - 1][0].transcript;
+        console.log('User said:', transcript);
+        
+        // Display user's transcript
+        onTranscript?.(transcript, true);
+        
+        // Stop listening while processing
+        setIsListening(false);
+        
+        // Process the message
+        await processMessage(transcript);
+        
+        // Resume listening
+        if (recognitionRef.current && isConnected) {
           setIsListening(true);
-        } else if (data.type === 'input_audio_buffer.speech_stopped') {
-          console.log('User stopped speaking');
-          setIsListening(false);
-        } else if (data.type === 'error') {
-          console.error('Server error:', data.error);
+        }
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        if (event.error !== 'no-speech') {
           toast({
             title: "Erreur",
-            description: data.error?.message || "Une erreur est survenue",
+            description: "Erreur de reconnaissance vocale",
             variant: "destructive",
           });
         }
       };
 
-      wsRef.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        toast({
-          title: "Erreur de connexion",
-          description: "Impossible de se connecter au service vocal",
-          variant: "destructive",
-        });
-        disconnect();
+      recognitionRef.current.onend = () => {
+        console.log('Speech recognition ended');
+        if (isConnected) {
+          // Restart if still connected
+          try {
+            recognitionRef.current?.start();
+          } catch (e) {
+            console.log('Recognition restart prevented:', e);
+          }
+        }
       };
 
-      wsRef.current.onclose = (event) => {
-        console.log('WebSocket closed:', event.code, event.reason);
-        if (event.code !== 1000) {
-          toast({
-            title: "Connexion perdue",
-            description: "La connexion vocale a été interrompue",
-            variant: "destructive",
-          });
-        }
-        setIsConnected(false);
-        setIsListening(false);
-        setIsSpeaking(false);
-        stopRecording();
-      };
+      // Start recognition
+      recognitionRef.current.start();
 
     } catch (error) {
       console.error('Error connecting:', error);
@@ -167,53 +109,100 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
     }
   };
 
-  const startRecording = async () => {
+  const processMessage = async (message: string) => {
     try {
-      console.log('Starting recording...');
-      recorderRef.current = new AudioRecorder((audioData) => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-          const encoded = encodeAudioForAPI(audioData);
-          wsRef.current.send(JSON.stringify({
-            type: 'input_audio_buffer.append',
-            audio: encoded
-          }));
+      // Call voice-chat function
+      const { data, error } = await supabase.functions.invoke('voice-chat', {
+        body: {
+          message,
+          userId,
+          selectedPharmacyId,
+          conversationId: conversationIdRef.current
         }
       });
-      await recorderRef.current.start();
+
+      if (error) throw error;
+
+      const { text, toolCalls } = data;
+
+      // Handle tool calls
+      if (toolCalls && toolCalls.length > 0) {
+        for (const toolCall of toolCalls) {
+          if (toolCall.type === 'display_products') {
+            onDisplayProducts?.(toolCall.data.products);
+          } else if (toolCall.type === 'add_to_cart') {
+            onAddToCart?.(toolCall.data);
+          } else if (toolCall.type === 'navigate') {
+            onNavigate?.(toolCall.data.page, toolCall.data.message, toolCall.data.guidance);
+          } else if (toolCall.type === 'search_results') {
+            // Results are included in the text response
+            console.log('Search results:', toolCall.results);
+          }
+        }
+      }
+
+      if (text) {
+        // Display Arthur's text response
+        onTranscript?.(text, true);
+        
+        // Convert to speech
+        await speakText(text);
+      }
+
     } catch (error) {
-      console.error('Error starting recording:', error);
+      console.error('Error processing message:', error);
       toast({
         title: "Erreur",
-        description: "Impossible d'accéder au microphone",
+        description: "Erreur lors du traitement du message",
         variant: "destructive",
       });
-      disconnect();
     }
   };
 
-  const stopRecording = () => {
-    if (recorderRef.current) {
-      console.log('Stopping recording...');
-      recorderRef.current.stop();
-      recorderRef.current = null;
+  const speakText = async (text: string) => {
+    try {
+      setIsSpeaking(true);
+      onSpeakingChange?.(true);
+
+      // Call text-to-speech function
+      const { data, error } = await supabase.functions.invoke('text-to-speech', {
+        body: { text, lang: 'fr' }
+      });
+
+      if (error) throw error;
+
+      // Play audio
+      const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
+      audioRef.current = audio;
+
+      audio.onended = () => {
+        setIsSpeaking(false);
+        onSpeakingChange?.(false);
+        audioRef.current = null;
+      };
+
+      await audio.play();
+
+    } catch (error) {
+      console.error('Error speaking text:', error);
+      setIsSpeaking(false);
+      onSpeakingChange?.(false);
     }
   };
 
   const disconnect = () => {
     console.log('Disconnecting...');
-    stopRecording();
     
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
     }
     
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
     }
     
-    clearAudioQueue();
     setIsConnected(false);
     setIsListening(false);
     setIsSpeaking(false);
