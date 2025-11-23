@@ -1,8 +1,16 @@
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingBag, ShoppingCart, User, Home, Package } from 'lucide-react';
+import { ShoppingBag, ShoppingCart, User, Home, Package, LayoutDashboard, Truck, LucideIcon } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+
+interface FooterLink {
+  to: string;
+  icon: LucideIcon;
+  label: string;
+  isActive: boolean;
+  badge?: number;
+}
 
 const Footer = () => {
   const location = useLocation();
@@ -27,7 +35,35 @@ const Footer = () => {
 
   if (location.pathname.startsWith('/checkout')) return null;
   if (location.pathname.startsWith('/pharmacy')) return null;
-  const allLinks = [
+  
+  const pharmacyLinks: FooterLink[] = [
+    { 
+      to: '/pharmacy-dashboard', 
+      icon: LayoutDashboard, 
+      label: 'Dashboard',
+      isActive: location.pathname === '/pharmacy-dashboard'
+    },
+    { 
+      to: '/pharmacy-pickup-orders', 
+      icon: Package, 
+      label: 'À Emporter',
+      isActive: location.pathname === '/pharmacy-pickup-orders'
+    },
+    { 
+      to: '/pharmacy-delivery-orders', 
+      icon: Truck, 
+      label: 'Livraisons',
+      isActive: location.pathname === '/pharmacy-delivery-orders'
+    },
+    { 
+      to: '/pharmacy-profile', 
+      icon: User, 
+      label: 'Mon Profil',
+      isActive: location.pathname === '/pharmacy-profile'
+    },
+  ];
+
+  const clientLinks: FooterLink[] = [
     { 
       to: '/', 
       icon: Home, 
@@ -45,8 +81,7 @@ const Footer = () => {
       icon: ShoppingCart, 
       label: 'Mon panier',
       badge: totalItems,
-      isActive: location.pathname === '/cart',
-      hideForPharmacist: true
+      isActive: location.pathname === '/cart'
     },
     { 
       to: '/my-orders', 
@@ -62,7 +97,7 @@ const Footer = () => {
     },
   ];
 
-  const links = allLinks.filter(link => !(isPharmacist && link.hideForPharmacist));
+  const links = isPharmacist ? pharmacyLinks : clientLinks;
 
   return (
     <footer className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-lg">
