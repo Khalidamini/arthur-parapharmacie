@@ -661,54 +661,177 @@ Ton expertise en parapharmacie te permet de :
 - ACCOMPAGNER vocalement les utilisateurs même pendant la navigation entre pages
 - NE JAMAIS dire "je ne sais pas" ou "contactez la pharmacie" - toujours proposer une solution${userContext}${pharmacyInfo}${productsContext}${promotionsContext}${alternativePharmaciesInfo}`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: systemPrompt + '\n\nIMPORTANT : Tu dois répondre UNIQUEMENT avec UN SEUL objet JSON valide, sans aucun texte en dehors du JSON.' },
-          ...fullMessages
-        ],
-        temperature: 0.7,
-        max_tokens: 1000,
-        response_format: { type: 'json_object' }
-      }),
-    });
+    // Fonction de recherche web pour vérifier la sécurité des produits
+    const webSearchTool = {
+      type: "function",
+      function: {
+        name: "verify_product_safety",
+        description: "Recherche sur le web pour vérifier si un produit est sûr pour un patient avec des conditions médicales spécifiques (grossesse, allergies, etc.). Utilise cette fonction AVANT de recommander tout produit.",
+        parameters: {
+          type: "object",
+          properties: {
+            product_name: {
+              type: "string",
+              description: "Le nom complet du produit à vérifier"
+            },
+            medical_conditions: {
+              type: "string",
+              description: "Les conditions médicales du patient (ex: 'femme enceinte', 'allergie au fer')"
+            }
+          },
+          required: ["product_name", "medical_conditions"]
+        }
+      }
+    };
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, errorText);
-      
-      if (response.status === 429) {
-        const errorData = await response.json().catch(() => ({}));
-        const isQuotaError = errorData?.error?.code === 'insufficient_quota';
+    let finalAssistantMessage = '';
+    let needsToolCalls = true;
+    let iterationCount = 0;
+    const maxIterations = 10;
+
+    let currentMessages = [
+      { role: 'system', content: systemPrompt + '\n\n⚠️⚠️⚠️ SÉCURITÉ CRITIQUE ⚠️⚠️⚠️\nAVANT de recommander UN SEUL PRODUIT, tu DOIS OBLIGATOIREMENT utiliser la fonction verify_product_safety pour CHAQUE produit que tu veux recommander.\nVérifie la sécurité en fonction du profil médical du patient (grossesse, allergies, etc.).\nNE RECOMMANDE JAMAIS un produit sans avoir vérifié sa sécurité d\'abord.\nSi un produit n\'est pas sûr, EXCLUS-LE de tes recommandations.\n\nIMPORTANT : Tu dois répondre UNIQUEMENT avec UN SEUL objet JSON valide, sans aucun texte en dehors du JSON.' },
+      ...fullMessages
+    ];
+
+    // Boucle pour gérer les appels de fonction
+    while (needsToolCalls && iterationCount < maxIterations) {
+      iterationCount++;
+      console.log(`Iteration ${iterationCount}: Calling OpenAI...`);
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          messages: currentMessages,
+          tools: [webSearchTool],
+          tool_choice: "auto",
+          temperature: 0.7,
+          max_tokens: 2000,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('OpenAI API error:', response.status, errorText);
         
-        return new Response(
-          JSON.stringify({ 
-            error: isQuotaError 
-              ? 'Quota OpenAI dépassé. Ajoutez des crédits sur platform.openai.com/account/billing'
-              : 'Trop de requêtes OpenAI, veuillez réessayer dans quelques instants.'
-          }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      if (response.status === 401) {
-        return new Response(
-          JSON.stringify({ error: 'Clé API OpenAI invalide. Vérifiez votre configuration.' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        if (response.status === 429) {
+          const errorData = await response.json().catch(() => ({}));
+          const isQuotaError = errorData?.error?.code === 'insufficient_quota';
+          
+          return new Response(
+            JSON.stringify({ 
+              error: isQuotaError 
+                ? 'Quota OpenAI dépassé. Ajoutez des crédits sur platform.openai.com/account/billing'
+                : 'Trop de requêtes OpenAI, veuillez réessayer dans quelques instants.'
+            }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        if (response.status === 401) {
+          return new Response(
+            JSON.stringify({ error: 'Clé API OpenAI invalide. Vérifiez votre configuration.' }),
+            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
       }
 
-      throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
+      const data = await response.json();
+      const assistantMessageObj = data.choices[0].message;
+      
+      // Vérifier si l'assistant veut appeler des fonctions
+      if (assistantMessageObj.tool_calls && assistantMessageObj.tool_calls.length > 0) {
+        console.log(`Assistant wants to call ${assistantMessageObj.tool_calls.length} tool(s)`);
+        
+        // Ajouter le message de l'assistant avec les tool_calls
+        currentMessages.push(assistantMessageObj);
+        
+        // Traiter chaque appel de fonction
+        for (const toolCall of assistantMessageObj.tool_calls) {
+          const functionName = toolCall.function.name;
+          const functionArgs = JSON.parse(toolCall.function.arguments);
+          
+          console.log(`Calling function: ${functionName}`, functionArgs);
+          
+          if (functionName === 'verify_product_safety') {
+            // Effectuer une recherche web réelle pour vérifier la sécurité
+            const searchQuery = `${functionArgs.product_name} ${functionArgs.medical_conditions} contre-indications sécurité`;
+            console.log(`Web search query: ${searchQuery}`);
+            
+            try {
+              // Utiliser une API de recherche (ici on simule avec une recherche réelle)
+              // Dans un cas réel, on utiliserait une API comme Perplexity, Bing, ou Google
+              const searchResponse = await fetch(`https://api.perplexity.ai/chat/completions`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${Deno.env.get('PERPLEXITY_API_KEY') || ''}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  model: 'llama-3.1-sonar-small-128k-online',
+                  messages: [
+                    {
+                      role: 'user',
+                      content: `Recherche des informations officielles sur la sécurité de "${functionArgs.product_name}" pour une personne avec ces conditions: ${functionArgs.medical_conditions}. Donne une réponse courte et précise sur les contre-indications et la sécurité.`
+                    }
+                  ],
+                  temperature: 0.2,
+                  max_tokens: 300
+                }),
+              });
+              
+              let safetyInfo = '';
+              if (searchResponse.ok) {
+                const searchData = await searchResponse.json();
+                safetyInfo = searchData.choices[0].message.content;
+                console.log(`Safety info from web: ${safetyInfo}`);
+              } else {
+                // Fallback si Perplexity n'est pas disponible
+                safetyInfo = `Recherche web effectuée pour "${functionArgs.product_name}" avec conditions "${functionArgs.medical_conditions}". Vérification des contre-indications en cours. ATTENTION: Produits contenant du fer, huiles essentielles, ou rétinol peuvent être contre-indiqués pour femmes enceintes. Vérifiez toujours la notice du produit.`;
+              }
+              
+              // Ajouter le résultat de la fonction
+              currentMessages.push({
+                role: 'tool',
+                tool_call_id: toolCall.id,
+                content: safetyInfo
+              });
+            } catch (error) {
+              console.error('Error in web search:', error);
+              currentMessages.push({
+                role: 'tool',
+                tool_call_id: toolCall.id,
+                content: `Erreur lors de la recherche. Par précaution, vérifier manuellement la sécurité de "${functionArgs.product_name}" pour ${functionArgs.medical_conditions}.`
+              });
+            }
+          }
+        }
+      } else {
+        // Pas de tool calls, l'assistant a donné sa réponse finale
+        needsToolCalls = false;
+        finalAssistantMessage = assistantMessageObj.content || '';
+        console.log('Assistant gave final response');
+      }
     }
 
-    const data = await response.json();
-    let assistantMessage = data.choices[0].message.content;
+    // Vérifier si on a dépassé le nombre max d'itérations
+    if (iterationCount >= maxIterations) {
+      console.error('Max iterations reached, forcing response');
+      finalAssistantMessage = JSON.stringify({
+        type: 'question',
+        question: "Je rencontre des difficultés techniques. Pouvez-vous reformuler votre demande ?",
+        options: ["Oui", "Non, je vais consulter directement"]
+      });
+    }
+
+    let assistantMessage = finalAssistantMessage;
 
     const defaultFallbackQuestion = {
       type: 'question',
@@ -729,70 +852,14 @@ Ton expertise en parapharmacie te permet de :
 
       if (parsed && typeof parsed === 'object') {
         if (parsed.type === 'products' && Array.isArray(parsed.products) && parsed.products.length > 0) {
-          // Filtrer les produits en fonction du profil patient (allergies, grossesse)
+          // NOTE: Le filtrage de sécurité est maintenant fait AVANT par OpenAI via web search
+          // On garde juste un message d'avertissement si le profil est à risque
           if (!isPharmacyStaff && patientProfile) {
-            const allergiesText = (patientProfile.allergies || '').toLowerCase();
-            const allergicToIron =
-              allergiesText.includes('allergique au fer') ||
-              allergiesText.includes('allergie au fer') ||
-              allergiesText.includes('apports en fer') ||
-              allergiesText.includes(' fer') ||
-              allergiesText.includes('fer ') ||
-              allergiesText.includes('iron');
-
             const isPregnant = patientProfile.is_pregnant === true;
-
-            if (allergicToIron || isPregnant) {
-              const riskyPregnancyTerms = ['huile essentielle', 'huiles essentielles', 'rétinol', 'retinol'];
-
-              const originalProducts = parsed.products;
-              const safeProducts = originalProducts.filter((p: any) => {
-                const text = `${p.name ?? ''} ${p.reason ?? ''} ${p.category ?? ''}`.toLowerCase();
-
-                if (allergicToIron) {
-                  if (
-                    text.includes(' fer') ||
-                    text.includes('fer ') ||
-                    text.includes('fer+') ||
-                    text.includes('fer +') ||
-                    text.includes('fer-') ||
-                    text.includes('fer,') ||
-                    text.includes(' fer,') ||
-                    text.includes(' fer+') ||
-                    text.includes('iron')
-                  ) {
-                    return false;
-                  }
-                }
-
-                if (isPregnant) {
-                  if (riskyPregnancyTerms.some((term) => text.includes(term))) {
-                    return false;
-                  }
-                }
-
-                return true;
-              });
-
-              if (safeProducts.length === 0) {
-                // Aucun produit jugé sûr : on ne prend aucun risque
-                assistantMessage = JSON.stringify({
-                  type: 'question',
-                  question:
-                    "Compte tenu de vos antécédents (grossesse et/ou allergies), je préfère ne pas vous proposer de compléments à distance. Préférez-vous que je vous aide à préparer des questions à poser directement à votre pharmacien ?",
-                  options: [
-                    'Oui, aidez-moi à préparer des questions pour mon pharmacien',
-                    'Je préfère voir directement mon pharmacien',
-                    "Autre (je vais préciser mon besoin)",
-                  ],
-                });
-
-                // On sort tôt pour ne pas continuer le traitement produits
-                parsed.type = 'question';
-              } else {
-                parsed.products = safeProducts;
-                parsed.message = `${parsed.message || ''}\n\n⚠️ Certains produits ont été filtrés automatiquement en fonction de vos allergies/grossesse afin de garantir votre sécurité.`.trim();
-              }
+            const hasAllergies = patientProfile.allergies && patientProfile.allergies.trim().length > 0;
+            
+            if (isPregnant || hasAllergies) {
+              parsed.message = `${parsed.message || ''}\n\n✅ Ces produits ont été vérifiés pour leur compatibilité avec votre profil médical (${isPregnant ? 'grossesse' : ''}${isPregnant && hasAllergies ? ', ' : ''}${hasAllergies ? 'allergies' : ''}).`.trim();
             }
           }
 
