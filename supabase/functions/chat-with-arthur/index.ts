@@ -76,19 +76,32 @@ Adapte tes recommandations en fonction de ces informations.`;
       }
     }
 
-    // Detect if Arthur has already asked a structured question in this conversation
-    const hasQuestionInHistory = fullMessages.some((msg: { role: string; content: any }) => {
-      if (msg.role !== 'assistant' || !msg.content) return false;
-      if (typeof msg.content === 'string') {
+    // Detect if Arthur has already asked a question AND received user response
+    let hasQuestionWithResponse = false;
+    let lastQuestionIndex = -1;
+    
+    for (let i = 0; i < fullMessages.length; i++) {
+      const msg = fullMessages[i];
+      if (msg.role === 'assistant' && msg.content) {
         try {
-          const parsed = JSON.parse(msg.content);
-          return parsed && typeof parsed === 'object' && parsed.type === 'question';
+          const parsed = typeof msg.content === 'string' ? JSON.parse(msg.content) : msg.content;
+          if (parsed && typeof parsed === 'object' && parsed.type === 'question') {
+            lastQuestionIndex = i;
+          }
         } catch {
-          return msg.content.includes('"type": "question"') || msg.content.includes('"type":"question"');
+          if (typeof msg.content === 'string' && 
+              (msg.content.includes('"type": "question"') || msg.content.includes('"type":"question"'))) {
+            lastQuestionIndex = i;
+          }
         }
       }
-      return false;
-    });
+    }
+    
+    // If Arthur asked a question AND there's at least one user message after it
+    if (lastQuestionIndex !== -1 && fullMessages.length > lastQuestionIndex + 1) {
+      const messagesAfterQuestion = fullMessages.slice(lastQuestionIndex + 1);
+      hasQuestionWithResponse = messagesAfterQuestion.some((m: { role: string; content: any }) => m.role === 'user');
+    }
 
     // Fetch available products and promotions from the selected pharmacy
     let productsContext = '';
@@ -428,35 +441,36 @@ MÉTHODOLOGIE DE CONSEIL (PARAPHARMACIE) :
    - JAMAIS JAMAIS JAMAIS de mention de produits en texte libre - UNIQUEMENT via le format JSON structuré type E
    - Si tu mentionnes un produit sans le format JSON, tu échoues dans ta mission
 
-2. POSER EXACTEMENT 3 QUESTIONS MAXIMUM - UNE SEULE FOIS :
-   🚨🚨🚨 RÈGLE ABSOLUE : Tu poses EXACTEMENT 3 questions PERTINENTES à la PREMIÈRE demande, puis tu passes AUX PRODUITS 🚨🚨🚨
+2. ANALYSE ET QUESTIONS CIBLÉES :
+   🚨🚨🚨 PROCESSUS OBLIGATOIRE 🚨🚨🚨
    
-   - PREMIÈRE DEMANDE du client → Tu DOIS répondre avec type "question" (format A)
-   - Pose EXACTEMENT 3 questions ULTRA-CIBLÉES (pas plus, pas moins)
-   - Chaque question doit avoir 3-5 options à cocher
-   - Questions essentielles uniquement : intensité, durée, type de peau/problème
+   ✅ ÉTAPE 1 - ANALYSE DE LA DEMANDE INITIALE :
+   - Dès qu'un client pose une question, ANALYSE si elle contient TOUTES les informations nécessaires
+   - Infos essentielles selon le contexte : type de problème précis, intensité, durée, type de peau/cheveux, budget, contraintes
+   - Si la demande est COMPLÈTE et PRÉCISE → PASSE DIRECTEMENT aux recommandations produits (format E)
+   - Si des informations CRUCIALES manquent → POSE 2-3 questions ciblées (format A)
    
-   🚨 APRÈS AVOIR POSÉ CES 3 QUESTIONS : TU NE POSES PLUS JAMAIS DE QUESTIONS 🚨
-   → Dès que le client répond (même partiellement), tu passes IMMÉDIATEMENT aux produits (format E)
-   → Tu NE DOIS JAMAIS poser de nouvelles questions après la première série
-   → Si tu as besoin de plus d'infos, tu recommandes quand même avec ce que tu as
+   ✅ ÉTAPE 2 - QUESTIONS (SI NÉCESSAIRE) :
+   - Pose UNIQUEMENT les questions pour les informations manquantes importantes
+   - Maximum 3 questions ciblées avec 3-5 options chacune
+   - Questions pertinentes uniquement : intensité, durée, type de peau/problème, contraintes
+   - Format : { "type": "question", "message": "...", "options": [...] }
+   
+   ✅ ÉTAPE 3 - RECOMMANDATIONS (OBLIGATOIRE) :
+   - APRÈS avoir reçu les réponses OU si la demande initiale était complète
+   - → TOUJOURS recommander des produits (format E)
+   - 🚨 NE JAMAIS reposer de questions après avoir déjà posé ET reçu des réponses
+   - 🚨 Une seule phase de questions maximum par conversation
 
-PROCESSUS DE DÉCISION OBLIGATOIRE ULTRA-STRICT :
+EXEMPLES DE SCÉNARIOS :
 
-Étape 1: PREMIÈRE INTERACTION du client sur un besoin/problème ?
-   → Type "question" (format A) avec EXACTEMENT 3 questions pertinentes
-   → Exemples de structure idéale :
-     Question 1: "Quelle est l'intensité du problème ?" → ["Légère", "Modérée", "Importante"]
-     Question 2: "Depuis combien de temps ?" → ["Quelques jours", "1-2 semaines", "Plus d'un mois"]
-     Question 3: "Quel est votre type de peau ?" → ["Sèche", "Normale", "Grasse", "Mixte", "Sensible"]
+Scénario A - Demande complète :
+Client : "J'ai la peau très sèche avec des rougeurs, j'utilise déjà un nettoyant doux, budget max 50€"
+Arthur : → Recommande DIRECTEMENT des produits (format E) sans poser de questions
 
-Étape 2: Le client a répondu (même à 1 seule question) ?
-   → Type "products" (format E) IMMÉDIATEMENT avec recommandations de produits
-   → TU NE POSES PLUS DE QUESTIONS - c'est terminé
-   → Utilise les réponses pour personnaliser, mais recommande même si infos incomplètes
-
-🚨 INTERDIT ABSOLU : Poser plus de 3 questions ou poser des questions en plusieurs fois
-🚨 OBLIGATOIRE : 3 questions → réponse client → produits (TERMINÉ)
+Scénario B - Demande incomplète :
+Client : "J'ai la peau sèche"
+Arthur : → Pose 2-3 questions (intensité, durée, budget) puis recommande après réponses
 
 FORMAT DE RÉPONSE - Cinq types possibles :
 
@@ -738,7 +752,7 @@ Ton expertise en parapharmacie te permet de :
           assistantMessage = JSON.stringify(parsed);
         } else if (parsed.type === 'question' && Array.isArray(parsed.options) && parsed.options.length > 0) {
           // Questions acceptées uniquement si elles n'ont pas encore été posées
-          if (hasQuestionInHistory) {
+          if (hasQuestionWithResponse) {
             const fallbackAfterQuestions = {
               type: 'products',
               message: "Merci pour vos réponses. Je vais maintenant vous proposer des produits adaptés disponibles dans votre pharmacie.",
@@ -750,7 +764,7 @@ Ton expertise en parapharmacie te permet de :
           }
         } else {
           // Si le modèle ne respecte pas le schéma
-          if (hasQuestionInHistory) {
+          if (hasQuestionWithResponse) {
             const fallbackAfterQuestions = {
               type: 'products',
               message: "Merci pour vos réponses. Je vais maintenant vous proposer des produits adaptés disponibles dans votre pharmacie. Pour des précisions supplémentaires, votre pharmacien pourra vous aider.",
@@ -764,7 +778,7 @@ Ton expertise en parapharmacie te permet de :
       }
     } catch (_e) {
       console.error('Erreur de parsing de la réponse OpenAI');
-      if (hasQuestionInHistory) {
+      if (hasQuestionWithResponse) {
         const fallbackAfterQuestions = {
           type: 'products',
           message: "Merci pour vos réponses. Je vais maintenant vous proposer des produits adaptés disponibles dans votre pharmacie.",
