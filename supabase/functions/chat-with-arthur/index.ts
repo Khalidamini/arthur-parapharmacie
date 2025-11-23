@@ -589,88 +589,87 @@ TU DOIS répondre avec UN SEUL objet JSON valide, sans texte en dehors du JSON.`
           console.log(`Calling function: ${functionName}`, functionArgs);
           
           if (functionName === 'verify_product_safety') {
-            // Effectuer une recherche web RÉELLE pour vérifier la sécurité du produit
             const productName = functionArgs.product_name;
             const medicalConditions = functionArgs.medical_conditions;
             
-            console.log(`🔍 Vérification de sécurité : ${productName} pour ${medicalConditions}`);
+            console.log(`🔍 Vérification de sécurité avec GPT-4 : ${productName} pour ${medicalConditions}`);
             
             try {
-              const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
-              
-              if (!PERPLEXITY_API_KEY) {
-                console.warn('⚠️ PERPLEXITY_API_KEY non configurée - utilisation du fallback');
-                currentMessages.push({
-                  role: 'tool',
-                  tool_call_id: toolCall.id,
-                  content: `ATTENTION : Impossible de vérifier la sécurité de "${productName}" via recherche web. Par PRÉCAUTION, ce produit NE DOIT PAS être recommandé pour ${medicalConditions}. Oriente le patient vers un pharmacien ou médecin pour un conseil personnalisé.`
-                });
-                continue;
-              }
-              
-              // Recherche sur le web avec Perplexity
-              const searchResponse = await fetch(`https://api.perplexity.ai/chat/completions`, {
+              // Utiliser GPT-4 pour analyser la sécurité basée sur ses connaissances médicales
+              const safetyCheckResponse = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
                 headers: {
-                  'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+                  'Authorization': `Bearer ${OPENAI_API_KEY}`,
                   'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                  model: 'llama-3.1-sonar-small-128k-online',
+                  model: 'gpt-4o',
                   messages: [
                     {
                       role: 'system',
-                      content: 'Tu es un expert médical qui analyse la sécurité des produits parapharmaceutiques. Réponds de manière factuelle et précise.'
+                      content: `Tu es un expert médical pharmacologue spécialisé dans l'analyse des contre-indications des produits parapharmaceutiques et compléments alimentaires.
+
+Ton rôle est d'analyser la sécurité d'un produit pour des conditions médicales spécifiques en te basant sur :
+1. Les connaissances pharmacologiques établies
+2. Les contre-indications connues des principes actifs
+3. Les recommandations des autorités de santé (ANSM, EMA, FDA)
+4. Les interactions potentielles avec les conditions médicales
+
+Réponds TOUJOURS selon ce format :
+- ✅ SÛR : Le produit est généralement considéré comme sûr pour ces conditions
+- ⚠️ AVIS MÉDICAL REQUIS : Consultation d'un professionnel de santé nécessaire
+- ❌ CONTRE-INDIQUÉ : Le produit est déconseillé ou contre-indiqué
+
+Sois PRÉCIS, FACTUEL et PRUDENT. En cas de doute, recommande un avis médical.`
                     },
                     {
                       role: 'user',
-                      content: `Analyse la sécurité de "${productName}" pour une personne avec : ${medicalConditions}.
+                      content: `Analyse la sécurité de ce produit :
 
-Recherche les informations officielles sur :
-1. Contre-indications spécifiques pour ces conditions médicales
-2. Avis médical requis ou non
-3. Ingrédients potentiellement problématiques
-4. Recommandations officielles des autorités de santé
+PRODUIT : ${productName}
 
-Réponds avec :
-- ✅ SÛR si le produit est confirmé sûr pour ces conditions
-- ⚠️ AVIS MÉDICAL REQUIS si consultation nécessaire
-- ❌ CONTRE-INDIQUÉ si clairement déconseillé
+CONDITIONS MÉDICALES DU PATIENT : ${medicalConditions}
 
-Sois PRÉCIS et cite les sources officielles.`
+Questions à évaluer :
+1. Ce produit contient-il des ingrédients contre-indiqués pour ces conditions ?
+2. Y a-t-il des risques connus d'interactions ?
+3. Les autorités de santé recommandent-elles un avis médical pour ce type de produit dans ce contexte ?
+4. Quels sont les ingrédients actifs typiques de ce produit et leurs contre-indications ?
+
+Donne ton évaluation avec justification claire et concise (maximum 200 mots).`
                     }
                   ],
                   temperature: 0.2,
-                  max_tokens: 500
+                  max_tokens: 400
                 }),
               });
               
-              if (searchResponse.ok) {
-                const searchData = await searchResponse.json();
-                const safetyInfo = searchData.choices[0].message.content;
-                console.log(`✅ Résultat de recherche web pour ${productName} :`, safetyInfo.substring(0, 200) + '...');
+              if (safetyCheckResponse.ok) {
+                const safetyData = await safetyCheckResponse.json();
+                const safetyAnalysis = safetyData.choices[0].message.content;
+                console.log(`✅ Analyse de sécurité GPT-4 pour ${productName} :`, safetyAnalysis.substring(0, 200) + '...');
                 
                 currentMessages.push({
                   role: 'tool',
                   tool_call_id: toolCall.id,
-                  content: `Résultat de la recherche web pour "${productName}" et conditions "${medicalConditions}" :\n\n${safetyInfo}`
+                  content: `Analyse de sécurité médicale pour "${productName}" avec conditions "${medicalConditions}" :\n\n${safetyAnalysis}`
                 });
               } else {
-                const errorText = await searchResponse.text();
-                console.error('❌ Erreur Perplexity API:', searchResponse.status, errorText);
+                const errorText = await safetyCheckResponse.text();
+                console.error('❌ Erreur GPT-4 safety check:', safetyCheckResponse.status, errorText);
                 
                 currentMessages.push({
                   role: 'tool',
                   tool_call_id: toolCall.id,
-                  content: `ERREUR lors de la recherche web pour "${productName}". Par PRÉCAUTION, NE PAS recommander ce produit pour ${medicalConditions}. Oriente le patient vers un pharmacien ou médecin.`
+                  content: `❌ ERREUR lors de l'analyse de sécurité de "${productName}". Par PRÉCAUTION ABSOLUE, NE PAS recommander ce produit pour ${medicalConditions}. Oriente impérativement le patient vers un pharmacien ou médecin.`
                 });
               }
             } catch (error) {
-              console.error('❌ Erreur lors de la recherche web:', error);
+              console.error('❌ Erreur lors de l\'analyse de sécurité:', error);
               currentMessages.push({
                 role: 'tool',
                 tool_call_id: toolCall.id,
-                content: `ERREUR technique lors de la vérification de "${productName}". Par PRÉCAUTION, NE PAS recommander ce produit pour ${medicalConditions}. Oriente le patient vers un professionnel de santé.`
+                content: `❌ ERREUR TECHNIQUE lors de la vérification de "${productName}". Par PRÉCAUTION MAXIMALE, NE PAS recommander ce produit pour ${medicalConditions}. Orientation obligatoire vers un professionnel de santé.`
               });
             }
           }
