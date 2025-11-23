@@ -83,7 +83,7 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   // Essayer de parser le contenu comme JSON
-  let parsedContent: ParsedQuestion | ParsedProducts | ParsedSalesAdvice | null = null;
+  let parsedContent: ParsedQuestion | ParsedProducts | ParsedSalesAdvice | { type: 'message'; message: string } | null = null;
   let textContent = content;
 
   try {
@@ -94,7 +94,13 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
       // Vérifier que c'est bien un format valide
       if (parsed && typeof parsed === 'object' && parsed.type) {
         parsedContent = parsed;
-        textContent = content.replace(jsonMatch[0], '').trim();
+        
+        // Pour type "message", extraire le message et l'afficher comme texte
+        if (parsed.type === 'message' && parsed.message) {
+          textContent = parsed.message;
+        } else {
+          textContent = content.replace(jsonMatch[0], '').trim();
+        }
       } else {
         // Si le format n'est pas valide, on garde tout en texte
         textContent = content;
