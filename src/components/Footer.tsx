@@ -35,7 +35,6 @@ const Footer = () => {
     checkPharmacistRole();
   }, []);
   if (location.pathname.startsWith('/checkout')) return null;
-  if (location.pathname.startsWith('/pharmacy')) return null;
 
   // Ne rien afficher pendant le chargement
   if (isPharmacist === null) return null;
