@@ -29,6 +29,26 @@ interface ParsedProducts {
   }>;
 }
 
+interface ParsedSalesAdvice {
+  type: 'sales_advice';
+  message: string;
+  main_products?: Array<{
+    name: string;
+    price?: string;
+    selling_points?: string[];
+    customer_benefit?: string;
+    questions_to_ask?: string[];
+  }>;
+  additional_sales?: Array<{
+    name: string;
+    price?: string;
+    reason?: string;
+    upsell_technique?: string;
+  }>;
+  total_basket?: string;
+  closing_tips?: string[];
+}
+
 interface Product {
   id: string;
   name: string;
@@ -57,7 +77,7 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   // Essayer de parser le contenu comme JSON
-  let parsedContent: ParsedQuestion | ParsedProducts | null = null;
+  let parsedContent: ParsedQuestion | ParsedProducts | ParsedSalesAdvice | null = null;
   let textContent = content;
 
   try {
@@ -217,6 +237,104 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
                 >
                   Valider ma sélection
                 </Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Conseils de vente pour le personnel de pharmacie */}
+        {parsedContent?.type === 'sales_advice' && !isUser && (
+          <Card className="bg-gradient-to-br from-primary/10 to-accent/10 border-primary/30">
+            <CardContent className="pt-4 space-y-4">
+              {parsedContent.message && (
+                <p className="text-sm font-medium text-foreground">{parsedContent.message}</p>
+              )}
+              
+              {parsedContent.main_products && parsedContent.main_products.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-sm text-primary">🎯 Produits principaux à proposer</h4>
+                  {parsedContent.main_products.map((product, idx) => (
+                    <div key={idx} className="bg-card/80 backdrop-blur-sm rounded-lg p-3 space-y-2">
+                      <div className="flex justify-between items-start">
+                        <h5 className="font-semibold text-sm">{product.name}</h5>
+                        {product.price && <span className="text-sm font-bold text-primary">{product.price}</span>}
+                      </div>
+                      
+                      {product.customer_benefit && (
+                        <p className="text-xs text-muted-foreground">
+                          <strong>✨ Bénéfice client :</strong> {product.customer_benefit}
+                        </p>
+                      )}
+                      
+                      {product.selling_points && product.selling_points.length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium">💬 Arguments de vente :</p>
+                          <ul className="space-y-1">
+                            {product.selling_points.map((point, pidx) => (
+                              <li key={pidx} className="text-xs text-muted-foreground pl-4">• {point}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {product.questions_to_ask && product.questions_to_ask.length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium">❓ Questions à poser :</p>
+                          <ul className="space-y-1">
+                            {product.questions_to_ask.map((question, qidx) => (
+                              <li key={qidx} className="text-xs text-muted-foreground pl-4">• {question}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {parsedContent.additional_sales && parsedContent.additional_sales.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-sm text-accent">💰 Ventes additionnelles suggérées</h4>
+                  {parsedContent.additional_sales.map((product, idx) => (
+                    <div key={idx} className="bg-card/80 backdrop-blur-sm rounded-lg p-3 space-y-2">
+                      <div className="flex justify-between items-start">
+                        <h5 className="font-semibold text-sm">{product.name}</h5>
+                        {product.price && <span className="text-sm font-bold text-accent">{product.price}</span>}
+                      </div>
+                      
+                      {product.reason && (
+                        <p className="text-xs text-muted-foreground">
+                          <strong>📌 Pourquoi :</strong> {product.reason}
+                        </p>
+                      )}
+                      
+                      {product.upsell_technique && (
+                        <p className="text-xs text-primary/80">
+                          <strong>🎤 Comment présenter :</strong> {product.upsell_technique}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {parsedContent.total_basket && (
+                <div className="bg-primary/10 rounded-lg p-3">
+                  <p className="text-sm font-semibold text-primary">
+                    🛒 Panier total estimé : {parsedContent.total_basket}
+                  </p>
+                </div>
+              )}
+              
+              {parsedContent.closing_tips && parsedContent.closing_tips.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-sm text-accent">✅ Conseils de closing</h4>
+                  <ul className="space-y-1">
+                    {parsedContent.closing_tips.map((tip, idx) => (
+                      <li key={idx} className="text-xs text-muted-foreground pl-4">• {tip}</li>
+                    ))}
+                  </ul>
+                </div>
               )}
             </CardContent>
           </Card>
