@@ -614,11 +614,12 @@ Ton expertise en parapharmacie te permet de :
       body: JSON.stringify({
         model: 'gpt-4o',
         messages: [
-          { role: 'system', content: systemPrompt },
+          { role: 'system', content: systemPrompt + '\n\nIMPORTANT : Tu dois répondre UNIQUEMENT avec UN SEUL objet JSON valide, sans aucun texte en dehors du JSON.' },
           ...fullMessages
         ],
         temperature: 0.7,
         max_tokens: 1000,
+        response_format: { type: 'json_object' }
       }),
     });
 
