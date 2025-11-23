@@ -39,6 +39,11 @@ const Footer = () => {
   // Ne rien afficher pendant le chargement
   if (isPharmacist === null) return null;
   const pharmacyLinks: FooterLink[] = [{
+    to: '/',
+    icon: Home,
+    label: 'Accueil',
+    isActive: location.pathname === '/'
+  }, {
     to: '/pharmacy-dashboard',
     icon: LayoutDashboard,
     label: 'Dashboard',
@@ -89,7 +94,7 @@ const Footer = () => {
   const links = isPharmacist ? pharmacyLinks : clientLinks;
   return <footer className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-lg">
       <div className="container max-w-3xl mx-auto mb-0 pb-0">
-        <div className={`grid gap-0.5 ${isPharmacist ? 'grid-cols-4' : 'grid-cols-5'}`}>
+        <div className={`grid gap-0.5 ${isPharmacist ? 'grid-cols-5' : 'grid-cols-5'}`}>
           {links.map(link => {
           const Icon = link.icon;
           return <Link key={link.to} to={link.to} className={`flex flex-col items-center justify-center py-2 sm:py-3 transition-colors relative ${link.isActive ? 'text-primary bg-primary/5' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}>
