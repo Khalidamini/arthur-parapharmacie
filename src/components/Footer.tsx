@@ -39,6 +39,9 @@ const Footer = () => {
 
   // Ne rien afficher pendant le chargement
   if (isPharmacist === null) return null;
+  
+  // Ne pas afficher le footer pour les membres de pharmacie
+  if (isPharmacist) return null;
   const pharmacyLinks: FooterLink[] = [{
     to: '/pharmacy-dashboard',
     icon: LayoutDashboard,
