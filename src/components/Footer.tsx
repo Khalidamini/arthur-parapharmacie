@@ -89,7 +89,7 @@ const Footer = () => {
   }];
   const links = isPharmacist ? pharmacyLinks : clientLinks;
   return <footer className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-lg">
-      <div className="container max-w-3xl mx-auto mb-0 pb-[7px]">
+      <div className="container max-w-3xl mx-auto mb-0 pb-0">
         <div className={`grid gap-0.5 ${isPharmacist ? 'grid-cols-4' : 'grid-cols-5'}`}>
           {links.map(link => {
           const Icon = link.icon;
