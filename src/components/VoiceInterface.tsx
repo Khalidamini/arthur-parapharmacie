@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, MicOff, Settings } from 'lucide-react';
+import { Mic, MicOff, Settings, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Select,
@@ -28,189 +28,178 @@ interface VoiceInterfaceProps {
   onNavigate?: (page: string, message?: string, guidance?: string) => void;
 }
 
-const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddToCart, onTranscript, onSpeakingChange, onNavigate }: VoiceInterfaceProps) => {
+const VoiceInterface = ({ 
+  userId, 
+  selectedPharmacyId, 
+  onDisplayProducts, 
+  onAddToCart, 
+  onTranscript, 
+  onSpeakingChange, 
+  onNavigate 
+}: VoiceInterfaceProps) => {
   const { toast } = useToast();
   const [isConnected, setIsConnected] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [selectedVoice, setSelectedVoice] = useState<string>('');
-  const [speechRate, setSpeechRate] = useState<number>(1.3);
-  const recognitionRef = useRef<any>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedVoice, setSelectedVoice] = useState<string>('onyx');
+  const [speechSpeed, setSpeechSpeed] = useState<number>(1.0);
+  
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const conversationIdRef = useRef<string | null>(null);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Available OpenAI voices
+  const availableVoices = [
+    { value: 'onyx', label: 'Onyx (Voix grave masculine)' },
+    { value: 'echo', label: 'Echo (Voix masculine)' },
+    { value: 'fable', label: 'Fable (Voix neutre)' },
+  ];
+
+  // Load saved preferences
   useEffect(() => {
-    // Load saved preferences from localStorage
     const savedVoice = localStorage.getItem('arthur-voice-preference');
-    const savedRate = localStorage.getItem('arthur-speech-rate');
+    const savedSpeed = localStorage.getItem('arthur-speech-speed');
     
-    if (savedRate) {
-      setSpeechRate(parseFloat(savedRate));
-    }
-    
-    // Load available voices
-    const loadVoices = () => {
-      if ('speechSynthesis' in window) {
-        const voices = window.speechSynthesis.getVoices();
-        // Filter for French male voices
-        const frenchVoices = voices.filter(voice => 
-          voice.lang.startsWith('fr')
-        );
-        setAvailableVoices(frenchVoices);
-        
-        // Use saved voice if available, otherwise auto-select
-        if (frenchVoices.length > 0) {
-          if (savedVoice && frenchVoices.some(v => v.name === savedVoice)) {
-            setSelectedVoice(savedVoice);
-          } else if (!selectedVoice) {
-            const maleVoice = frenchVoices.find(voice => 
-              voice.name.toLowerCase().includes('male') || 
-              voice.name.toLowerCase().includes('homme') ||
-              voice.name.toLowerCase().includes('thomas') ||
-              voice.name.toLowerCase().includes('daniel') ||
-              voice.name.toLowerCase().includes('henri')
-            );
-            const defaultVoice = (maleVoice || frenchVoices[0]).name;
-            setSelectedVoice(defaultVoice);
-            localStorage.setItem('arthur-voice-preference', defaultVoice);
-          }
-        }
-      }
-    };
-
-    loadVoices();
-    
-    // Voices might load asynchronously
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.onvoiceschanged = loadVoices;
-    }
-
-    return () => {
-      disconnect();
-    };
+    if (savedVoice) setSelectedVoice(savedVoice);
+    if (savedSpeed) setSpeechSpeed(parseFloat(savedSpeed));
   }, []);
 
-  // Save voice preference when changed
+  // Save preferences when changed
   useEffect(() => {
-    if (selectedVoice) {
-      localStorage.setItem('arthur-voice-preference', selectedVoice);
-    }
+    localStorage.setItem('arthur-voice-preference', selectedVoice);
   }, [selectedVoice]);
 
-  // Save speech rate when changed
   useEffect(() => {
-    localStorage.setItem('arthur-speech-rate', speechRate.toString());
-  }, [speechRate]);
+    localStorage.setItem('arthur-speech-speed', speechSpeed.toString());
+  }, [speechSpeed]);
 
   const connect = async () => {
     try {
-      // Check Web Speech API support
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      // Request microphone access
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      if (!SpeechRecognition) {
-        throw new Error('Votre navigateur ne supporte pas la reconnaissance vocale');
-      }
+      // Create MediaRecorder
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm',
+      });
+      
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
 
-      // Initialize speech recognition
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.lang = 'fr-FR';
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = false;
-
-      recognitionRef.current.onstart = () => {
-        console.log('Speech recognition started');
-        setIsConnected(true);
-        setIsListening(true);
-        toast({
-          title: "🎙️ Connexion établie",
-          description: "Arthur vous écoute, parlez naturellement",
-        });
-      };
-
-      recognitionRef.current.onresult = async (event: any) => {
-        const transcript = event.results[event.results.length - 1][0].transcript;
-        console.log('User said:', transcript);
-        
-        // Skip empty or whitespace-only transcripts
-        if (!transcript || transcript.trim().length === 0) {
-          console.log('Skipping empty transcript');
-          return;
-        }
-        
-        // INTERRUPTION: Stop Arthur if he's speaking
-        if (isSpeaking && 'speechSynthesis' in window) {
-          console.log('User interrupted Arthur - stopping speech');
-          window.speechSynthesis.cancel();
-          setIsSpeaking(false);
-          onSpeakingChange?.(false);
-        }
-        
-        // Display user's transcript
-        onTranscript?.(transcript, true);
-        
-        // Process the message (keep listening in background)
-        await processMessage(transcript);
-      };
-
-      recognitionRef.current.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-        if (event.error !== 'no-speech') {
-          toast({
-            title: "Erreur",
-            description: "Erreur de reconnaissance vocale",
-            variant: "destructive",
-          });
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
         }
       };
 
-      recognitionRef.current.onend = () => {
-        console.log('Speech recognition ended, restarting...');
-        // Always restart if still connected and recognition exists
-        if (isConnected && recognitionRef.current) {
-          setTimeout(() => {
-            try {
-              if (recognitionRef.current && isConnected) {
-                recognitionRef.current.start();
-                console.log('Recognition restarted successfully');
-              }
-            } catch (e) {
-              console.log('Recognition restart prevented:', e);
-              // Retry after a short delay
-              setTimeout(() => {
-                if (recognitionRef.current && isConnected) {
-                  try {
-                    recognitionRef.current.start();
-                  } catch (err) {
-                    console.error('Failed to restart recognition:', err);
-                  }
-                }
-              }, 200);
-            }
-          }, 100);
-        }
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        audioChunksRef.current = [];
+        
+        // Process the recorded audio
+        await processAudioBlob(audioBlob);
       };
 
-      // Start recognition
-      recognitionRef.current.start();
+      // Start recording
+      mediaRecorder.start();
+      setIsConnected(true);
+      setIsListening(true);
+      
+      toast({
+        title: "🎙️ Connexion établie",
+        description: "Arthur vous écoute via OpenAI",
+      });
 
     } catch (error) {
       console.error('Error connecting:', error);
       toast({
         title: "Erreur",
-        description: error instanceof Error ? error.message : "Impossible d'accéder au microphone",
+        description: "Impossible d'accéder au microphone",
         variant: "destructive",
       });
     }
   };
 
-  const processMessage = async (message: string) => {
+  const stopListening = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+      setIsListening(false);
+    }
+  };
+
+  const processAudioBlob = async (audioBlob: Blob) => {
+    setIsProcessing(true);
+    
     try {
-      // Additional client-side validation
-      if (!message || message.trim().length === 0) {
-        console.log('Skipping empty message');
+      // Convert blob to base64
+      const reader = new FileReader();
+      reader.readAsDataURL(audioBlob);
+      
+      await new Promise((resolve) => {
+        reader.onloadend = resolve;
+      });
+      
+      const base64Audio = (reader.result as string).split(',')[1];
+
+      // Send to speech-to-text
+      console.log('Sending audio to Whisper...');
+      const { data: sttData, error: sttError } = await supabase.functions.invoke('speech-to-text', {
+        body: { audio: base64Audio }
+      });
+
+      if (sttError) throw sttError;
+
+      const transcript = sttData.text;
+      console.log('Transcribed:', transcript);
+      
+      if (!transcript || transcript.trim().length === 0) {
+        console.log('Empty transcript, skipping');
+        setIsProcessing(false);
+        // Restart listening
+        if (isConnected) {
+          audioChunksRef.current = [];
+          mediaRecorderRef.current?.start();
+          setIsListening(true);
+        }
         return;
       }
 
+      // Stop Arthur if speaking (interruption)
+      if (isSpeaking && currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+        setIsSpeaking(false);
+        onSpeakingChange?.(false);
+      }
+
+      // Display user's transcript
+      onTranscript?.(transcript, true);
+
+      // Process the message with voice-chat
+      await processMessage(transcript);
+
+    } catch (error) {
+      console.error('Error processing audio:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de traiter l'audio",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+      // Restart listening
+      if (isConnected && mediaRecorderRef.current) {
+        audioChunksRef.current = [];
+        mediaRecorderRef.current.start();
+        setIsListening(true);
+      }
+    }
+  };
+
+  const processMessage = async (message: string) => {
+    try {
       // Call voice-chat function
       const { data, error } = await supabase.functions.invoke('voice-chat', {
         body: {
@@ -234,9 +223,6 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
             onAddToCart?.(toolCall.data);
           } else if (toolCall.type === 'navigate') {
             onNavigate?.(toolCall.data.page, toolCall.data.message, toolCall.data.guidance);
-          } else if (toolCall.type === 'search_results') {
-            // Results are included in the text response
-            console.log('Search results:', toolCall.results);
           }
         }
       }
@@ -246,90 +232,107 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
         onTranscript?.(text, true);
         
         // Convert to speech
-        speakText(text);
+        await speakText(text);
       }
 
     } catch (error) {
       console.error('Error processing message:', error);
       toast({
         title: "Erreur",
-        description: "Désolé, je n'ai pas pu traiter votre message. Veuillez réessayer.",
+        description: "Impossible de traiter votre message",
         variant: "destructive",
       });
     }
   };
 
-  const speakText = (text: string) => {
-    if (!text || !('speechSynthesis' in window)) {
-      console.log('Speech synthesis not available');
-      return;
-    }
+  const speakText = async (text: string) => {
+    if (!text) return;
     
     setIsSpeaking(true);
     onSpeakingChange?.(true);
     
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
-    
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'fr-FR';
-    utterance.rate = speechRate; // Use user-selected rate
-    utterance.pitch = 1.0; // Natural pitch (not too low)
-    utterance.volume = 0.95; // Slightly lower for more natural sound
-    
-    // Use selected voice
-    if (selectedVoice) {
-      const voice = availableVoices.find(v => v.name === selectedVoice);
-      if (voice) {
-        utterance.voice = voice;
-        console.log('Using voice:', voice.name, 'at rate:', speechRate);
+    try {
+      console.log('Converting text to speech with OpenAI...');
+      
+      // Call text-to-speech
+      const { data: ttsData, error: ttsError } = await supabase.functions.invoke('text-to-speech', {
+        body: { 
+          text, 
+          voice: selectedVoice,
+          speed: speechSpeed
+        }
+      });
+
+      if (ttsError) throw ttsError;
+
+      // Decode base64 audio and play
+      const audioData = atob(ttsData.audioContent);
+      const arrayBuffer = new ArrayBuffer(audioData.length);
+      const view = new Uint8Array(arrayBuffer);
+      
+      for (let i = 0; i < audioData.length; i++) {
+        view[i] = audioData.charCodeAt(i);
       }
+
+      const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
+      const audioUrl = URL.createObjectURL(blob);
+      
+      const audio = new Audio(audioUrl);
+      currentAudioRef.current = audio;
+      
+      audio.onended = () => {
+        console.log('Speech ended');
+        setIsSpeaking(false);
+        onSpeakingChange?.(false);
+        URL.revokeObjectURL(audioUrl);
+      };
+      
+      audio.onerror = (error) => {
+        console.error('Audio playback error:', error);
+        setIsSpeaking(false);
+        onSpeakingChange?.(false);
+        URL.revokeObjectURL(audioUrl);
+      };
+      
+      await audio.play();
+
+    } catch (error) {
+      console.error('Error speaking text:', error);
+      setIsSpeaking(false);
+      onSpeakingChange?.(false);
+      toast({
+        title: "Erreur vocale",
+        description: "Impossible de générer la voix",
+        variant: "destructive",
+      });
     }
-    
-    utterance.onend = () => {
-      console.log('Speech ended naturally');
-      setIsSpeaking(false);
-      onSpeakingChange?.(false);
-    };
-    
-    utterance.onerror = (error) => {
-      console.error('Speech synthesis error:', error);
-      // 'interrupted' error is normal when user interrupts
-      if (error.error !== 'interrupted') {
-        toast({
-          title: "Erreur vocale",
-          description: "Problème avec la synthèse vocale",
-          variant: "destructive",
-        });
-      }
-      setIsSpeaking(false);
-      onSpeakingChange?.(false);
-    };
-    
-    window.speechSynthesis.speak(utterance);
   };
 
   const disconnect = () => {
     console.log('Disconnecting...');
     
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
+    if (mediaRecorderRef.current) {
+      if (mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      mediaRecorderRef.current = null;
     }
     
-    // Cancel any ongoing speech
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
     }
     
     setIsConnected(false);
     setIsListening(false);
     setIsSpeaking(false);
+    setIsProcessing(false);
   };
 
   return (
     <div className="flex items-center justify-between w-full gap-2 px-2 py-2 bg-muted/50 rounded-lg">
-      {/* Voice Visualizer - inline next to mic */}
+      {/* Voice Visualizer */}
       {isConnected && isSpeaking && (
         <div className="flex items-center gap-2 flex-1 animate-in fade-in slide-in-from-left-2 duration-300">
           <div className="flex items-center gap-1 h-8">
@@ -349,20 +352,21 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
         </div>
       )}
       
+      {/* Processing indicator */}
+      {isProcessing && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span className="hidden sm:inline">Traitement...</span>
+        </div>
+      )}
+      
       {/* Status indicator */}
-      {isConnected && !isSpeaking && (
+      {isConnected && !isSpeaking && !isProcessing && (
         <div className="flex items-center gap-2 text-xs flex-shrink-0">
           {isListening && (
             <div className="flex items-center gap-1 text-green-600 animate-pulse">
               <Mic className="h-4 w-4" />
-              <span className="hidden sm:inline">Vous parlez</span>
-            </div>
-          )}
-          
-          {!isListening && (
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <Mic className="h-4 w-4" />
-              <span className="hidden sm:inline">En écoute</span>
+              <span className="hidden sm:inline">En écoute OpenAI</span>
             </div>
           )}
         </div>
@@ -382,15 +386,15 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
         <PopoverContent className="w-80" align="end">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="voice-select">Voix masculine</Label>
+              <Label htmlFor="voice-select">Voix OpenAI</Label>
               <Select value={selectedVoice} onValueChange={setSelectedVoice}>
                 <SelectTrigger id="voice-select">
                   <SelectValue placeholder="Sélectionnez une voix" />
                 </SelectTrigger>
                 <SelectContent>
                   {availableVoices.map((voice) => (
-                    <SelectItem key={voice.name} value={voice.name}>
-                      {voice.name}
+                    <SelectItem key={voice.value} value={voice.value}>
+                      {voice.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -400,15 +404,15 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="speed-slider">Vitesse</Label>
-                <span className="text-sm text-muted-foreground">{speechRate.toFixed(1)}x</span>
+                <span className="text-sm text-muted-foreground">{speechSpeed.toFixed(1)}x</span>
               </div>
               <Slider
                 id="speed-slider"
                 min={0.5}
                 max={2}
                 step={0.1}
-                value={[speechRate]}
-                onValueChange={(value) => setSpeechRate(value[0])}
+                value={[speechSpeed]}
+                onValueChange={(value) => setSpeechSpeed(value[0])}
                 className="w-full"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
@@ -421,7 +425,7 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
         </PopoverContent>
       </Popover>
 
-      {/* Control button */}
+      {/* Control buttons */}
       {!isConnected ? (
         <Button 
           onClick={connect}
@@ -432,15 +436,28 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
           <span className="hidden sm:inline">Parler</span>
         </Button>
       ) : (
-        <Button 
-          onClick={disconnect}
-          size="sm"
-          variant="secondary"
-          className="flex-shrink-0"
-        >
-          <MicOff className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">Arrêter</span>
-        </Button>
+        <>
+          {isListening && (
+            <Button 
+              onClick={stopListening}
+              size="sm"
+              variant="outline"
+              className="flex-shrink-0"
+            >
+              <MicOff className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Pause</span>
+            </Button>
+          )}
+          <Button 
+            onClick={disconnect}
+            size="sm"
+            variant="secondary"
+            className="flex-shrink-0"
+          >
+            <MicOff className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Arrêter</span>
+          </Button>
+        </>
       )}
     </div>
   );
