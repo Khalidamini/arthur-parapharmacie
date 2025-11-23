@@ -164,6 +164,7 @@ const Index = () => {
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
             Votre assistant en parapharmacie.
+            <br />
             {isPharmacist
               ? "Je vous aide à améliorer les conseils et la vente à vos clients."
               : "Je vous conseils et trouve les produits qui correspondent à vos besoins."}
