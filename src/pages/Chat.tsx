@@ -630,7 +630,7 @@ const Chat = () => {
           </div>
 
           {/* Input & Voice Interface - Fixed above footer */}
-          <div className="fixed bottom-12 sm:bottom-24 left-0 right-0 bg-card border-t border-border shadow-xl z-30">
+          <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-xl z-30 pb-16 sm:pb-20">
             {/* Promotions Slider */}
             {promotions.length > 0 && <div className="border-b border-border bg-muted/30 backdrop-blur-sm">
                 <div className="w-full px-4 py-3 max-w-4xl mx-auto">
