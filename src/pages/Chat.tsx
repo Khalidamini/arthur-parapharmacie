@@ -511,7 +511,7 @@ const Chat = () => {
               {/* Welcome Message */}
               {messages.length === 0 && <div className="text-center animate-in fade-in duration-500 mt-0 mb-0 py-0">
                   <div className="inline-flex h-16 w-16 items-center justify-center mb-4">
-                    <PharmacyLogos size="lg" />
+                    <PharmacyLogos size="xl" />
                   </div>
                   <h2 className="text-2xl font-bold text-foreground mb-2">
                     Bonjour{username ? ` ${username}` : ""} ! Je suis Arthur
