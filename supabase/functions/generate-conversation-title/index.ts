@@ -13,21 +13,21 @@ serve(async (req) => {
   try {
     const { firstUserMessage } = await req.json();
     
-    const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     
-    if (!deepseekApiKey) {
-      throw new Error('DeepSeek API key not configured');
+    if (!openaiApiKey) {
+      throw new Error('OpenAI API key not configured');
     }
 
     // Generate a short title based on the first user message
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${deepseekApiKey}`,
+        'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: 'gpt-3.5-turbo',
         messages: [
           {
             role: 'system',

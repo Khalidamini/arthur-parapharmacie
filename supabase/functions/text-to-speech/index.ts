@@ -1,5 +1,4 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,36 +12,29 @@ serve(async (req) => {
   }
 
   try {
-    const { text, voice } = await req.json();
+    const { text, lang = 'fr' } = await req.json();
 
     if (!text) {
       throw new Error('Text is required');
     }
 
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY is not configured');
-    }
+    console.log('Generating speech with gTTS for text:', text.substring(0, 50));
 
-    // Generate speech from text using OpenAI TTS
-    const response = await fetch('https://api.openai.com/v1/audio/speech', {
-      method: 'POST',
+    // Use Google Translate TTS API (free)
+    // This is the same API that gTTS library uses
+    const encodedText = encodeURIComponent(text);
+    const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodedText}`;
+
+    // Fetch audio from Google TTS
+    const response = await fetch(ttsUrl, {
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
       },
-      body: JSON.stringify({
-        model: 'tts-1',
-        input: text,
-        voice: voice || 'alloy',
-        response_format: 'mp3',
-      }),
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenAI TTS error:', response.status, errorText);
-      throw new Error(`Failed to generate speech: ${errorText}`);
+      console.error('Google TTS error:', response.status);
+      throw new Error(`Failed to generate speech: ${response.statusText}`);
     }
 
     // Convert audio buffer to base64
@@ -50,6 +42,8 @@ serve(async (req) => {
     const base64Audio = btoa(
       String.fromCharCode(...new Uint8Array(arrayBuffer))
     );
+
+    console.log('Successfully generated audio with gTTS');
 
     return new Response(
       JSON.stringify({ audioContent: base64Audio }),
