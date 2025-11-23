@@ -1,11 +1,28 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { encodeHex } from "https://deno.land/std@0.224.0/encoding/hex.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Normalize query for cache matching
+function normalizeQuery(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[?!.,;:\s]+/g, ' ')
+    .replace(/\s+/g, ' ');
+}
+
+// Generate hash for cache key
+async function generateQueryHash(normalizedQuery: string): Promise<string> {
+  const msgUint8 = new TextEncoder().encode(normalizedQuery);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+  return encodeHex(hashBuffer);
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -448,6 +465,43 @@ Ton expertise en parapharmacie te permet de :
 - ACCOMPAGNER vocalement les utilisateurs même pendant la navigation entre pages
 - NE JAMAIS dire "je ne sais pas" ou "contactez la pharmacie" - toujours proposer une solution${userContext}${pharmacyInfo}${productsContext}${promotionsContext}${alternativePharmaciesInfo}`;
 
+    // Check cache for simple queries (short conversations with no complex context)
+    const lastUserMessage = fullMessages.filter((m: any) => m.role === 'user').pop();
+    
+    if (lastUserMessage?.content && fullMessages.length <= 3) {
+      const normalizedQuery = normalizeQuery(lastUserMessage.content);
+      const queryHash = await generateQueryHash(normalizedQuery);
+
+      const { data: cachedResponse } = await supabase
+        .from('arthur_response_cache')
+        .select('response_text, id, hit_count')
+        .eq('query_hash', queryHash)
+        .single();
+
+      if (cachedResponse) {
+        console.log('✅ Cache hit! Returning cached response (hit count:', cachedResponse.hit_count, ')');
+        
+        // Update cache statistics
+        await supabase
+          .from('arthur_response_cache')
+          .update({
+            hit_count: cachedResponse.hit_count + 1,
+            last_used_at: new Date().toISOString()
+          })
+          .eq('id', cachedResponse.id);
+
+        return new Response(
+          JSON.stringify({ 
+            message: cachedResponse.response_text,
+            fromCache: true 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      console.log('❌ Cache miss, calling OpenAI API');
+    }
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -493,8 +547,34 @@ Ton expertise en parapharmacie te permet de :
 
     console.log('Successfully generated response');
 
+    // Save to cache if it's a simple Q&A (short response, not too complex conversation)
+    if (lastUserMessage?.content && assistantMessage.length < 2000 && fullMessages.length <= 3) {
+      const normalizedQuery = normalizeQuery(lastUserMessage.content);
+      const queryHash = await generateQueryHash(normalizedQuery);
+
+      const { error: cacheError } = await supabase
+        .from('arthur_response_cache')
+        .upsert({
+          query_normalized: normalizedQuery,
+          query_hash: queryHash,
+          response_text: assistantMessage,
+          context_type: 'general',
+          hit_count: 1,
+          last_used_at: new Date().toISOString()
+        }, { onConflict: 'query_hash' });
+
+      if (cacheError) {
+        console.error('❌ Cache save error:', cacheError);
+      } else {
+        console.log('✅ Response cached successfully');
+      }
+    }
+
     return new Response(
-      JSON.stringify({ message: assistantMessage }),
+      JSON.stringify({ 
+        message: assistantMessage,
+        fromCache: false 
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
