@@ -131,6 +131,12 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
         const transcript = event.results[event.results.length - 1][0].transcript;
         console.log('User said:', transcript);
         
+        // Skip empty or whitespace-only transcripts
+        if (!transcript || transcript.trim().length === 0) {
+          console.log('Skipping empty transcript');
+          return;
+        }
+        
         // Display user's transcript
         onTranscript?.(transcript, true);
         
@@ -184,10 +190,16 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
 
   const processMessage = async (message: string) => {
     try {
+      // Additional client-side validation
+      if (!message || message.trim().length === 0) {
+        console.log('Skipping empty message');
+        return;
+      }
+
       // Call voice-chat function
       const { data, error } = await supabase.functions.invoke('voice-chat', {
         body: {
-          message,
+          message: message.trim(),
           userId,
           selectedPharmacyId,
           conversationId: conversationIdRef.current
@@ -226,7 +238,7 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
       console.error('Error processing message:', error);
       toast({
         title: "Erreur",
-        description: "Erreur lors du traitement du message",
+        description: "Désolé, je n'ai pas pu traiter votre message. Veuillez réessayer.",
         variant: "destructive",
       });
     }
