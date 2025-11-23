@@ -137,6 +137,14 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
           return;
         }
         
+        // INTERRUPTION: Stop Arthur if he's speaking
+        if (isSpeaking && 'speechSynthesis' in window) {
+          console.log('User interrupted Arthur - stopping speech');
+          window.speechSynthesis.cancel();
+          setIsSpeaking(false);
+          onSpeakingChange?.(false);
+        }
+        
         // Display user's transcript
         onTranscript?.(transcript, true);
         
@@ -266,8 +274,8 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'fr-FR';
     utterance.rate = speechRate; // Use user-selected rate
-    utterance.pitch = 0.85; // Lower pitch for male voice
-    utterance.volume = 1.0;
+    utterance.pitch = 1.0; // Natural pitch (not too low)
+    utterance.volume = 0.95; // Slightly lower for more natural sound
     
     // Use selected voice
     if (selectedVoice) {
@@ -279,12 +287,21 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
     }
     
     utterance.onend = () => {
+      console.log('Speech ended naturally');
       setIsSpeaking(false);
       onSpeakingChange?.(false);
     };
     
     utterance.onerror = (error) => {
       console.error('Speech synthesis error:', error);
+      // 'interrupted' error is normal when user interrupts
+      if (error.error !== 'interrupted') {
+        toast({
+          title: "Erreur vocale",
+          description: "Problème avec la synthèse vocale",
+          variant: "destructive",
+        });
+      }
       setIsSpeaking(false);
       onSpeakingChange?.(false);
     };
