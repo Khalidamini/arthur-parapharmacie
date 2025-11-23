@@ -27,24 +27,19 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Build system instructions with user context
-    let systemInstructions = `Tu es Arthur, assistant vocal avenant, gentil et compatissant, spécialisé en produits parapharmaceutiques.
+    // Build optimized system instructions
+    let systemInstructions = `Tu es Arthur, assistant vocal parapharmaceutique. Réponds TOUJOURS dans la langue du client.
 
-Tu communiques de vive voix avec les clients dans leur langue (français, anglais, etc.). Adapte automatiquement ta langue à celle du client.
+PERSONNALITÉ : Avenant, gentil, compatissant, chaleureux et proactif.
 
-TON CARACTÈRE :
-- AVENANT et accueillant
-- GENTIL et bienveillant
-- COMPATISSANT et à l'écoute
-- Ton CHALEUREUX et RASSURANT
+EXPERTISE : Produits parapharmaceutiques UNIQUEMENT (pas de médicaments, pas de diagnostic, pas de prescription).
 
-TU ES SPÉCIALISTE EN PARAPHARMACIE UNIQUEMENT. Tu NE prescris JAMAIS de médicaments, tu NE fais JAMAIS de diagnostic médical, tu NE remplaces JAMAIS le pharmacien ou médecin.
-
-RÈGLES IMPÉRATIVES :
-- Sois PROACTIF : propose régulièrement des produits spécifiques adaptés aux besoins du client
-- Suggère des produits complémentaires pour maximiser les ventes tout en restant éthique
-- Si un produit n'est PAS disponible dans la pharmacie sélectionnée, indique les pharmacies où il est disponible
-- En cas de doute médical, oriente vers le pharmacien ou médecin`;
+RÈGLES STRICTES :
+1. Propose ACTIVEMENT des produits disponibles avec leurs IDs exacts
+2. Suggère des compléments pertinents (routine complète)
+3. Si produit indisponible : cherche dans autres pharmacies ET propose alternatives locales
+4. Doute médical = orienter vers pharmacien/médecin
+5. Utilise les tools pour display_products, add_to_cart, search_all_pharmacies, navigate`;
 
     // Fetch user profile
     if (userId) {
@@ -55,10 +50,15 @@ RÈGLES IMPÉRATIVES :
         .single();
 
       if (profile) {
-        systemInstructions += `\n\nInformations du patient :
-- Sexe : ${profile.gender || 'non renseigné'}
-- Âge : ${profile.age ? `${profile.age} ans` : 'non renseigné'}
-${profile.gender === 'femme' && profile.is_pregnant ? '- Enceinte : Oui\n' : ''}${profile.allergies ? `- Allergies : ${profile.allergies}\n` : ''}${profile.medical_history ? `- Antécédents médicaux : ${profile.medical_history}\n` : ''}`;
+        const profil = [];
+        if (profile.gender) profil.push(`Sexe: ${profile.gender}`);
+        if (profile.age) profil.push(`Âge: ${profile.age}ans`);
+        if (profile.gender === 'femme' && profile.is_pregnant) profil.push('Enceinte');
+        if (profile.allergies) profil.push(`Allergies: ${profile.allergies}`);
+        if (profile.medical_history) profil.push(`Antécédents: ${profile.medical_history}`);
+        if (profil.length > 0) {
+          systemInstructions += `\n\nPROFIL CLIENT : ${profil.join(' | ')} → Adapte tes conseils`;
+        }
       }
     }
 
@@ -96,9 +96,10 @@ ${profile.gender === 'femme' && profile.is_pregnant ? '- Enceinte : Oui\n' : ''}
         .limit(100);
 
       if (products && products.length > 0) {
-        systemInstructions += `\n\nProduits disponibles :\n${products.map(p => 
-          `- ${p.name} (${p.brand}) - ${p.category} - ${p.price}€`
-        ).join('\n')}`;
+        systemInstructions += `\n\nPRODUITS DISPO (${pharmacy?.name}) :\n${products.map(p => 
+          `ID:${p.id}|${p.name}|${p.brand}|${p.category}|${p.price}€`
+        ).join('\n')}
+→ Utilise display_products pour montrer, add_to_cart pour ajouter (avec ID exact)`;
       }
     }
 
@@ -212,7 +213,8 @@ ${profile.gender === 'femme' && profile.is_pregnant ? '- Enceinte : Oui\n' : ''}
         messages,
         tools,
         tool_choice: 'auto',
-        temperature: 0.8,
+        temperature: 0.7,
+        max_tokens: 500,
       }),
     });
 
