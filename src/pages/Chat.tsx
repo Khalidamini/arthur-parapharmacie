@@ -13,6 +13,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { useCart } from "@/contexts/CartContext";
 import VoiceInterface from "@/components/VoiceInterface";
+import PharmacyLogos from "@/components/PharmacyLogos";
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -495,7 +496,7 @@ const Chat = () => {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div className="flex items-center gap-3 min-w-0 flex-1">
-                <img src="/icon-192.png" alt="Arthur Logo" className="h-10 w-10 rounded-full flex-shrink-0" />
+                <PharmacyLogos size="md" />
                 <div className="min-w-0 flex-1">
                   <h1 className="font-semibold text-foreground text-base">Arthur</h1>
                   <p className="text-xs text-muted-foreground truncate">Assistant parapharmacie</p>
@@ -510,7 +511,7 @@ const Chat = () => {
               {/* Welcome Message */}
               {messages.length === 0 && <div className="text-center animate-in fade-in duration-500 mt-0 mb-0 py-0">
                   <div className="inline-flex h-16 w-16 items-center justify-center mb-4">
-                    <img src="/icon-192.png" alt="Arthur Logo" className="h-16 w-16 rounded-full" />
+                    <PharmacyLogos size="lg" />
                   </div>
                   <h2 className="text-2xl font-bold text-foreground mb-2">
                     Bonjour{username ? ` ${username}` : ""} ! Je suis Arthur
