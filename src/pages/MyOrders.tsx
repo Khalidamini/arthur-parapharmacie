@@ -151,15 +151,14 @@ const MyOrders = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Logos */}
-        <div className="flex justify-center items-center mb-6">
+        {/* Header with Logos and Back Button */}
+        <div className="flex items-center justify-between mb-6">
           <PharmacyLogos size="md" />
+          <Button variant="ghost" onClick={() => navigate('/')}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Retour
+          </Button>
         </div>
-
-        <Button variant="ghost" onClick={() => navigate('/')} className="mb-4">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Retour à l'accueil
-        </Button>
         
         <div className="flex items-center gap-3 mb-6">
           <ShoppingBag className="h-8 w-8 text-primary" />

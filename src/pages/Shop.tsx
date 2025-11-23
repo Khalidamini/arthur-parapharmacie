@@ -198,23 +198,23 @@ const Shop = () => {
   }
   return <div className="min-h-screen bg-background p-4 pb-24">
       <div className="max-w-3xl mx-auto">
-        {/* Logos */}
-        <div className="flex justify-center items-center mb-6">
+        {/* Header with Logos and Back Button */}
+        <div className="flex items-center justify-between mb-6">
           <PharmacyLogos size="md" />
+          <Button variant="ghost" onClick={() => navigate("/")}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Retour
+          </Button>
         </div>
 
-        {/* Header */}
+        {/* Actions */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <Button variant="ghost" onClick={() => navigate("/")}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Retour
-            </Button>
-            <Button variant="outline" onClick={() => navigate('/cart')}>
-              <ShoppingBag className="mr-2 h-4 w-4" />
-              Panier ({cart.totalItems})
-            </Button>
-          </div>
+          <Button variant="outline" onClick={() => navigate('/cart')}>
+            <ShoppingBag className="mr-2 h-4 w-4" />
+            Panier ({cart.totalItems})
+          </Button>
+        </div>
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold mb-2">Boutique</h1>

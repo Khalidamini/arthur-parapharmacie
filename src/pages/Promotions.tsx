@@ -10,6 +10,7 @@ import { Search, ArrowLeft, Tag, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
 import Footer from '@/components/Footer';
+import PharmacyLogos from '@/components/PharmacyLogos';
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -166,14 +167,16 @@ const Promotions = () => {
   return (
     <div className="min-h-screen bg-background p-4 pb-24">
       <div className="max-w-3xl mx-auto">
-        {/* Header */}
+        {/* Header with Logos and Back Button */}
+        <div className="flex items-center justify-between mb-6">
+          <PharmacyLogos size="md" />
+          <Button variant="ghost" onClick={() => navigate("/shop")}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Retour
+          </Button>
+        </div>
+        
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <Button variant="ghost" onClick={() => navigate("/shop")}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Retour à la boutique
-            </Button>
-          </div>
           <h1 className="text-3xl font-bold">Promotions</h1>
           <p className="text-muted-foreground">{pharmacyName}</p>
         </div>
