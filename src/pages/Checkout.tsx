@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { addDays, format } from "date-fns";
 import { fr } from "date-fns/locale";
+import PharmacyLogos from '@/components/PharmacyLogos';
 export default function Checkout() {
   const {
     cartId
@@ -232,10 +233,14 @@ export default function Checkout() {
     paddingBottom: 'calc(env(safe-area-inset-bottom) + 120px)'
   }}>
       <div className="max-w-3xl mx-auto">
-        <Button variant="ghost" onClick={() => navigate('/cart')} className="mb-4">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Retour au panier
-        </Button>
+        {/* Header with Logos and Back Button */}
+        <div className="flex items-center justify-between mb-6">
+          <PharmacyLogos size="md" />
+          <Button variant="ghost" onClick={() => navigate('/cart')}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Retour
+          </Button>
+        </div>
 
         <Card>
           <CardHeader>

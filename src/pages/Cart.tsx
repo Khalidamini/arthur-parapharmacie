@@ -207,16 +207,16 @@ export default function Cart() {
   return (
     <div className="min-h-screen bg-background p-4 pb-24">
       <div className="max-w-3xl mx-auto">
-        {/* Logos */}
-        <div className="flex justify-center items-center mb-6">
+        {/* Header with Logos and Back Button */}
+        <div className="flex items-center justify-between mb-6">
           <PharmacyLogos size="md" />
-        </div>
-
-        <div className="mb-6">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
+          <Button variant="ghost" onClick={() => navigate(-1)}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Retour
           </Button>
+        </div>
+
+        <div className="mb-6">
           <div className="flex items-center gap-2 mb-2">
             <ShoppingBag className="h-8 w-8" />
             <h1 className="text-3xl font-bold">Mes Paniers</h1>

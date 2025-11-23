@@ -7,6 +7,7 @@ import { ArrowLeft, Calendar, Tag, Trash2, MessageSquare, Bot, User, MessageCirc
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Footer from '@/components/Footer';
+import PharmacyLogos from '@/components/PharmacyLogos';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -278,8 +279,10 @@ const Recommendations = () => {
     <div className="min-h-screen bg-gradient-subtle pb-20">{/* Ajout de padding-bottom pour le footer */}
       {/* Header */}
       <div className="bg-card border-b border-border shadow-sm">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-3xl mx-auto px-4 py-4">
+          {/* Header with Logos and Back Button */}
+          <div className="flex items-center justify-between mb-2">
+            <PharmacyLogos size="md" />
             <Button
               variant="ghost"
               size="icon"
@@ -288,8 +291,8 @@ const Recommendations = () => {
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-xl font-bold text-foreground">Mon compte</h1>
           </div>
+          <h1 className="text-xl font-bold text-foreground">Mon compte</h1>
         </div>
       </div>
 

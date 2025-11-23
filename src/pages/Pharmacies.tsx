@@ -19,6 +19,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import QRCode from "qrcode";
 import Footer from "@/components/Footer";
+import PharmacyLogos from '@/components/PharmacyLogos';
 import { useCart } from "@/contexts/CartContext";
 interface Pharmacy {
   id: string;
@@ -214,10 +215,15 @@ const Pharmacies = () => {
     <div className="min-h-screen bg-gradient-subtle pb-24">
       <div className="bg-card border-b border-border shadow-sm">
         <div className="max-w-3xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-3 mb-4">
+          {/* Header with Logos and Back Button */}
+          <div className="flex items-center justify-between mb-4">
+            <PharmacyLogos size="md" />
             <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="rounded-full">
               <ArrowLeft className="h-5 w-5" />
             </Button>
+          </div>
+
+          <div className="flex items-center gap-3 mb-4">
             <h1 className="text-xl font-bold text-foreground flex-1">Pharmacies affiliées</h1>
             <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)} className="gap-2">
               <SlidersHorizontal className="h-4 w-4" />
