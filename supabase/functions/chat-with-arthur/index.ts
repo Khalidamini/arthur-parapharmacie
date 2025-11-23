@@ -76,31 +76,19 @@ Adapte tes recommandations en fonction de ces informations.`;
       }
     }
 
-    // Detect if Arthur has already asked a question AND received user response
-    let hasQuestionWithResponse = false;
-    let lastQuestionIndex = -1;
-    
-    for (let i = 0; i < fullMessages.length; i++) {
-      const msg = fullMessages[i];
+    // Count how many questions Arthur has asked in this conversation
+    let questionCount = 0;
+    for (const msg of fullMessages) {
       if (msg.role === 'assistant' && msg.content) {
         try {
           const parsed = typeof msg.content === 'string' ? JSON.parse(msg.content) : msg.content;
           if (parsed && typeof parsed === 'object' && parsed.type === 'question') {
-            lastQuestionIndex = i;
+            questionCount++;
           }
         } catch {
-          if (typeof msg.content === 'string' && 
-              (msg.content.includes('"type": "question"') || msg.content.includes('"type":"question"'))) {
-            lastQuestionIndex = i;
-          }
+          // Ignore parsing errors
         }
       }
-    }
-    
-    // If Arthur asked a question AND there's at least one user message after it
-    if (lastQuestionIndex !== -1 && fullMessages.length > lastQuestionIndex + 1) {
-      const messagesAfterQuestion = fullMessages.slice(lastQuestionIndex + 1);
-      hasQuestionWithResponse = messagesAfterQuestion.some((m: { role: string; content: any }) => m.role === 'user');
     }
 
     // Fetch available products and promotions from the selected pharmacy
@@ -441,26 +429,22 @@ MÉTHODOLOGIE DE CONSEIL (PARAPHARMACIE) :
    - JAMAIS JAMAIS JAMAIS de mention de produits en texte libre - UNIQUEMENT via le format JSON structuré type E
    - Si tu mentionnes un produit sans le format JSON, tu échoues dans ta mission
 
-2. ANALYSE ET QUESTIONS CIBLÉES :
-   🚨🚨🚨 PROCESSUS OBLIGATOIRE 🚨🚨🚨
-   
-   ✅ ÉTAPE 1 - ANALYSE DE LA DEMANDE INITIALE :
-   - Dès qu'un client pose une question, ANALYSE si elle contient TOUTES les informations nécessaires
-   - Infos essentielles selon le contexte : type de problème précis, intensité, durée, type de peau/cheveux, budget, contraintes
-   - Si la demande est COMPLÈTE et PRÉCISE → PASSE DIRECTEMENT aux recommandations produits (format E)
-   - Si des informations CRUCIALES manquent → POSE 2-3 questions ciblées (format A)
-   
-   ✅ ÉTAPE 2 - QUESTIONS (SI NÉCESSAIRE) :
-   - Pose UNIQUEMENT les questions pour les informations manquantes importantes
-   - Maximum 3 questions ciblées avec 3-5 options chacune
-   - Questions pertinentes uniquement : intensité, durée, type de peau/problème, contraintes
-   - Format : { "type": "question", "message": "...", "options": [...] }
-   
-   ✅ ÉTAPE 3 - RECOMMANDATIONS (OBLIGATOIRE) :
-   - APRÈS avoir reçu les réponses OU si la demande initiale était complète
-   - → TOUJOURS recommander des produits (format E)
-   - 🚨 NE JAMAIS reposer de questions après avoir déjà posé ET reçu des réponses
-   - 🚨 Une seule phase de questions maximum par conversation
+2. LOGIQUE DE CONSEIL EN 3 ÉTAPES :
+    
+    ✅ ÉTAPE 1 - ÉVALUATION :
+    - Lis attentivement la demande du client
+    - Détermine si tu as ASSEZ d'informations pour recommander un produit adapté
+    - Infos souvent nécessaires : problème précis, type de peau/cheveux, intensité, durée
+    
+    ✅ ÉTAPE 2 - QUESTIONS (si infos manquantes) :
+    - Si des informations IMPORTANTES manquent → pose 2-3 questions ciblées maximum (format A)
+    - Tu ne peux poser des questions QU'UNE SEULE FOIS dans la conversation
+    - Après avoir posé des questions, tu DOIS recommander des produits à la prochaine réponse
+    
+    ✅ ÉTAPE 3 - RECOMMANDATION :
+    - Dès que tu as assez d'informations (soit dès le début, soit après les réponses)
+    - → Recommande 2-4 produits adaptés en utilisant OBLIGATOIREMENT le format E (products)
+    - Explique pourquoi chaque produit convient au besoin du client
 
 EXEMPLES DE SCÉNARIOS :
 
@@ -751,34 +735,25 @@ Ton expertise en parapharmacie te permet de :
           // OK, format produits conforme avec image_url complétée
           assistantMessage = JSON.stringify(parsed);
         } else if (parsed.type === 'question' && Array.isArray(parsed.options) && parsed.options.length > 0) {
-          // Questions acceptées uniquement si elles n'ont pas encore été posées
-          if (hasQuestionWithResponse) {
-            const fallbackAfterQuestions = {
+          // Accepter les questions seulement si Arthur n'en a pas déjà posé
+          if (questionCount >= 1) {
+            // Arthur a déjà posé des questions, il doit maintenant recommander des produits
+            assistantMessage = JSON.stringify({
               type: 'products',
-              message: "Merci pour vos réponses. Je vais maintenant vous proposer des produits adaptés disponibles dans votre pharmacie.",
+              message: "Merci pour ces précisions. Voici mes recommandations de produits adaptés à votre besoin :",
               products: []
-            };
-            assistantMessage = JSON.stringify(fallbackAfterQuestions);
+            });
           } else {
             assistantMessage = JSON.stringify(parsed);
           }
         } else {
-          // Si le modèle ne respecte pas le schéma
-          if (hasQuestionWithResponse) {
-            const fallbackAfterQuestions = {
-              type: 'products',
-              message: "Merci pour vos réponses. Je vais maintenant vous proposer des produits adaptés disponibles dans votre pharmacie. Pour des précisions supplémentaires, votre pharmacien pourra vous aider.",
-              products: []
-            };
-            assistantMessage = JSON.stringify(fallbackAfterQuestions);
-          } else {
-            assistantMessage = JSON.stringify(defaultFallbackQuestion);
-          }
+          // Format invalide - redemander à Arthur de suivre le bon format
+          assistantMessage = JSON.stringify(defaultFallbackQuestion);
         }
       }
     } catch (_e) {
       console.error('Erreur de parsing de la réponse OpenAI');
-      if (hasQuestionWithResponse) {
+      if (questionCount >= 1) {
         const fallbackAfterQuestions = {
           type: 'products',
           message: "Merci pour vos réponses. Je vais maintenant vous proposer des produits adaptés disponibles dans votre pharmacie.",
