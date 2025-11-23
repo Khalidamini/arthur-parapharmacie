@@ -647,7 +647,7 @@ const Chat = () => {
                 </div>
 
                 {/* Text Input */}
-                <div className="flex gap-3">
+                <div className="flex gap-3 pb-[11px]">
                   <Input value={input} onChange={e => setInput(e.target.value)} onKeyPress={e => e.key === "Enter" && handleSend()} placeholder="Écrivez votre question..." disabled={loading} className="flex-1 rounded-full border-2 focus-visible:ring-primary h-12 px-5 text-base" />
                   <Button onClick={handleSend} disabled={loading || !input.trim()} className="rounded-full bg-gradient-primary hover:opacity-90 transition-opacity h-12 w-12 p-0 flex items-center justify-center">
                     <Send className="h-5 w-5" />
