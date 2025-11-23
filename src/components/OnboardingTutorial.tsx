@@ -113,31 +113,79 @@ const OnboardingTutorial = ({ userId, onComplete }: OnboardingTutorialProps) => 
       // Cancel any ongoing speech
       window.speechSynthesis.cancel();
 
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'fr-FR';
-      utterance.rate = 0.95;
-      utterance.pitch = 1;
-      
-      // Try to find a French male voice
-      const voices = window.speechSynthesis.getVoices();
-      const frenchVoice = voices.find(voice => 
-        voice.lang.startsWith('fr') && voice.name.toLowerCase().includes('male')
-      ) || voices.find(voice => voice.lang.startsWith('fr'));
-      
-      if (frenchVoice) {
-        utterance.voice = frenchVoice;
-      }
-
-      utterance.onend = () => {
-        setIsPlayingAudio(false);
+      // Wait for voices to be loaded
+      const loadVoices = () => {
+        return new Promise<SpeechSynthesisVoice[]>((resolve) => {
+          let voices = window.speechSynthesis.getVoices();
+          if (voices.length > 0) {
+            resolve(voices);
+            return;
+          }
+          
+          const voicesChangedHandler = () => {
+            voices = window.speechSynthesis.getVoices();
+            if (voices.length > 0) {
+              window.speechSynthesis.removeEventListener('voiceschanged', voicesChangedHandler);
+              resolve(voices);
+            }
+          };
+          
+          window.speechSynthesis.addEventListener('voiceschanged', voicesChangedHandler);
+          
+          // Timeout after 2 seconds
+          setTimeout(() => {
+            window.speechSynthesis.removeEventListener('voiceschanged', voicesChangedHandler);
+            resolve(window.speechSynthesis.getVoices());
+          }, 2000);
+        });
       };
 
-      utterance.onerror = (error) => {
-        console.error('Speech synthesis error:', error);
-        setIsPlayingAudio(false);
+      const voices = await loadVoices();
+
+      // Split text into chunks to avoid browser timeout (Chrome has ~15s limit)
+      const chunks = text.match(/[^.!?]+[.!?]+/g) || [text];
+      let currentChunk = 0;
+
+      const speakChunk = () => {
+        if (currentChunk >= chunks.length) {
+          setIsPlayingAudio(false);
+          return;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(chunks[currentChunk].trim());
+        utterance.lang = 'fr-FR';
+        utterance.rate = 0.95;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+        
+        // Try to find a French voice
+        const frenchVoice = voices.find(voice => 
+          voice.lang.startsWith('fr') && voice.name.toLowerCase().includes('male')
+        ) || voices.find(voice => voice.lang.startsWith('fr'));
+        
+        if (frenchVoice) {
+          utterance.voice = frenchVoice;
+        }
+
+        utterance.onend = () => {
+          currentChunk++;
+          speakChunk();
+        };
+
+        utterance.onerror = (error) => {
+          console.error('Speech synthesis error:', error);
+          currentChunk++;
+          if (currentChunk < chunks.length) {
+            speakChunk();
+          } else {
+            setIsPlayingAudio(false);
+          }
+        };
+
+        window.speechSynthesis.speak(utterance);
       };
 
-      window.speechSynthesis.speak(utterance);
+      speakChunk();
     } catch (error) {
       console.error('Error playing audio:', error);
       setIsPlayingAudio(false);
