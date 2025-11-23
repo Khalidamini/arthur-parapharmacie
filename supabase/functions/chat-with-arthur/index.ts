@@ -143,7 +143,7 @@ Adapte tes recommandations en fonction de ces informations.`;
 
       if (selectedPharmacyProducts && selectedPharmacyProducts.length > 0) {
         productsContext = `\n\nProduits disponibles dans la pharmacie sélectionnée (${pharmacy?.name}) :\n${selectedPharmacyProducts.map(p => 
-            `- ID: ${p.id} | ${p.name} (${p.brand}) - ${p.category} - ${p.price}€ - ${p.description || 'Aucune description'}`
+            `- ID: ${p.id} | ${p.name} (${p.brand}) - ${p.category} - ${p.price}€ - ${p.description || 'Aucune description'} - image_url: ${p.image_url || 'AUCUNE_IMAGE'}`
           ).join('\n')}`;
       }
 
@@ -217,7 +217,7 @@ Adapte tes recommandations en fonction de ces informations.`;
 
       if (products && products.length > 0) {
         productsContext = `\n\nProduits disponibles en pharmacie :\n${products.map(p => 
-            `- ${p.name} (${p.brand}) - ${p.category} - ${p.price}€ - ${p.description || 'Aucune description'}`
+            `- ID: ${p.id} | ${p.name} (${p.brand}) - ${p.category} - ${p.price}€ - ${p.description || 'Aucune description'} - image_url: ${p.image_url || 'AUCUNE_IMAGE'}`
           ).join('\n')}`;
       }
     }
@@ -500,7 +500,7 @@ E) RECOMMANDATIONS CHALEUREUSES DE PRODUITS PARAPHARMACEUTIQUES :
 ⚠️⚠️⚠️ LES PRODUITS DOIVENT TOUJOURS ÊTRE AFFICHÉS AVEC CE FORMAT JSON - JAMAIS EN TEXTE LIBRE ⚠️⚠️⚠️
 {
   "type": "products",
-  "message": "Explication détaillée, bienveillante et accessible sur les produits parapharmaceutiques recommandés. INCLUS TOUJOURS des suggestions de produits complémentaires pertinents (ex: 'Pour maximiser les résultats, vous pourriez également envisager...' ou 'En complément, je vous suggère aussi...')",
+  "message": "Explication détaillée, bienveillante et accessible sur les produits parapharmaceutiques recommandés. INCLUS TOUJOURS des suggestions de produits complémentaires pertinents (ex: 'Pour maximiser les résultats, vous pourriez également envisager...' ou 'En complément, je vous suggère aussi...'). N'utilise que des IDs et des image_url provenant de la liste de produits ci-dessus.",
   "products": [
     {
       "id": "ID EXACT du produit depuis la base de données (OBLIGATOIRE pour que le bouton Ajouter fonctionne)",
@@ -508,7 +508,7 @@ E) RECOMMANDATIONS CHALEUREUSES DE PRODUITS PARAPHARMACEUTIQUES :
       "brand": "Marque du produit",
       "price": 15.90,
       "reason": "Explication claire et chaleureuse de pourquoi ce produit de bien-être est adapté (composition, bénéfices, usage)",
-      "image_url": "URL de l'image du produit depuis la base de données",
+      "image_url": "image_url EXACTE du produit telle qu'elle apparaît dans la liste Produits disponibles (ne JAMAIS inventer d'URL)",
       "category": "Catégorie du produit",
       "available_in_pharmacy": true
     },
@@ -518,7 +518,7 @@ E) RECOMMANDATIONS CHALEUREUSES DE PRODUITS PARAPHARMACEUTIQUES :
       "brand": "Marque du produit 2",
       "price": 12.50,
       "reason": "Explication chaleureuse et accessible",
-      "image_url": "URL de l'image du produit 2",
+      "image_url": "image_url EXACTE du produit 2 depuis la liste Produits disponibles",
       "category": "Catégorie du produit 2",
       "available_in_pharmacy": true
     },
@@ -528,7 +528,7 @@ E) RECOMMANDATIONS CHALEUREUSES DE PRODUITS PARAPHARMACEUTIQUES :
       "brand": "Marque du produit 3",
       "price": 18.00,
       "reason": "Explication bienveillante et professionnelle",
-      "image_url": "URL de l'image du produit 3",
+      "image_url": "image_url EXACTE du produit 3 depuis la liste Produits disponibles",
       "category": "Catégorie du produit 3",
       "available_in_pharmacy": false
     }

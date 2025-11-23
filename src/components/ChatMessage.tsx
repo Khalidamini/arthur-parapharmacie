@@ -137,17 +137,10 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
       // Utiliser directement les produits fournis par Arthur avec leurs IDs
       const productsWithProxy = productRecommendations.map(rec => {
         const rawImage = rec.image_url;
-        const hasRealImage = rawImage && !rawImage.includes("example.com");
-        const isExternal = hasRealImage && rawImage!.startsWith("http");
-
-        // Si Arthur n'a pas d'image réelle (ou URL factice), on génère une image gratuite liée au produit
-        const fallbackImage = generateFreeImageUrl(`${rec.brand} ${rec.name}`);
-
-        const displayImage = hasRealImage && isExternal && proxyBase
-          ? `${proxyBase}/functions/v1/image-proxy?url=${encodeURIComponent(rawImage!)}`
-          : hasRealImage
-            ? rawImage!
-            : fallbackImage;
+        const isExternal = rawImage?.startsWith('http');
+        const displayImage = isExternal && proxyBase
+          ? `${proxyBase}/functions/v1/image-proxy?url=${encodeURIComponent(rawImage)}`
+          : (rawImage || '/placeholder.svg');
         
         return {
           id: rec.id,
