@@ -24,6 +24,7 @@ const Index = () => {
   const [username, setUsername] = useState<string | null>(null);
   const [currentPharmacy, setCurrentPharmacy] = useState<string | null>(null);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [isPharmacist, setIsPharmacist] = useState(false);
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -42,6 +43,16 @@ const Index = () => {
           if (profileData?.username) {
             setUsername(profileData.username);
           }
+
+          // Vérifier si l'utilisateur est un membre de pharmacie
+          const { data: roleData } = await (supabase as any)
+            .from("user_roles")
+            .select("id")
+            .eq("user_id", user.id)
+            .limit(1)
+            .maybeSingle();
+          
+          setIsPharmacist(!!roleData);
 
           // Vérifier s'il y a une affiliation en attente
           const pendingAffiliation = localStorage.getItem("pending_pharmacy_affiliation");
@@ -170,21 +181,11 @@ Je vous conseils et trouve les produits qui correspondent à vos besoins.
             </div>}
 
           {/* Actions principales */}
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 max-w-3xl mx-auto mb-8 sm:mb-12 px-4">
-            <Button onClick={() => navigate("/chat")} className="w-full h-20 sm:h-24 bg-gradient-primary border-2 border-primary hover:opacity-90 transition-all group">
-              <div className="flex flex-col items-center gap-1 sm:gap-2">
-                <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground group-hover:scale-110 transition-transform" />
-                <span className="font-medium text-xs sm:text-sm text-primary-foreground">Discuter avec Arthur   </span>
-              </div>
-            </Button>
-
-            <Button onClick={() => navigate("/pharmacies")} variant="outline" className="w-full h-20 sm:h-24 border-2 hover:border-primary/50 transition-all group">
-              <div className="flex flex-col items-center gap-1 sm:gap-2">
-                <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-primary group-hover:scale-110 transition-transform" />
-                <span className="font-medium text-xs sm:text-sm text-center leading-tight">Choisir  pharmacie</span>
-              </div>
-            </Button>
-          </div>
+          {!isPharmacist && (
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 max-w-3xl mx-auto mb-8 sm:mb-12 px-4">
+...
+            </div>
+          )}
         </div>
       </section>
 
