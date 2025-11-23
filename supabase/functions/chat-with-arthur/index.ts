@@ -1,28 +1,11 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
-import { encodeHex } from "https://deno.land/std@0.224.0/encoding/hex.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-// Normalize query for cache matching
-function normalizeQuery(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[?!.,;:\s]+/g, ' ')
-    .replace(/\s+/g, ' ');
-}
-
-// Generate hash for cache key
-async function generateQueryHash(normalizedQuery: string): Promise<string> {
-  const msgUint8 = new TextEncoder().encode(normalizedQuery);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-  return encodeHex(hashBuffer);
-}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -52,27 +35,22 @@ serve(async (req) => {
         .single();
 
       if (profile) {
-        const profil = [];
-        if (profile.gender) profil.push(`Sexe:${profile.gender}`);
-        if (profile.age) profil.push(`${profile.age}ans`);
-        if (profile.gender === 'femme' && profile.is_pregnant) profil.push('Enceinte');
-        if (profile.allergies) profil.push(`Allergies:${profile.allergies}`);
-        if (profile.medical_history) profil.push(`Antéc:${profile.medical_history}`);
-        if (profil.length > 0) {
-          userContext = `\n\nPROFIL : ${profil.join('|')} → Adapte conseils`;
-        }
+        userContext = `\n\nInformations du patient :
+- Sexe : ${profile.gender || 'non renseigné'}
+- Âge : ${profile.age ? `${profile.age} ans` : 'non renseigné'}
+${profile.gender === 'femme' && profile.is_pregnant ? '- Enceinte : Oui\n' : ''}${profile.allergies ? `- Allergies : ${profile.allergies}\n` : ''}${profile.medical_history ? `- Antécédents médicaux : ${profile.medical_history}\n` : ''}
+Adapte tes recommandations en fonction de ces informations.`;
       }
     }
 
-    // Fetch conversation history if conversationId is provided (limited for cost optimization)
+    // Fetch conversation history if conversationId is provided
     let fullMessages = messages;
     if (conversationId) {
       const { data: historyMessages, error } = await supabase
         .from('messages')
         .select('role, content')
         .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true })
-        .limit(8);
+        .order('created_at', { ascending: true });
 
       if (error) {
         console.error('Error fetching conversation history:', error);
@@ -97,10 +75,10 @@ serve(async (req) => {
         .single();
 
       if (pharmacy) {
-        pharmacyInfo = `\n\nPHARMACIE : ${pharmacy.name}|${pharmacy.address}, ${pharmacy.city}`;
+        pharmacyInfo = `\n\nPharmacie sélectionnée : ${pharmacy.name} - ${pharmacy.address}, ${pharmacy.city}`;
       }
 
-      // Get products available in the selected pharmacy (limited for cost optimization)
+      // Get products available in the selected pharmacy
       const { data: selectedPharmacyProducts } = await supabase
         .from('products')
         .select(`
@@ -120,7 +98,7 @@ serve(async (req) => {
         .eq('pharmacy_products.pharmacy_id', selectedPharmacyId)
         .eq('pharmacy_products.is_available', true)
         .gt('pharmacy_products.stock_quantity', 0)
-        .limit(35);
+        .limit(100);
 
       // Get active promotions from the selected pharmacy
       const now = new Date().toISOString();
@@ -148,18 +126,18 @@ serve(async (req) => {
         .order('created_at', { ascending: false });
 
       if (selectedPharmacyProducts && selectedPharmacyProducts.length > 0) {
-        productsContext = `\n\nPRODUITS DISPO (${pharmacy?.name}) :\n${selectedPharmacyProducts.slice(0, 50).map(p => 
-            `ID:${p.id}|${p.name}|${p.brand}|${p.category}|${p.price}€|${(p.description || '').substring(0, 50)}`
+        productsContext = `\n\nProduits disponibles dans la pharmacie sélectionnée (${pharmacy?.name}) :\n${selectedPharmacyProducts.map(p => 
+            `- ID: ${p.id} | ${p.name} (${p.brand}) - ${p.category} - ${p.price}€ - ${p.description || 'Aucune description'}`
           ).join('\n')}`;
       }
 
       if (activePromotions && activePromotions.length > 0) {
-        promotionsContext = `\n\nPROMOS ACTIVES (${pharmacy?.name}) :\n${activePromotions.map(promo => {
+        promotionsContext = `\n\nPromotions en cours dans la pharmacie sélectionnée (${pharmacy?.name}) :\n${activePromotions.map(promo => {
           const product = promo.products;
           const discountedPrice = promo.original_price ? 
             (promo.original_price * (1 - (promo.discount_percentage || 0) / 100)).toFixed(2) : 
             product?.price;
-          return `ID:${promo.id}|${promo.title}|${product?.name || 'Général'}|${product?.brand || ''}|${discountedPrice}€ (-${promo.discount_percentage}%)|Fin:${new Date(promo.valid_until || '').toLocaleDateString('fr-FR')}`;
+          return `- ID Promotion: ${promo.id} | ${promo.title} - ${promo.description || ''} | ${product ? `Produit: ${product.name} (${product.brand})` : 'Produit général'} | Prix promo: ${discountedPrice}€ ${promo.original_price ? `(au lieu de ${promo.original_price}€)` : ''} | Réduction: ${promo.discount_percentage}% | Valide jusqu'au: ${new Date(promo.valid_until || '').toLocaleDateString('fr-FR')}`;
         }).join('\n')}`;
       }
 
@@ -196,8 +174,8 @@ serve(async (req) => {
           };
         }).sort((a, b) => a.distance - b.distance);
 
-        alternativePharmaciesInfo = `\n\nAUTRES PHARMACIES (par distance) :\n${pharmaciesWithDistance.slice(0, 5).map(p => 
-          `${p.name}|${p.address}, ${p.city}|${p.distance.toFixed(1)}km`
+        alternativePharmaciesInfo = `\n\nPharmacies alternatives (triées par proximité) :\n${pharmaciesWithDistance.map(p => 
+          `- ${p.name} - ${p.address}, ${p.city} (à ${p.distance.toFixed(1)} km)`
         ).join('\n')}`;
       }
     } else {
@@ -241,22 +219,34 @@ serve(async (req) => {
       return R * c;
     }
 
-const systemPrompt = `Tu es Arthur, assistant parapharmaceutique. Réponds dans la langue du client.
+    const systemPrompt = `Tu es Arthur, un assistant virtuel avenant, gentil et compatissant, spécialisé en produits parapharmaceutiques pour les pharmacies françaises.
 
-PERSONNALITÉ : Avenant, gentil, compatissant, éthique, NATUREL. Parle comme un humain.
+LANGUE DE RÉPONSE :
+Tu dois TOUJOURS répondre dans la même langue que celle utilisée par l'utilisateur dans sa question. Si l'utilisateur pose sa question en français, réponds en français. Si l'utilisateur pose sa question en anglais, réponds en anglais. Adapte automatiquement la langue de ta réponse à celle de la question.
 
-JAMAIS : "je ne sais pas" ou "contactez la pharmacie" → AGIS et TROUVE
+TON CARACTÈRE ET APPROCHE :
+- Tu es AVENANT et accueillant, tu mets les gens à l'aise
+- Tu es GENTIL et bienveillant dans toutes tes interactions
+- Tu es COMPATISSANT et à l'écoute des préoccupations des clients
+- Tu es ÉTHIQUE et respectueux des limites de ton rôle
+- Tu adoptes un ton chaleureux, rassurant et professionnel
+- Tu es PROACTIF et capable de naviguer dans l'application pour aider les clients
+- Tu NE DIS JAMAIS "je ne sais pas" ou "contactez la pharmacie" - tu AGIS et TROUVES les informations
 
-STYLE VOCAL :
-- Conversationnel et décontracté (pas formel/robotique)
-- Phrases courtes (5-10 mots)
-- Langage naturel avec "euh", "alors", "voyons"
-- Questions de suivi pour engager
-- Empathie ("Je comprends", "Ah oui")
+TON IDENTITÉ PROFESSIONNELLE :
+Tu es un SPÉCIALISTE EN PRODUITS PARAPHARMACEUTIQUES UNIQUEMENT avec une expertise en :
+- Produits de parapharmacie en vente libre
+- Produits de soins et d'hygiène
+- Compléments alimentaires et nutrition
+- Cosmétiques et dermatologie cosmétique
+- Aromathérapie et phytothérapie (produits non médicamenteux)
 
-EXPERTISE PARAPHARMACIE : Soins, hygiène, compléments, cosmétiques (PAS médicaments/diagnostic).
+Tu es aussi un GUIDE EXPERT de l'application pour :
+- Aider les CLIENTS à naviguer et utiliser l'application (voir promotions, acheter, suivre commandes)
+- Aider les PHARMACIENS à utiliser leur interface (créer promotions, gérer produits, consulter journal de bord)
+- Accompagner en MODE VOCAL pendant la navigation sans interrompre la conversation
 
-GUIDE APPLICATION : Clients (promo/achat) ET Pharmaciens (gestion). Navigation vocale fluide.
+Tu te perfectionnes constamment grâce aux conversations avec les clients, en apprenant de leurs besoins et retours.
 
 PAGES DISPONIBLES DANS L'APPLICATION :
 
@@ -277,19 +267,52 @@ POUR LES PHARMACIENS :
 - /pharmacy-delivery-orders : Commandes à livrer
 - /pharmacy-connector-download : Télécharger le connecteur
 
-LIMITES STRICTES :
-⚠️ INTERDIT : Prescrire, diagnostiquer, remplacer médecin/pharmacien, traitement médical.
-✅ AUTORISÉ : Conseiller parapharmacie, expliquer usages, orienter si besoin médical.
+LIMITES LÉGALES ET ÉTHIQUES STRICTES :
+⚠️ INTERDIT ABSOLU :
+- Tu NE PEUX JAMAIS prescrire de médicaments (sur ordonnance ou non)
+- Tu NE PEUX JAMAIS établir de diagnostic médical
+- Tu NE PEUX JAMAIS remplacer une consultation médicale ou pharmacienne
+- Tu NE TE SUBSTITUES JAMAIS au pharmacien - tu es son assistant pour les produits parapharmaceutiques
+- Tu NE RECOMMANDES JAMAIS de traitements médicaux
+- En cas de symptômes graves, persistants ou nécessitant un avis médical : TOUJOURS orienter vers un médecin ou pharmacien
 
-MÉTHODOLOGIE :
-1. Écoute empathique + questions ciblées (âge, symptômes, durée, allergies, contexte)
-2. Personnalise selon profil${userContext ? ' (voir PROFIL ci-dessous)' : ''}
-3. Recommande UNIQUEMENT produits dispo pharmacie sélectionnée${pharmacyInfo ? ' (voir ci-dessous)' : ''}
-4. Vente suggestive NATURELLE : compléments pertinents, routine complète, alternatives prix
-5. Si indispo : cherche autre pharmacie + suggère alternatives locales
-6. Navigation active : utilise "navigate" pour rediriger (clients vers /shop, /promotions, /cart, /my-orders ; pharmaciens vers /pharmacy-dashboard, /pharmacy-pickup-orders, etc.)
-7. Promotions : affiche TOUTES avec format "promotions", ajoute au panier avec ID exact
-8. Urgence médicale → oriente vers médecin/pharmacien
+✅ TU PEUX (PARAPHARMACIE UNIQUEMENT) :
+- Conseiller sur les produits de parapharmacie disponibles en pharmacie
+- Expliquer les usages, bénéfices et précautions des produits parapharmaceutiques
+- Poser des questions pour mieux comprendre les besoins en produits de bien-être
+- Recommander de consulter le pharmacien ou un médecin quand la situation le nécessite
+- Donner des conseils d'hygiène, de prévention et de bien-être général
+
+MÉTHODOLOGIE DE CONSEIL (PARAPHARMACIE) :
+1. ÉCOUTE BIENVEILLANTE : Pose des questions avec empathie pour comprendre les besoins en produits de bien-être
+2. PERSONNALISATION RESPECTUEUSE : Adapte tes conseils au profil du client (âge, sensibilités, préférences)
+3. HUMILITÉ PROFESSIONNELLE : Si la situation nécessite l'avis d'un pharmacien ou médecin, oriente immédiatement vers eux
+4. PRIORISATION ABSOLUE : Tu dois TOUJOURS recommander UNIQUEMENT les produits parapharmaceutiques disponibles dans la pharmacie sélectionnée${pharmacyInfo ? ' (voir détails ci-dessous)' : ''}
+5. NAVIGATION ET PROMOTIONS : 
+   - Quand un client demande les promotions en cours, tu DOIS lui afficher TOUTES les promotions actives de sa pharmacie
+   - Utilise le format "promotions" pour afficher les promotions avec leurs détails complets
+   - Tu PEUX ajouter des promotions au panier quand le client te le demande explicitement
+   - Pour ajouter au panier, utilise le format "add_to_cart" avec l'ID de la promotion
+6. ACCOMPAGNEMENT DANS L'APPLICATION :
+   - Tu DOIS aider les utilisateurs à naviguer dans l'application (clients ET pharmaciens)
+   - Quand un utilisateur demande à accéder à une fonctionnalité, utilise le format "navigate" pour le rediriger
+   - Exemples pour CLIENTS : "Voir mes commandes" → /my-orders, "Voir les promotions" → /promotions, "Mon panier" → /cart
+   - Exemples pour PHARMACIENS : "Journal de bord" ou "Activités" → /pharmacy-dashboard (onglet Activités), "Créer une promotion" → /pharmacy-dashboard (onglet Promotions), "Gérer mes produits" → /pharmacy-dashboard (onglet Produits), "Commandes à emporter" → /pharmacy-pickup-orders, "Commandes à livrer" → /pharmacy-delivery-orders
+   - Après la navigation, continue à guider l'utilisateur avec des instructions vocales adaptées à la page
+   - Ne JAMAIS dire "je ne peux pas vous aider avec ça" - TOUJOURS proposer une solution de navigation ou d'action
+7. VENTE SUGGESTIVE ET PROACTIVE : Tu dois SYSTÉMATIQUEMENT suggérer des produits complémentaires et additionnels pertinents :
+   - Identifie des produits qui complètent ou renforcent l'efficacité du produit principal
+   - Propose des alternatives dans différentes gammes de prix
+   - Suggère des formats différents (voyage, familial, etc.)
+   - Recommande des produits pour une routine complète
+   - Pense aux besoins connexes du client (si crème visage → suggère nettoyant, sérum, etc.)
+   - Reste NATUREL et PERTINENT dans tes suggestions - chaque produit additionnel doit apporter une vraie valeur
+   - Ne force JAMAIS la vente - reste au service du bien-être du client
+8. RECHERCHE ALTERNATIVE : Si un client cherche un produit parapharmaceutique spécifique qui n'est PAS disponible dans sa pharmacie sélectionnée, tu dois :
+   - Chercher ce produit dans les autres pharmacies de la base de données
+   - Identifier la pharmacie la PLUS PROCHE où le produit est disponible
+   - Indiquer clairement au client avec bienveillance : "Ce produit n'est pas disponible dans votre pharmacie, mais vous pouvez le trouver à [Nom Pharmacie] - [Adresse], située à [X] km de votre pharmacie actuelle"
+   - Proposer également des produits parapharmaceutiques SIMILAIRES disponibles dans sa pharmacie sélectionnée comme alternatives
 
 FORMAT DE RÉPONSE - Trois types possibles :
 
@@ -425,43 +448,6 @@ Ton expertise en parapharmacie te permet de :
 - ACCOMPAGNER vocalement les utilisateurs même pendant la navigation entre pages
 - NE JAMAIS dire "je ne sais pas" ou "contactez la pharmacie" - toujours proposer une solution${userContext}${pharmacyInfo}${productsContext}${promotionsContext}${alternativePharmaciesInfo}`;
 
-    // Check cache for simple queries (short conversations with no complex context)
-    const lastUserMessage = fullMessages.filter((m: any) => m.role === 'user').pop();
-    
-    if (lastUserMessage?.content && fullMessages.length <= 3) {
-      const normalizedQuery = normalizeQuery(lastUserMessage.content);
-      const queryHash = await generateQueryHash(normalizedQuery);
-
-      const { data: cachedResponse } = await supabase
-        .from('arthur_response_cache')
-        .select('response_text, id, hit_count')
-        .eq('query_hash', queryHash)
-        .single();
-
-      if (cachedResponse) {
-        console.log('✅ Cache hit! Returning cached response (hit count:', cachedResponse.hit_count, ')');
-        
-        // Update cache statistics
-        await supabase
-          .from('arthur_response_cache')
-          .update({
-            hit_count: cachedResponse.hit_count + 1,
-            last_used_at: new Date().toISOString()
-          })
-          .eq('id', cachedResponse.id);
-
-        return new Response(
-          JSON.stringify({ 
-            message: cachedResponse.response_text,
-            fromCache: true 
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      console.log('❌ Cache miss, calling OpenAI API');
-    }
-
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -469,13 +455,13 @@ Ton expertise en parapharmacie te permet de :
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         messages: [
           { role: 'system', content: systemPrompt },
           ...fullMessages
         ],
         temperature: 0.7,
-        max_tokens: 250,
+        max_tokens: 1000,
       }),
     });
 
@@ -484,9 +470,14 @@ Ton expertise en parapharmacie te permet de :
       console.error('OpenAI API error:', response.status, errorText);
       
       if (response.status === 429) {
+        const errorData = await response.json().catch(() => ({}));
+        const isQuotaError = errorData?.error?.code === 'insufficient_quota';
+        
         return new Response(
           JSON.stringify({ 
-            error: 'Trop de requêtes OpenAI, veuillez réessayer dans quelques instants.'
+            error: isQuotaError 
+              ? 'Quota OpenAI dépassé. Ajoutez des crédits sur platform.openai.com/account/billing'
+              : 'Trop de requêtes OpenAI, veuillez réessayer dans quelques instants.'
           }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -507,34 +498,8 @@ Ton expertise en parapharmacie te permet de :
 
     console.log('Successfully generated response');
 
-    // Save to cache if it's a simple Q&A (short response, not too complex conversation)
-    if (lastUserMessage?.content && assistantMessage.length < 2000 && fullMessages.length <= 3) {
-      const normalizedQuery = normalizeQuery(lastUserMessage.content);
-      const queryHash = await generateQueryHash(normalizedQuery);
-
-      const { error: cacheError } = await supabase
-        .from('arthur_response_cache')
-        .upsert({
-          query_normalized: normalizedQuery,
-          query_hash: queryHash,
-          response_text: assistantMessage,
-          context_type: 'general',
-          hit_count: 1,
-          last_used_at: new Date().toISOString()
-        }, { onConflict: 'query_hash' });
-
-      if (cacheError) {
-        console.error('❌ Cache save error:', cacheError);
-      } else {
-        console.log('✅ Response cached successfully');
-      }
-    }
-
     return new Response(
-      JSON.stringify({ 
-        message: assistantMessage,
-        fromCache: false 
-      }),
+      JSON.stringify({ message: assistantMessage }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

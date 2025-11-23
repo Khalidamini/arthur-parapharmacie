@@ -3,15 +3,6 @@ project_id = "gtjmebionytcomoldgjl"
 [functions.chat-with-arthur]
 verify_jwt = false
 
-[functions.voice-chat]
-verify_jwt = false
-
-[functions.text-to-speech]
-verify_jwt = false
-
-[functions.speech-to-text]
-verify_jwt = false
-
 [functions.realtime-voice-chat]
 verify_jwt = false
 
