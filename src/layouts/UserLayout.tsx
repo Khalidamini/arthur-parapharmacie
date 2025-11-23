@@ -5,50 +5,39 @@ import { MessageSquare, LogOut, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import Footer from '@/components/Footer';
 import PharmacyLogos from '@/components/PharmacyLogos';
-
 interface UserLayoutProps {
   children: ReactNode;
   user?: any;
 }
-
-const UserLayout = ({ children, user }: UserLayoutProps) => {
+const UserLayout = ({
+  children,
+  user
+}: UserLayoutProps) => {
   const navigate = useNavigate();
-
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate('/auth');
   };
-
-  return (
-    <div className="min-h-screen bg-gradient-subtle pb-20">
+  return <div className="min-h-screen bg-gradient-subtle pb-20">
       {/* Header */}
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
         <div className="max-w-3xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <PharmacyLogos size="md" />
-            <span className="font-bold text-base sm:text-xl bg-gradient-primary bg-clip-text text-transparent">Arthur</span>
+            <span className="font-bold text-base sm:text-xl bg-gradient-primary bg-clip-text text-transparent"></span>
           </div>
           <nav className="flex items-center gap-2 sm:gap-3">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => navigate('/pharmacy-login')}
-              className="text-xs sm:text-sm"
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate('/pharmacy-login')} className="text-xs sm:text-sm">
               <Building2 className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
               Espace Pharmacien
             </Button>
-            {user ? (
-              <Button variant="outline" onClick={handleSignOut} className="text-xs sm:text-sm px-2 sm:px-4">
+            {user ? <Button variant="outline" onClick={handleSignOut} className="text-xs sm:text-sm px-2 sm:px-4">
                 <LogOut className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Déconnexion</span>
                 <span className="sm:hidden">Sortir</span>
-              </Button>
-            ) : (
-              <Button onClick={() => navigate('/auth')} className="bg-gradient-primary hover:opacity-90 transition-opacity text-xs sm:text-sm px-3 sm:px-4">
+              </Button> : <Button onClick={() => navigate('/auth')} className="bg-gradient-primary hover:opacity-90 transition-opacity text-xs sm:text-sm px-3 sm:px-4">
                 Se connecter
-              </Button>
-            )}
+              </Button>}
           </nav>
         </div>
       </header>
@@ -57,8 +46,6 @@ const UserLayout = ({ children, user }: UserLayoutProps) => {
       <main>{children}</main>
 
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default UserLayout;
