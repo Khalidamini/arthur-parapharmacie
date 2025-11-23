@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePharmacyActivityLog } from "@/hooks/usePharmacyActivityLog";
 import { Loader2 } from "lucide-react";
 import { z } from "zod";
+import PharmacyLayout from "@/layouts/PharmacyLayout";
 
 const profileSchema = z.object({
   first_name: z.string().trim().min(1, { message: "Le prénom est requis" }).max(100),
@@ -157,8 +158,8 @@ const PharmacyProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-2xl mx-auto py-8">
+    <PharmacyLayout>
+      <div className="max-w-2xl mx-auto py-8 px-4">
         <Card>
           <CardHeader>
             <CardTitle>Mon Profil</CardTitle>
@@ -233,7 +234,7 @@ const PharmacyProfile = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PharmacyLayout>
   );
 };
 
