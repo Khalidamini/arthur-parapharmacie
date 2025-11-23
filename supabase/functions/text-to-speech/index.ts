@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 const corsHeaders = {
@@ -6,91 +7,52 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const { text, lang = 'fr' } = await req.json();
+    const { text, voice, speed } = await req.json();
 
     if (!text) {
       throw new Error('Text is required');
     }
 
-    console.log('Generating speech for text:', text.substring(0, 50), 'Language:', lang);
-
-    // Split text into chunks if too long (Google TTS has ~200 char limit)
-    const maxLength = 200;
-    const chunks = [];
-    
-    if (text.length > maxLength) {
-      // Split by sentences
-      const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-      let currentChunk = '';
-      
-      for (const sentence of sentences) {
-        if ((currentChunk + sentence).length <= maxLength) {
-          currentChunk += sentence;
-        } else {
-          if (currentChunk) chunks.push(currentChunk);
-          currentChunk = sentence;
-        }
-      }
-      if (currentChunk) chunks.push(currentChunk);
-    } else {
-      chunks.push(text);
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    if (!OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY is not configured');
     }
 
-    console.log(`Text split into ${chunks.length} chunks`);
+    console.log('Generating speech with OpenAI TTS:', text.substring(0, 50));
 
-    // Generate audio for each chunk
-    const audioBuffers = [];
-    
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i].trim();
-      if (!chunk) continue;
-      
-      console.log(`Processing chunk ${i + 1}/${chunks.length}`);
-      
-      const encodedText = encodeURIComponent(chunk);
-      const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=gtx&q=${encodedText}`;
+    // Generate speech from text using OpenAI TTS
+    const response = await fetch('https://api.openai.com/v1/audio/speech', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'tts-1',
+        input: text,
+        voice: voice || 'onyx', // Male voices: onyx, echo
+        speed: speed || 1.0,
+      }),
+    });
 
-      const response = await fetch(ttsUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Referer': 'https://translate.google.com/',
-        },
-      });
-
-      if (!response.ok) {
-        console.error('Google TTS error for chunk:', response.status, response.statusText);
-        throw new Error(`Failed to generate speech: ${response.statusText}`);
-      }
-
-      const arrayBuffer = await response.arrayBuffer();
-      audioBuffers.push(new Uint8Array(arrayBuffer));
-      
-      // Small delay between requests to avoid rate limiting
-      if (i < chunks.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenAI TTS error:', response.status, errorText);
+      throw new Error(`Failed to generate speech: ${response.status}`);
     }
 
-    // Combine all audio buffers
-    const totalLength = audioBuffers.reduce((sum, buf) => sum + buf.length, 0);
-    const combinedBuffer = new Uint8Array(totalLength);
-    let offset = 0;
-    
-    for (const buffer of audioBuffers) {
-      combinedBuffer.set(buffer, offset);
-      offset += buffer.length;
-    }
+    // Convert audio buffer to base64
+    const arrayBuffer = await response.arrayBuffer();
+    const base64Audio = btoa(
+      String.fromCharCode(...new Uint8Array(arrayBuffer))
+    );
 
-    // Convert to base64
-    const base64Audio = btoa(String.fromCharCode(...combinedBuffer));
-
-    console.log('Successfully generated audio, size:', combinedBuffer.length, 'bytes');
+    console.log('Successfully generated audio with OpenAI TTS');
 
     return new Response(
       JSON.stringify({ audioContent: base64Audio }),
