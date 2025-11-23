@@ -76,6 +76,20 @@ Adapte tes recommandations en fonction de ces informations.`;
       }
     }
 
+    // Detect if Arthur has already asked a structured question in this conversation
+    const hasQuestionInHistory = fullMessages.some((msg: { role: string; content: any }) => {
+      if (msg.role !== 'assistant' || !msg.content) return false;
+      if (typeof msg.content === 'string') {
+        try {
+          const parsed = JSON.parse(msg.content);
+          return parsed && typeof parsed === 'object' && parsed.type === 'question';
+        } catch {
+          return msg.content.includes('"type": "question"') || msg.content.includes('"type":"question"');
+        }
+      }
+      return false;
+    });
+
     // Fetch available products and promotions from the selected pharmacy
     let productsContext = '';
     let promotionsContext = '';
@@ -671,6 +685,17 @@ Ton expertise en parapharmacie te permet de :
     const data = await response.json();
     let assistantMessage = data.choices[0].message.content;
 
+    const defaultFallbackQuestion = {
+      type: 'question',
+      question: "Pour bien vous conseiller, pouvez-vous préciser un peu plus votre besoin ?",
+      options: [
+        "Préciser la zone concernée (visage, corps, cuir chevelu...)",
+        "Indiquer depuis quand le problème est présent",
+        "Mentionner d'éventuelles allergies connues",
+        "Autre (je vais l'expliquer dans ma réponse)"
+      ]
+    };
+
     // Normaliser la réponse : toujours un JSON avec un type reconnu
     try {
       const parsed = typeof assistantMessage === 'string'
@@ -682,36 +707,43 @@ Ton expertise en parapharmacie te permet de :
           // OK, format produits conforme
           assistantMessage = JSON.stringify(parsed);
         } else if (parsed.type === 'question' && Array.isArray(parsed.options) && parsed.options.length > 0) {
-          // OK, format question conforme
-          assistantMessage = JSON.stringify(parsed);
+          // Questions acceptées uniquement si elles n'ont pas encore été posées
+          if (hasQuestionInHistory) {
+            const fallbackAfterQuestions = {
+              type: 'products',
+              message: "Merci pour vos réponses. Je vais maintenant vous proposer des produits adaptés disponibles dans votre pharmacie.",
+              products: []
+            };
+            assistantMessage = JSON.stringify(fallbackAfterQuestions);
+          } else {
+            assistantMessage = JSON.stringify(parsed);
+          }
         } else {
-          // Si le modèle ne respecte pas le schéma, on force une question de clarification
-          const fallbackQuestion = {
-            type: 'question',
-            question: "Pour bien vous conseiller, pouvez-vous préciser un peu plus votre besoin ?",
-            options: [
-              "Préciser la zone concernée (visage, corps, cuir chevelu...)",
-              "Indiquer depuis quand le problème est présent",
-              "Mentionner d'éventuelles allergies connues",
-              "Autre (je vais l'expliquer dans ma réponse)"
-            ]
-          };
-          assistantMessage = JSON.stringify(fallbackQuestion);
+          // Si le modèle ne respecte pas le schéma
+          if (hasQuestionInHistory) {
+            const fallbackAfterQuestions = {
+              type: 'products',
+              message: "Merci pour vos réponses. Je vais maintenant vous proposer des produits adaptés disponibles dans votre pharmacie. Pour des précisions supplémentaires, votre pharmacien pourra vous aider.",
+              products: []
+            };
+            assistantMessage = JSON.stringify(fallbackAfterQuestions);
+          } else {
+            assistantMessage = JSON.stringify(defaultFallbackQuestion);
+          }
         }
       }
     } catch (_e) {
-      console.error('Erreur de parsing de la réponse OpenAI, utilisation de la question de secours');
-      const fallbackQuestion = {
-        type: 'question',
-        question: "Pour bien vous conseiller, pouvez-vous préciser un peu plus votre besoin ?",
-        options: [
-          "Préciser la zone concernée (visage, corps, cuir chevelu...)",
-          "Indiquer depuis quand le problème est présent",
-          "Mentionner d'éventuelles allergies connues",
-          "Autre (je vais l'expliquer dans ma réponse)"
-        ]
-      };
-      assistantMessage = JSON.stringify(fallbackQuestion);
+      console.error('Erreur de parsing de la réponse OpenAI');
+      if (hasQuestionInHistory) {
+        const fallbackAfterQuestions = {
+          type: 'products',
+          message: "Merci pour vos réponses. Je vais maintenant vous proposer des produits adaptés disponibles dans votre pharmacie.",
+          products: []
+        };
+        assistantMessage = JSON.stringify(fallbackAfterQuestions);
+      } else {
+        assistantMessage = JSON.stringify(defaultFallbackQuestion);
+      }
     }
 
     console.log('Successfully generated response');
