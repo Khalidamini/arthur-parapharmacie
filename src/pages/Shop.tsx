@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
 import Footer from '@/components/Footer';
 import FeaturedProductsSlider from '@/components/FeaturedProductsSlider';
+import PharmacyLogos from '@/components/PharmacyLogos';
 interface Product {
   id: string;
   name: string;
@@ -197,6 +198,11 @@ const Shop = () => {
   }
   return <div className="min-h-screen bg-background p-4 pb-24">
       <div className="max-w-3xl mx-auto">
+        {/* Logos */}
+        <div className="flex justify-center items-center mb-6">
+          <PharmacyLogos size="md" />
+        </div>
+
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
