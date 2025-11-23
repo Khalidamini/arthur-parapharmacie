@@ -140,16 +140,8 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
         // Display user's transcript
         onTranscript?.(transcript, true);
         
-        // Stop listening while processing
-        setIsListening(false);
-        
-        // Process the message
+        // Process the message (keep listening in background)
         await processMessage(transcript);
-        
-        // Resume listening
-        if (recognitionRef.current && isConnected) {
-          setIsListening(true);
-        }
       };
 
       recognitionRef.current.onerror = (event: any) => {
@@ -164,14 +156,29 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
       };
 
       recognitionRef.current.onend = () => {
-        console.log('Speech recognition ended');
-        if (isConnected) {
-          // Restart if still connected
-          try {
-            recognitionRef.current?.start();
-          } catch (e) {
-            console.log('Recognition restart prevented:', e);
-          }
+        console.log('Speech recognition ended, restarting...');
+        // Always restart if still connected and recognition exists
+        if (isConnected && recognitionRef.current) {
+          setTimeout(() => {
+            try {
+              if (recognitionRef.current && isConnected) {
+                recognitionRef.current.start();
+                console.log('Recognition restarted successfully');
+              }
+            } catch (e) {
+              console.log('Recognition restart prevented:', e);
+              // Retry after a short delay
+              setTimeout(() => {
+                if (recognitionRef.current && isConnected) {
+                  try {
+                    recognitionRef.current.start();
+                  } catch (err) {
+                    console.error('Failed to restart recognition:', err);
+                  }
+                }
+              }, 200);
+            }
+          }, 100);
         }
       };
 
