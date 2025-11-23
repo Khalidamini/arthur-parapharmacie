@@ -704,7 +704,37 @@ Ton expertise en parapharmacie te permet de :
 
       if (parsed && typeof parsed === 'object') {
         if (parsed.type === 'products' && Array.isArray(parsed.products) && parsed.products.length > 0) {
-          // OK, format produits conforme
+          // Compléter les images manquantes avec les photos officielles de la boutique
+          const productIds = parsed.products
+            .map((p: any) => p.id)
+            .filter((id: any) => typeof id === 'string');
+
+          if (productIds.length > 0) {
+            const { data: dbProducts, error: dbError } = await supabase
+              .from('products')
+              .select('id, image_url')
+              .in('id', productIds);
+
+            if (dbError) {
+              console.error('Error fetching product images for recommendations:', dbError);
+            } else if (dbProducts) {
+              const imageById = new Map<string, string | null>();
+              for (const p of dbProducts as Array<{ id: string; image_url: string | null }>) {
+                imageById.set(p.id, p.image_url);
+              }
+
+              parsed.products = parsed.products.map((p: any) => {
+                const existing = p.image_url;
+                const fromDb = imageById.get(p.id);
+                return {
+                  ...p,
+                  image_url: existing || fromDb || null,
+                };
+              });
+            }
+          }
+
+          // OK, format produits conforme avec image_url complétée
           assistantMessage = JSON.stringify(parsed);
         } else if (parsed.type === 'question' && Array.isArray(parsed.options) && parsed.options.length > 0) {
           // Questions acceptées uniquement si elles n'ont pas encore été posées
