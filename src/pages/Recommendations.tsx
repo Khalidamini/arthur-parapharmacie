@@ -287,6 +287,7 @@ const Recommendations = () => {
   };
 
   const handleEditProfile = () => {
+    console.log('Opening edit profile dialog');
     setEditProfileData({
       gender: profileData?.gender || '',
       age: profileData?.age?.toString() || '',
@@ -537,7 +538,7 @@ const Recommendations = () => {
       </AlertDialog>
 
       <Dialog open={showEditProfile} onOpenChange={setShowEditProfile}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Modifier mes informations</DialogTitle>
             <DialogDescription>
@@ -578,7 +579,7 @@ const Recommendations = () => {
             {editProfileData.gender === 'femme' && (
               <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
                 <div className="space-y-0.5">
-                  <Label htmlFor="is_pregnant">Enceinte</Label>
+                  <Label htmlFor="is_pregnant" className="cursor-pointer">Enceinte</Label>
                   <p className="text-sm text-muted-foreground">
                     Cochez si vous êtes actuellement enceinte
                   </p>
