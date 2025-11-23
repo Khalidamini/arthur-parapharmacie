@@ -15,7 +15,7 @@ interface FooterLink {
 const Footer = () => {
   const location = useLocation();
   const { totalItems } = useCart();
-  const [isPharmacist, setIsPharmacist] = useState(false);
+  const [isPharmacist, setIsPharmacist] = useState<boolean | null>(null);
 
   useEffect(() => {
     const checkPharmacistRole = async () => {
@@ -28,6 +28,8 @@ const Footer = () => {
           .maybeSingle();
         
         setIsPharmacist(!!roles);
+      } else {
+        setIsPharmacist(false);
       }
     };
     checkPharmacistRole();
@@ -35,6 +37,9 @@ const Footer = () => {
 
   if (location.pathname.startsWith('/checkout')) return null;
   if (location.pathname.startsWith('/pharmacy')) return null;
+  
+  // Ne rien afficher pendant le chargement
+  if (isPharmacist === null) return null;
   
   const pharmacyLinks: FooterLink[] = [
     { 
