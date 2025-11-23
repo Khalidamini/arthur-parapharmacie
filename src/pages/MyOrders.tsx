@@ -9,6 +9,7 @@ import { ArrowLeft, ShoppingBag, Calendar, Package, MapPin, Truck, ExternalLink 
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Footer from '@/components/Footer';
+import PharmacyLogos from '@/components/PharmacyLogos';
 
 interface CartItem {
   id: string;
@@ -150,6 +151,11 @@ const MyOrders = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Logos */}
+        <div className="flex justify-center items-center mb-6">
+          <PharmacyLogos size="md" />
+        </div>
+
         <Button variant="ghost" onClick={() => navigate('/')} className="mb-4">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Retour à l'accueil

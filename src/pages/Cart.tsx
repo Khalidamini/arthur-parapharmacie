@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, Building2, Clock, Check } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import Footer from '@/components/Footer';
+import PharmacyLogos from '@/components/PharmacyLogos';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -206,6 +207,11 @@ export default function Cart() {
   return (
     <div className="min-h-screen bg-background p-4 pb-24">
       <div className="max-w-3xl mx-auto">
+        {/* Logos */}
+        <div className="flex justify-center items-center mb-6">
+          <PharmacyLogos size="md" />
+        </div>
+
         <div className="mb-6">
           <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
             <ArrowLeft className="mr-2 h-4 w-4" />
