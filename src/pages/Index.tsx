@@ -157,7 +157,7 @@ const Index = () => {
         <div className="absolute inset-0 bg-gradient-primary opacity-5"></div>
         <div className="max-w-3xl mx-auto px-4 text-center relative py-[34px]">
           <div className="inline-flex h-20 w-20 items-center justify-center mb-6 animate-in zoom-in duration-500 my-0 py-0">
-            <PharmacyLogos size={64} />
+            <PharmacyLogos size="lg" />
           </div>
           <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
             Bonjour{username ? ` ${username}` : ""}, je suis{" "}
