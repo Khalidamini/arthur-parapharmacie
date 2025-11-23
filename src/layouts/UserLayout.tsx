@@ -1,9 +1,10 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { MessageSquare, LogOut, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import Footer from '@/components/Footer';
+import PharmacyLogos from '@/components/PharmacyLogos';
 
 interface UserLayoutProps {
   children: ReactNode;
@@ -24,11 +25,7 @@ const UserLayout = ({ children, user }: UserLayoutProps) => {
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
         <div className="max-w-3xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img 
-              src="/icon-192.png" 
-              alt="Arthur Logo" 
-              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full"
-            />
+            <PharmacyLogos size="md" />
             <span className="font-bold text-base sm:text-xl bg-gradient-primary bg-clip-text text-transparent">Arthur</span>
           </div>
           <nav className="flex items-center gap-2 sm:gap-3">

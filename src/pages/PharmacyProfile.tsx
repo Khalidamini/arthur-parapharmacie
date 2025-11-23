@@ -158,7 +158,7 @@ const PharmacyProfile = () => {
   }
 
   return (
-    <PharmacyLayout>
+    <PharmacyLayout pharmacyId={pharmacyId || undefined}>
       <div className="max-w-2xl mx-auto py-8 px-4">
         <Card>
           <CardHeader>

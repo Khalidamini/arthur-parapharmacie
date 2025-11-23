@@ -95,7 +95,7 @@ const PharmacyDashboard = () => {
   }
 
   return (
-    <PharmacyLayout pharmacyName={pharmacyData?.name}>
+    <PharmacyLayout pharmacyName={pharmacyData?.name} pharmacyId={pharmacyId || undefined}>
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
         <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row gap-3">
           <Button 

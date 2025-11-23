@@ -7,6 +7,7 @@ import UserLayout from "@/layouts/UserLayout";
 import PromotionSlider from "@/components/PromotionSlider";
 import OnboardingTutorial from "@/components/OnboardingTutorial";
 import { useCart } from "@/contexts/CartContext";
+import PharmacyLogos from "@/components/PharmacyLogos";
 interface Promotion {
   id: string;
   title: string;
@@ -142,7 +143,7 @@ const Index = () => {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="inline-flex h-16 w-16 items-center justify-center animate-pulse">
-            <img src="/icon-192.png" alt="Arthur Logo" className="h-16 w-16 rounded-full" />
+            <PharmacyLogos size="lg" />
           </div>
           <p className="text-muted-foreground">Chargement...</p>
         </div>
@@ -156,7 +157,7 @@ const Index = () => {
         <div className="absolute inset-0 bg-gradient-primary opacity-5"></div>
         <div className="max-w-3xl mx-auto px-4 text-center relative py-[34px]">
           <div className="inline-flex h-20 w-20 items-center justify-center mb-6 animate-in zoom-in duration-500 my-0 py-0">
-            <img src="/icon-192.png" alt="Arthur Logo" className="h-20 w-20 rounded-full shadow-xl" />
+            <PharmacyLogos size="lg" />
           </div>
           <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
             Bonjour{username ? ` ${username}` : ""}, je suis{" "}

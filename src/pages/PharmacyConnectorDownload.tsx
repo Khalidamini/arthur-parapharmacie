@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Download, CheckCircle2, AlertCircle, Monitor, Package, Zap } from "lucide-react";
 import PharmacyLayout from "@/layouts/PharmacyLayout";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Accordion,
   AccordionContent,
@@ -13,6 +15,30 @@ import {
 
 export default function PharmacyConnectorDownload() {
   const [downloadStarted, setDownloadStarted] = useState(false);
+  const [pharmacyId, setPharmacyId] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const loadPharmacyId = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/pharmacy-login');
+        return;
+      }
+
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('pharmacy_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (roleData) {
+        setPharmacyId(roleData.pharmacy_id);
+      }
+    };
+
+    loadPharmacyId();
+  }, []);
 
   const handleDownload = () => {
     setDownloadStarted(true);
@@ -21,7 +47,7 @@ export default function PharmacyConnectorDownload() {
   };
 
   return (
-    <PharmacyLayout>
+    <PharmacyLayout pharmacyId={pharmacyId || undefined}>
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Pencil } from "lucide-react";
+import { Pencil, Upload, X } from "lucide-react";
 import { usePharmacyActivityLog } from "@/hooks/usePharmacyActivityLog";
 interface PharmacyInfoEditProps {
   pharmacyData: any;
@@ -26,6 +26,9 @@ const PharmacyInfoEdit = ({
   } = usePharmacyActivityLog();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [formData, setFormData] = useState({
     name: pharmacyData.name || '',
     phone: pharmacyData.phone || '',
@@ -34,13 +37,143 @@ const PharmacyInfoEdit = ({
     postal_code: pharmacyData.postal_code || '',
     notification_email: pharmacyData.notification_email || ''
   });
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast({
+          title: "Fichier trop volumineux",
+          description: "Le logo ne doit pas dépasser 2 Mo.",
+          variant: "destructive"
+        });
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Format invalide",
+          description: "Veuillez sélectionner une image.",
+          variant: "destructive"
+        });
+        return;
+      }
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    try {
+      setUploadingLogo(true);
+      
+      // Supprimer le logo du storage si il existe
+      if (pharmacyData.logo_url) {
+        const logoPath = pharmacyData.logo_url.split('/').pop();
+        await supabase.storage
+          .from('pharmacy-logos')
+          .remove([`${pharmacyId}/${logoPath}`]);
+      }
+
+      // Mettre à jour la base de données
+      const { data, error } = await supabase
+        .from('pharmacies')
+        .update({ logo_url: null })
+        .eq('id', pharmacyId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Logo supprimé",
+        description: "Le logo de votre pharmacie a été supprimé."
+      });
+
+      await logActivity({
+        pharmacyId,
+        actionType: 'pharmacy_logo_removed',
+        entityType: 'pharmacy',
+        entityId: pharmacyId
+      });
+
+      onUpdate(data);
+      setLogoFile(null);
+      setLogoPreview(null);
+    } catch (error) {
+      console.error('Error removing logo:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer le logo.",
+        variant: "destructive"
+      });
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const uploadLogo = async () => {
+    if (!logoFile) return null;
+
+    try {
+      setUploadingLogo(true);
+
+      // Supprimer l'ancien logo si il existe
+      if (pharmacyData.logo_url) {
+        const oldLogoPath = pharmacyData.logo_url.split('/').pop();
+        await supabase.storage
+          .from('pharmacy-logos')
+          .remove([`${pharmacyId}/${oldLogoPath}`]);
+      }
+
+      const fileExt = logoFile.name.split('.').pop();
+      const fileName = `logo-${Date.now()}.${fileExt}`;
+      const filePath = `${pharmacyId}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('pharmacy-logos')
+        .upload(filePath, logoFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('pharmacy-logos')
+        .getPublicUrl(filePath);
+
+      await logActivity({
+        pharmacyId,
+        actionType: 'pharmacy_logo_uploaded',
+        entityType: 'pharmacy',
+        entityId: pharmacyId
+      });
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      throw error;
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
   const handleUpdate = async () => {
     setUpdating(true);
     try {
+      let logoUrl = pharmacyData.logo_url;
+
+      // Upload du logo si un nouveau fichier a été sélectionné
+      if (logoFile) {
+        logoUrl = await uploadLogo();
+      }
+
+      const updateData = logoUrl ? { ...formData, logo_url: logoUrl } : formData;
+
       const {
         data,
         error
-      } = await supabase.from('pharmacies').update(formData).eq('id', pharmacyId).select().single();
+      } = await supabase.from('pharmacies').update(updateData).eq('id', pharmacyId).select().single();
       if (error) throw error;
       toast({
         title: "Informations mises à jour",
@@ -52,13 +185,15 @@ const PharmacyInfoEdit = ({
         pharmacyId,
         actionType: 'pharmacy_info_updated',
         actionDetails: {
-          updatedFields: Object.keys(formData)
+          updatedFields: Object.keys(updateData)
         },
         entityType: 'pharmacy',
         entityId: pharmacyId
       });
       onUpdate(data);
       setEditDialogOpen(false);
+      setLogoFile(null);
+      setLogoPreview(null);
     } catch (error: any) {
       console.error('Error updating pharmacy:', error);
       toast({
@@ -79,6 +214,8 @@ const PharmacyInfoEdit = ({
       postal_code: pharmacyData.postal_code || '',
       notification_email: pharmacyData.notification_email || ''
     });
+    setLogoFile(null);
+    setLogoPreview(null);
     setEditDialogOpen(true);
   };
   return <>
@@ -90,6 +227,29 @@ const PharmacyInfoEdit = ({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {pharmacyData.logo_url && (
+            <div className="flex items-center gap-4 mb-4 p-4 bg-muted/50 rounded-lg">
+              <img 
+                src={pharmacyData.logo_url} 
+                alt="Logo pharmacie" 
+                className="h-16 w-16 object-contain rounded"
+              />
+              <div className="flex-1">
+                <p className="text-sm font-medium">Logo actuel</p>
+                <p className="text-xs text-muted-foreground">Visible sur toutes les pages</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRemoveLogo}
+                disabled={uploadingLogo}
+              >
+                <X className="h-4 w-4 mr-2" />
+                Supprimer
+              </Button>
+            </div>
+          )}
+          
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">Nom</p>
@@ -130,6 +290,31 @@ const PharmacyInfoEdit = ({
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="logo">Logo de la pharmacie</Label>
+              <div className="flex items-center gap-4">
+                {(logoPreview || pharmacyData.logo_url) && (
+                  <img 
+                    src={logoPreview || pharmacyData.logo_url} 
+                    alt="Logo preview" 
+                    className="h-16 w-16 object-contain rounded border"
+                  />
+                )}
+                <div className="flex-1">
+                  <Input 
+                    id="logo" 
+                    type="file" 
+                    accept="image/*"
+                    onChange={handleLogoChange}
+                    className="cursor-pointer"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Format: JPG, PNG. Taille max: 2 Mo
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="grid gap-2">
               <Label htmlFor="name">Nom de la pharmacie</Label>
               <Input id="name" value={formData.name} onChange={e => setFormData({
@@ -184,11 +369,18 @@ const PharmacyInfoEdit = ({
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setEditDialogOpen(false);
+                setLogoFile(null);
+                setLogoPreview(null);
+              }}
+            >
               Annuler
             </Button>
-            <Button onClick={handleUpdate} disabled={updating}>
-              {updating ? "Mise à jour..." : "Enregistrer"}
+            <Button onClick={handleUpdate} disabled={updating || uploadingLogo}>
+              {updating || uploadingLogo ? "Mise à jour..." : "Enregistrer"}
             </Button>
           </DialogFooter>
         </DialogContent>

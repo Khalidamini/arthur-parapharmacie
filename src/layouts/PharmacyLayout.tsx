@@ -1,16 +1,18 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Building2, LogOut, Home, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import Footer from '@/components/Footer';
+import PharmacyLogos from '@/components/PharmacyLogos';
 
 interface PharmacyLayoutProps {
   children: ReactNode;
   pharmacyName?: string;
+  pharmacyId?: string;
 }
 
-const PharmacyLayout = ({ children, pharmacyName }: PharmacyLayoutProps) => {
+const PharmacyLayout = ({ children, pharmacyName, pharmacyId }: PharmacyLayoutProps) => {
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -24,11 +26,7 @@ const PharmacyLayout = ({ children, pharmacyName }: PharmacyLayoutProps) => {
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-            <img 
-              src="/icon-192.png" 
-              alt="Arthur Logo" 
-              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full shrink-0"
-            />
+            <PharmacyLogos pharmacyId={pharmacyId} size="md" />
             <div className="min-w-0">
               <h1 className="font-bold text-sm sm:text-xl truncate">Back-Office Pharmacie</h1>
               {pharmacyName && (
