@@ -509,7 +509,7 @@ const Chat = () => {
           <div className="flex-1 overflow-y-auto pb-[340px] sm:pb-[300px]">
             <div className="max-w-4xl w-full mx-auto px-4 py-6">
               {/* Welcome Message */}
-              {messages.length === 0 && <div className="text-center animate-in fade-in duration-500 mt-0 mb-0 py-0">
+              {messages.length === 0 && <div className="text-center mt-0 mb-0 py-0">
                   <div className="flex justify-center items-center mb-4">
                     <PharmacyLogos size="xxl" />
                   </div>
