@@ -22,10 +22,14 @@ interface ParsedProducts {
   type: 'products';
   message: string;
   products: Array<{ 
-    name: string; 
+    id: string;
+    name: string;
+    brand: string;
+    price: number;
     reason: string;
     image_url?: string;
-    average_price?: string;
+    category?: string;
+    available_in_pharmacy?: boolean;
   }>;
 }
 
@@ -56,6 +60,8 @@ interface Product {
   price: number;
   image_url: string;
   description: string;
+  category?: string;
+  available_in_pharmacy?: boolean;
 }
 
 const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
@@ -114,47 +120,41 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
   };
 
   // Charger les produits si on a une réponse de type products
-  const loadProducts = async (productRecommendations: Array<{ name: string; reason: string }>) => {
+  const loadProducts = async (productRecommendations: Array<{ 
+    id: string; 
+    name: string; 
+    brand: string;
+    price: number;
+    reason: string;
+    image_url?: string;
+    category?: string;
+    available_in_pharmacy?: boolean;
+  }>) => {
     setLoadingProducts(true);
     try {
-      const productNames = productRecommendations.map(p => p.name);
-      
-      const { data } = await (supabase as any)
-        .from('products')
-        .select('id, name, brand, price, image_url, description')
-        .in('name', productNames);
-      
       const proxyBase = import.meta.env.VITE_SUPABASE_URL;
       
-      // Créer un produit pour chaque recommandation, même si non trouvé en DB
-      const productsWithReasons = productRecommendations.map(rec => {
-        const dbProduct = data?.find((p: Product) => p.name === rec.name);
-        if (dbProduct) {
-          // Si le produit est en DB mais n'a pas d'image, générer une URL gratuite
-          if (!dbProduct.image_url || dbProduct.image_url === '') {
-            const freeImageUrl = generateFreeImageUrl(dbProduct.name);
-            dbProduct.image_url = proxyBase 
-              ? `${proxyBase}/functions/v1/image-proxy?url=${encodeURIComponent(freeImageUrl)}`
-              : freeImageUrl;
-          }
-          return dbProduct;
-        }
+      // Utiliser directement les produits fournis par Arthur avec leurs IDs
+      const productsWithProxy = productRecommendations.map(rec => {
+        const rawImage = rec.image_url;
+        const isExternal = rawImage?.startsWith('http');
+        const displayImage = isExternal && proxyBase
+          ? `${proxyBase}/functions/v1/image-proxy?url=${encodeURIComponent(rawImage)}`
+          : (rawImage || '/placeholder.svg');
         
-        // Produit non trouvé en DB : générer une image gratuite
-        const freeImageUrl = generateFreeImageUrl(rec.name);
         return {
-          id: `temp-${rec.name}`,
+          id: rec.id,
           name: rec.name,
-          brand: 'À vérifier en pharmacie',
-          price: 0,
-          image_url: proxyBase 
-            ? `${proxyBase}/functions/v1/image-proxy?url=${encodeURIComponent(freeImageUrl)}`
-            : freeImageUrl,
-          description: rec.reason
+          brand: rec.brand,
+          price: rec.price,
+          image_url: displayImage,
+          description: rec.reason,
+          category: rec.category,
+          available_in_pharmacy: rec.available_in_pharmacy
         };
       });
       
-      setProducts(productsWithReasons);
+      setProducts(productsWithProxy);
     } catch (error) {
       console.error('Error loading products:', error);
     } finally {
@@ -354,14 +354,9 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
               <div className="grid gap-2">
                 {products.map((product, idx) => {
                   const recommendation = parsedContent.products[idx];
-                  const isInDatabase = !product.id.startsWith('temp-');
-                  const rawImage = (recommendation as any)?.image_url || (recommendation as any)?.imageUrl || product.image_url;
-                  const isExternal = rawImage?.startsWith('http');
-                  const proxyBase = import.meta.env.VITE_SUPABASE_URL;
-                  const displayImage = isExternal && proxyBase
-                    ? `${proxyBase}/functions/v1/image-proxy?url=${encodeURIComponent(rawImage)}`
-                    : (rawImage || '/placeholder.svg');
-                  const displayPrice = recommendation?.average_price || (isInDatabase && product.price > 0 ? `${product.price.toFixed(2)}€` : null);
+                  const isInDatabase = product.available_in_pharmacy !== false;
+                  const displayImage = product.image_url || '/placeholder.svg';
+                  const displayPrice = product.price > 0 ? `${product.price.toFixed(2)}€` : null;
                   
                   return (
                     <Card 
@@ -377,7 +372,7 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
                           imageUrl: displayImage,
                           reason: recommendation?.reason,
                           source: 'arthur',
-                          productId: product.id && !product.id.startsWith('temp-') ? product.id : undefined
+                          productId: isInDatabase ? product.id : undefined
                         });
                         setDialogOpen(true);
                       }}
