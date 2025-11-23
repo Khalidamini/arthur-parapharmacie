@@ -26,7 +26,7 @@ const PharmacyLayout = ({ children, pharmacyName, pharmacyId }: PharmacyLayoutPr
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-            <PharmacyLogos pharmacyId={pharmacyId} size="md" />
+            <PharmacyLogos pharmacyId={pharmacyId} size="lg" showPharmacyName={false} />
             <div className="min-w-0">
               <h1 className="font-bold text-sm sm:text-xl truncate">Back-Office Pharmacie</h1>
               {pharmacyName && (
