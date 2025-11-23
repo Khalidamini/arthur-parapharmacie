@@ -4,7 +4,7 @@ import { useCart } from '@/contexts/CartContext';
 
 interface PharmacyLogosProps {
   pharmacyId?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   showPharmacyName?: boolean;
 }
 
@@ -42,7 +42,8 @@ const PharmacyLogos = ({ pharmacyId, size = 'md', showPharmacyName = false }: Ph
   const sizes = {
     sm: 'h-6 w-6 sm:h-8 sm:w-8',
     md: 'h-8 w-8 sm:h-10 sm:w-10',
-    lg: 'h-10 w-10 sm:h-12 sm:w-12'
+    lg: 'h-10 w-10 sm:h-12 sm:w-12',
+    xl: 'h-12 w-12 sm:h-15 sm:w-15'
   };
 
   return (
