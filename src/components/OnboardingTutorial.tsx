@@ -89,7 +89,7 @@ const OnboardingTutorial = ({ userId, onComplete }: OnboardingTutorialProps) => 
 
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('onboarding_completed')
+      .select('skip_tutorial_at_startup')
       .eq('id', userId)
       .single();
 
@@ -98,44 +98,46 @@ const OnboardingTutorial = ({ userId, onComplete }: OnboardingTutorialProps) => 
       return;
     }
 
-    // Show tutorial if not completed
-    if (!profile?.onboarding_completed) {
+    // Show tutorial if user hasn't disabled it at startup
+    if (!profile?.skip_tutorial_at_startup) {
       setIsOpen(true);
     }
   };
 
   const playStepAudio = async (text: string) => {
-    if (!audioEnabled) return;
+    if (!audioEnabled || !window.speechSynthesis) return;
 
     try {
       setIsPlayingAudio(true);
 
-      const { data, error } = await supabase.functions.invoke('text-to-speech', {
-        body: { text, voice: 'alloy' }
-      });
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
 
-      if (error) throw error;
-
-      if (data?.audioContent) {
-        const audioBlob = new Blob(
-          [Uint8Array.from(atob(data.audioContent), c => c.charCodeAt(0))],
-          { type: 'audio/mp3' }
-        );
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-
-        audio.onended = () => {
-          setIsPlayingAudio(false);
-          URL.revokeObjectURL(audioUrl);
-        };
-
-        audio.onerror = () => {
-          setIsPlayingAudio(false);
-          URL.revokeObjectURL(audioUrl);
-        };
-
-        await audio.play();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'fr-FR';
+      utterance.rate = 0.95;
+      utterance.pitch = 1;
+      
+      // Try to find a French male voice
+      const voices = window.speechSynthesis.getVoices();
+      const frenchVoice = voices.find(voice => 
+        voice.lang.startsWith('fr') && voice.name.toLowerCase().includes('male')
+      ) || voices.find(voice => voice.lang.startsWith('fr'));
+      
+      if (frenchVoice) {
+        utterance.voice = frenchVoice;
       }
+
+      utterance.onend = () => {
+        setIsPlayingAudio(false);
+      };
+
+      utterance.onerror = (error) => {
+        console.error('Speech synthesis error:', error);
+        setIsPlayingAudio(false);
+      };
+
+      window.speechSynthesis.speak(utterance);
     } catch (error) {
       console.error('Error playing audio:', error);
       setIsPlayingAudio(false);
@@ -150,6 +152,15 @@ const OnboardingTutorial = ({ userId, onComplete }: OnboardingTutorialProps) => 
       }
     }
   }, [currentStep, isOpen, audioEnabled]);
+
+  // Cleanup speech synthesis on unmount
+  useEffect(() => {
+    return () => {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   const handleNext = () => {
     const step = TUTORIAL_STEPS[currentStep];
@@ -167,7 +178,37 @@ const OnboardingTutorial = ({ userId, onComplete }: OnboardingTutorialProps) => 
   };
 
   const handleSkip = () => {
-    completeTutorial();
+    setIsOpen(false);
+  };
+
+  const handleDontShowAgain = async () => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          skip_tutorial_at_startup: true,
+          onboarding_completed: true,
+          onboarding_completed_at: new Date().toISOString(),
+        })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      setIsOpen(false);
+      toast({
+        title: "✅ Préférence enregistrée",
+        description: "Le tutoriel ne s'affichera plus au démarrage.",
+      });
+
+      onComplete?.();
+    } catch (error) {
+      console.error('Error saving preference:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder la préférence",
+        variant: "destructive",
+      });
+    }
   };
 
   const completeTutorial = async () => {
@@ -185,7 +226,7 @@ const OnboardingTutorial = ({ userId, onComplete }: OnboardingTutorialProps) => 
       setIsOpen(false);
       toast({
         title: "✅ Tutoriel terminé",
-        description: "Vous pouvez le relancer à tout moment depuis votre profil.",
+        description: "Vous pouvez le relancer à tout moment.",
       });
 
       onComplete?.();
@@ -271,28 +312,37 @@ const OnboardingTutorial = ({ userId, onComplete }: OnboardingTutorialProps) => 
             </div>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-3 pt-4">
+          <div className="flex flex-col gap-3 pt-4">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                variant="outline"
+                onClick={handleSkip}
+                className="flex-1"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Fermer
+              </Button>
+              <Button
+                onClick={handleNext}
+                className="flex-1 bg-gradient-primary hover:opacity-90"
+                disabled={isPlayingAudio}
+              >
+                {currentStep === TUTORIAL_STEPS.length - 1 ? (
+                  <>Terminer</>
+                ) : (
+                  <>
+                    Continuer
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            </div>
             <Button
-              variant="outline"
-              onClick={handleSkip}
-              className="flex-1"
+              variant="ghost"
+              onClick={handleDontShowAgain}
+              className="w-full text-muted-foreground hover:text-foreground"
             >
-              <SkipForward className="h-4 w-4 mr-2" />
-              Passer le tutoriel
-            </Button>
-            <Button
-              onClick={handleNext}
-              className="flex-1 bg-gradient-primary hover:opacity-90"
-              disabled={isPlayingAudio}
-            >
-              {currentStep === TUTORIAL_STEPS.length - 1 ? (
-                <>Terminer</>
-              ) : (
-                <>
-                  Continuer
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </>
-              )}
+              Ne plus afficher au démarrage
             </Button>
           </div>
         </div>
