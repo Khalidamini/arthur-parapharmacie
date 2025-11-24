@@ -8,10 +8,12 @@ import PharmacyLogos from '@/components/PharmacyLogos';
 interface UserLayoutProps {
   children: ReactNode;
   user?: any;
+  pharmacyId?: string;
 }
 const UserLayout = ({
   children,
-  user
+  user,
+  pharmacyId
 }: UserLayoutProps) => {
   const navigate = useNavigate();
   const handleSignOut = async () => {
@@ -23,7 +25,7 @@ const UserLayout = ({
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
         <div className="max-w-3xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <PharmacyLogos size="md" />
+            <PharmacyLogos size="md" pharmacyId={pharmacyId} />
             <span className="font-bold text-base sm:text-xl bg-gradient-primary bg-clip-text text-transparent"></span>
           </div>
           <nav className="flex items-center gap-2 sm:gap-3">
