@@ -102,9 +102,13 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
         if (parsed && typeof parsed === 'object' && parsed.type) {
           parsedContent = parsed;
           
-          // Pour type "message", extraire uniquement le message
+          // Extraire le message et convertir les \n en vrais sauts de ligne
           if (parsed.type === 'message' && parsed.message) {
-            textContent = parsed.message;
+            textContent = parsed.message.replace(/\\n/g, '\n');
+          } else if (parsed.type === 'products' && parsed.message) {
+            textContent = parsed.message.replace(/\\n/g, '\n');
+          } else if (parsed.type === 'sales_advice' && parsed.message) {
+            textContent = parsed.message.replace(/\\n/g, '\n');
           } else {
             textContent = content.replace(jsonMatch[0], '').trim();
           }
