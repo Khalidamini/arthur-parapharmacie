@@ -213,9 +213,19 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
                 : 'bg-card border border-border shadow-sm'
             }`}
           >
-            <p className="text-sm leading-relaxed whitespace-pre-wrap">{textContent}</p>
+            {(!isUser ? textContent.split(/\n\s*\n/).filter(Boolean) : [textContent]).map((para, idx) => (
+              <p
+                key={idx}
+                className={`text-sm leading-relaxed whitespace-pre-wrap ${
+                  !isUser && idx < textContent.split(/\n\s*\n/).filter(Boolean).length - 1 ? 'mb-3' : ''
+                }`}
+              >
+                {para}
+              </p>
+            ))}
           </div>
         )}
+
 
         {/* Questions avec options à cocher */}
         {parsedContent?.type === 'question' && !isUser && parsedContent.question && Array.isArray(parsedContent.options) && (
