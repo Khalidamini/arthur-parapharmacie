@@ -41,13 +41,14 @@ interface ParsedSalesAdvice {
     price?: string;
     selling_points?: string[];
     customer_benefit?: string;
-    questions_to_ask?: string[];
+    how_to_present?: string;
   }>;
   additional_sales?: Array<{
     name: string;
     price?: string;
     reason?: string;
     upsell_technique?: string;
+    added_value?: string;
   }>;
   total_basket?: string;
   closing_tips?: string[];
@@ -283,15 +284,10 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
                         </div>
                       )}
                       
-                      {product.questions_to_ask && product.questions_to_ask.length > 0 && (
-                        <div className="space-y-1">
-                          <p className="text-xs font-medium">❓ Questions à poser :</p>
-                          <ul className="space-y-1">
-                            {product.questions_to_ask.map((question, qidx) => (
-                              <li key={qidx} className="text-xs text-muted-foreground pl-4">• {question}</li>
-                            ))}
-                          </ul>
-                        </div>
+                      {product.how_to_present && (
+                        <p className="text-xs text-primary/80 bg-primary/5 rounded p-2">
+                          <strong>🎤 Comment présenter :</strong> "{product.how_to_present}"
+                        </p>
                       )}
                     </div>
                   ))}
@@ -315,8 +311,14 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
                       )}
                       
                       {product.upsell_technique && (
-                        <p className="text-xs text-primary/80">
-                          <strong>🎤 Comment présenter :</strong> {product.upsell_technique}
+                        <p className="text-xs text-primary/80 bg-primary/5 rounded p-2">
+                          <strong>🎤 Comment présenter :</strong> "{product.upsell_technique}"
+                        </p>
+                      )}
+                      
+                      {product.added_value && (
+                        <p className="text-xs text-accent font-semibold">
+                          💵 Valeur ajoutée : {product.added_value}
                         </p>
                       )}
                     </div>
