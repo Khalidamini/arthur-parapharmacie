@@ -26,6 +26,7 @@ const Index = () => {
   const [currentPharmacy, setCurrentPharmacy] = useState<string | null>(null);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [isPharmacist, setIsPharmacist] = useState(false);
+  const [pharmacistPharmacyId, setPharmacistPharmacyId] = useState<string | null>(null);
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -48,12 +49,15 @@ const Index = () => {
           // Vérifier si l'utilisateur est un membre de pharmacie
           const { data: roleData } = await (supabase as any)
             .from("user_roles")
-            .select("id")
+            .select("id, pharmacy_id")
             .eq("user_id", user.id)
             .limit(1)
             .maybeSingle();
 
-          setIsPharmacist(!!roleData);
+          if (roleData) {
+            setIsPharmacist(true);
+            setPharmacistPharmacyId(roleData.pharmacy_id);
+          }
 
           // Vérifier s'il y a une affiliation en attente
           const pendingAffiliation = localStorage.getItem("pending_pharmacy_affiliation");
@@ -143,7 +147,7 @@ const Index = () => {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="flex justify-center items-center">
-            <PharmacyLogos size="xxl" />
+            <PharmacyLogos size="xxl" pharmacyId={pharmacistPharmacyId || undefined} />
           </div>
           <p className="text-muted-foreground">Chargement...</p>
         </div>
@@ -157,7 +161,7 @@ const Index = () => {
         <div className="absolute inset-0 bg-gradient-primary opacity-5"></div>
         <div className="max-w-3xl mx-auto px-4 text-center relative py-[34px]">
           <div className="flex justify-center items-center mb-6">
-            <PharmacyLogos size="xxl" />
+            <PharmacyLogos size="xxl" pharmacyId={pharmacistPharmacyId || undefined} />
           </div>
           <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
             Bonjour{username ? ` ${username}` : ""}, je suis{" "}
