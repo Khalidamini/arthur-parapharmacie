@@ -88,37 +88,28 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
   let textContent = content;
 
   try {
-    // Vérifier si content est déjà un objet
+    // Cas où le contenu est déjà un objet typé
     if (typeof content === 'object' && content !== null && 'type' in (content as any)) {
       parsedContent = content as any;
-      console.log('📦 ChatMessage - Content is object:', parsedContent);
       if (parsedContent.type === 'message' && 'message' in (parsedContent as any)) {
         textContent = (parsedContent as any).message;
       }
     } else if (typeof content === 'string' && content) {
-      // Chercher des blocs JSON dans le contenu string
-      const jsonMatch = content.match(/\{[\s\S]*?"type"[\s\S]*?\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        if (parsed && typeof parsed === 'object' && parsed.type) {
-          parsedContent = parsed;
-          console.log('📦 ChatMessage - Parsed from string:', parsedContent);
-          
-          // Extraire le message et convertir les \n en vrais sauts de ligne
-          if (parsed.type === 'message' && parsed.message) {
-            textContent = parsed.message.replace(/\\n/g, '\n');
-          } else if (parsed.type === 'products' && parsed.message) {
-            textContent = parsed.message.replace(/\\n/g, '\n');
-            console.log('🛍️ ChatMessage - Products detected:', parsed.products?.length || 0);
-          } else if (parsed.type === 'sales_advice' && parsed.message) {
-            textContent = parsed.message.replace(/\\n/g, '\n');
-          } else {
-            textContent = content.replace(jsonMatch[0], '').trim();
-          }
+      // Le backend renvoie du JSON pur : on essaie de parser directement
+      const parsed = JSON.parse(content);
+      if (parsed && typeof parsed === 'object' && 'type' in parsed) {
+        parsedContent = parsed as any;
+        if (parsed.type === 'message' && parsed.message) {
+          textContent = parsed.message.replace(/\\n/g, '\n');
+        } else if (parsed.type === 'products' && parsed.message) {
+          textContent = parsed.message.replace(/\\n/g, '\n');
+        } else if (parsed.type === 'sales_advice' && parsed.message) {
+          textContent = parsed.message.replace(/\\n/g, '\n');
+        } else {
+          textContent = content;
         }
       } else {
-        // Pas de JSON trouvé, c'est un message texte simple
-        console.log('📝 ChatMessage - Plain text message');
+        // Pas de JSON structuré, on garde le texte brut
         textContent = content;
       }
     }
