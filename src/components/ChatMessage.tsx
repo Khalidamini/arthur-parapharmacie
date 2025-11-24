@@ -91,6 +91,7 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
     // Vérifier si content est déjà un objet
     if (typeof content === 'object' && content !== null && 'type' in (content as any)) {
       parsedContent = content as any;
+      console.log('📦 ChatMessage - Content is object:', parsedContent);
       if (parsedContent.type === 'message' && 'message' in (parsedContent as any)) {
         textContent = (parsedContent as any).message;
       }
@@ -101,12 +102,14 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
         const parsed = JSON.parse(jsonMatch[0]);
         if (parsed && typeof parsed === 'object' && parsed.type) {
           parsedContent = parsed;
+          console.log('📦 ChatMessage - Parsed from string:', parsedContent);
           
           // Extraire le message et convertir les \n en vrais sauts de ligne
           if (parsed.type === 'message' && parsed.message) {
             textContent = parsed.message.replace(/\\n/g, '\n');
           } else if (parsed.type === 'products' && parsed.message) {
             textContent = parsed.message.replace(/\\n/g, '\n');
+            console.log('🛍️ ChatMessage - Products detected:', parsed.products?.length || 0);
           } else if (parsed.type === 'sales_advice' && parsed.message) {
             textContent = parsed.message.replace(/\\n/g, '\n');
           } else {
@@ -115,6 +118,7 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
         }
       } else {
         // Pas de JSON trouvé, c'est un message texte simple
+        console.log('📝 ChatMessage - Plain text message');
         textContent = content;
       }
     }
@@ -182,9 +186,15 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
 
   // Charger les produits au premier rendu si c'est une réponse products
   useEffect(() => {
+    console.log('🔄 useEffect - parsedContent?.type:', parsedContent?.type);
+    console.log('🔄 useEffect - isUser:', isUser);
     if (parsedContent?.type === 'products' && !isUser) {
+      console.log('🛍️ useEffect - Products array:', parsedContent.products);
       if (parsedContent.products.length > 0) {
+        console.log('✅ useEffect - Loading products:', parsedContent.products.length);
         loadProducts(parsedContent.products);
+      } else {
+        console.warn('⚠️ useEffect - Products array is empty');
       }
     }
   }, [content]);
