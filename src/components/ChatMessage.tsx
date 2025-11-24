@@ -229,10 +229,10 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
                     variant={selectedOptions.has(option) ? "default" : "outline"}
                     size="sm"
                     onClick={() => handleOptionToggle(option)}
-                    className="w-full justify-start gap-2"
+                    className="w-full justify-start gap-2 h-auto min-h-[2.5rem] whitespace-normal text-left py-2"
                   >
-                    {selectedOptions.has(option) && <Check className="h-4 w-4" />}
-                    {typeof option === 'string' ? option : JSON.stringify(option)}
+                    {selectedOptions.has(option) && <Check className="h-4 w-4 flex-shrink-0" />}
+                    <span className="flex-1">{typeof option === 'string' ? option : JSON.stringify(option)}</span>
                   </Button>
                 ))}
               </div>
