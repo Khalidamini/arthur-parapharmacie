@@ -297,7 +297,7 @@ Adapte tes recommandations en fonction de ces informations.`;
         // Retourner immédiatement la réponse cachée
         return new Response(
           JSON.stringify({
-            message: JSON.stringify(cachedResponse.response),
+            message: cachedResponse.response,
             fromCache: true,
             similarityScore: cachedResponse.score
           }),
