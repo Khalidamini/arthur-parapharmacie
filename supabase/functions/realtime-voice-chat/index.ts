@@ -106,29 +106,31 @@ TON CARACTÈRE :
 TU ES SPÉCIALISTE EN PARAPHARMACIE UNIQUEMENT. Tu NE prescris JAMAIS de médicaments, tu NE fais JAMAIS de diagnostic médical, tu NE remplaces JAMAIS le pharmacien ou médecin. 
 
 ═══════════════════════════════════════════════════════
-🎯 RÈGLE ABSOLUE : TOUJOURS RECOMMANDER DES PRODUITS
+🎯 RÈGLE ABSOLUE #1 : APPELER display_products
 ═══════════════════════════════════════════════════════
 
-❌ INTERDIT : Répondre en disant "je n'ai pas d'information" ou "consultez un professionnel" SANS recommander de produits
-✅ OBLIGATOIRE : TOUJOURS appeler display_products avec des produits adaptés au besoin du client
+DÉROULEMENT OBLIGATOIRE pour CHAQUE conseil produit :
 
-AFFICHAGE DES PRODUITS - RÈGLES IMPÉRATIVES :
-- Quand un client demande un conseil, tu DOIS IMPÉRATIVEMENT appeler la fonction display_products avec 2-4 produits pertinents
-- Cette fonction affichera les produits visuellement dans le chat avec photos et boutons pour les ajouter au panier
-- AVANT d'appeler display_products, décris ORALEMENT (en 2-3 phrases max) pourquoi tu recommandes ces produits
-- Après avoir appelé display_products, énumère AUSSI oralement quelques bénéfices clés des produits
-- Sois PROACTIF : propose régulièrement des produits spécifiques adaptés aux besoins du client
-- Suggère des produits complémentaires pour maximiser les ventes tout en restant éthique
+1️⃣ ÉCOUTER la demande du client
+2️⃣ RÉPONDRE oralement avec empathie (1-2 phrases)
+3️⃣ APPELER IMMÉDIATEMENT display_products avec 2-4 produits de la liste disponible
+4️⃣ CONTINUER à parler pour décrire les bénéfices des produits
+
+❌ INTERDIT : Répondre sans appeler display_products
+❌ INTERDIT : Dire "je n'ai pas d'information" sans proposer de produits
+✅ OBLIGATOIRE : TOUJOURS appeler display_products même si tu ne connais pas le produit exact
+
+EXEMPLE DE CONVERSATION :
+Client: "Qu'est-ce que tu me conseilles pour avoir une meilleure peau sur mon visage ?"
+Arthur: "Je comprends votre préoccupation. Pour une belle peau, je vous recommande..." [APPELER display_products ICI] "...ces produits sont excellents car ils hydratent en profondeur et protègent votre peau."
 
 RECHERCHE MULTI-PHARMACIES :
 - Si un produit n'est PAS disponible dans la pharmacie sélectionnée, utilise AUTOMATIQUEMENT la fonction search_all_pharmacies
 - Tu peux aussi l'utiliser quand le client te demande explicitement où trouver un produit
 - Informe le client oralement du nom et de l'adresse de la pharmacie où le produit est disponible
-- Sois clair et précis dans tes indications d'adresse
 
-Tu recommandes PRIORITAIREMENT les produits disponibles dans la pharmacie sélectionnée ci-dessous.
+Tu recommandes PRIORITAIREMENT les produits disponibles dans la liste ci-dessous.${systemInstructions}`;
 
-En cas de doute médical GRAVE uniquement, oriente vers le pharmacien ou médecin, mais propose QUAND MÊME des produits adaptés.${systemInstructions}`;
 
     clientSocket.onopen = () => {
       console.log('Client WebSocket connected');
@@ -145,96 +147,106 @@ En cas de doute médical GRAVE uniquement, oriente vers le pharmacien ou médeci
       ]);
 
       openaiSocket.onopen = () => {
-        console.log('Connected to OpenAI, sending session config...');
-        
-        // Send session configuration (without authorization field)
-        openaiSocket.send(JSON.stringify({
-          type: 'session.update',
-          session: {
-            modalities: ['text', 'audio'],
-            instructions: baseInstructions,
-            voice: 'echo',
-            input_audio_format: 'pcm16',
-            output_audio_format: 'pcm16',
-            input_audio_transcription: {
-              model: 'whisper-1'
-            },
-            turn_detection: {
-              type: 'server_vad',
-              threshold: 0.5,
-              prefix_padding_ms: 300,
-              silence_duration_ms: 1000
-            },
-            temperature: 0.8,
-            max_response_output_tokens: 4096,
-            tools: [
-              {
-                type: 'function',
-                name: 'display_products',
-                description: 'Affiche visuellement les produits disponibles dans le chat avec leurs détails et un bouton pour les ajouter au panier. Utilise cette fonction quand le client demande à voir les produits disponibles.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    products: {
-                      type: 'array',
-                      items: {
-                        type: 'object',
-                        properties: {
-                          id: { type: 'string' },
-                          name: { type: 'string' },
-                          brand: { type: 'string' },
-                          category: { type: 'string' },
-                          price: { type: 'number' },
-                          description: { type: 'string' },
-                          image_url: { type: 'string' }
-                        }
-                      }
-                    }
-                  },
-                  required: ['products']
-                }
-              },
-              {
-                type: 'function',
-                name: 'add_to_cart',
-                description: 'Ajoute un produit au panier du client. Utilise cette fonction quand le client demande explicitement d\'ajouter un produit à son panier (par exemple "ajoute ce produit", "mets ça dans mon panier", etc.).',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    productId: { type: 'string', description: 'ID du produit' },
-                    name: { type: 'string', description: 'Nom du produit' },
-                    brand: { type: 'string', description: 'Marque du produit' },
-                    price: { type: 'number', description: 'Prix du produit' },
-                    imageUrl: { type: 'string', description: 'URL de l\'image du produit' }
-                  },
-                  required: ['productId', 'name', 'brand', 'price']
-                }
-              },
-              {
-                type: 'function',
-                name: 'search_all_pharmacies',
-                description: 'Recherche un produit dans TOUTES les pharmacies disponibles. Utilise cette fonction quand le client cherche un produit qui n\'est pas disponible dans sa pharmacie sélectionnée ou quand il demande explicitement où trouver un produit.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    productName: { 
-                      type: 'string', 
-                      description: 'Nom du produit recherché' 
-                    }
-                  },
-                  required: ['productName']
-                }
-              }
-            ],
-            tool_choice: 'auto'
-          }
-        }));
-        console.log('Session configuration sent');
+        console.log('Connected to OpenAI, waiting for session.created...');
       };
 
       openaiSocket.onmessage = async (event: MessageEvent) => {
         const data = JSON.parse(event.data as string);
         console.log('OpenAI message type:', data.type);
+
+        // Wait for session.created before sending configuration
+        if (data.type === 'session.created' && !sessionConfigured) {
+          console.log('Session created, sending configuration...');
+          sessionConfigured = true;
+          
+          // Send session configuration AFTER session.created
+          openaiSocket.send(JSON.stringify({
+            type: 'session.update',
+            session: {
+              modalities: ['text', 'audio'],
+              instructions: baseInstructions,
+              voice: 'echo',
+              input_audio_format: 'pcm16',
+              output_audio_format: 'pcm16',
+              input_audio_transcription: {
+                model: 'whisper-1'
+              },
+              turn_detection: {
+                type: 'server_vad',
+                threshold: 0.5,
+                prefix_padding_ms: 300,
+                silence_duration_ms: 1000
+              },
+              temperature: 0.8,
+              max_response_output_tokens: 4096,
+              tools: [
+                {
+                  type: 'function',
+                  name: 'display_products',
+                  description: 'FONCTION CRITIQUE : Affiche les produits avec photos et boutons. Tu DOIS appeler cette fonction à CHAQUE fois qu\'un client demande un conseil produit. C\'est la seule façon de montrer les produits visuellement au client. Choisis 2-4 produits pertinents de la liste disponible.',
+                  parameters: {
+                    type: 'object',
+                    properties: {
+                      products: {
+                        type: 'array',
+                        description: 'Liste de 2 à 4 produits à afficher. Choisis parmi les produits disponibles listés dans le contexte système.',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            id: { type: 'string', description: 'ID du produit de la liste' },
+                            name: { type: 'string', description: 'Nom exact du produit' },
+                            brand: { type: 'string', description: 'Marque du produit' },
+                            category: { type: 'string', description: 'Catégorie du produit' },
+                            price: { type: 'number', description: 'Prix en euros' },
+                            description: { type: 'string', description: 'Description du produit' },
+                            image_url: { type: 'string', description: 'URL de l\'image du produit' }
+                          },
+                          required: ['id', 'name', 'brand', 'price']
+                        },
+                        minItems: 2,
+                        maxItems: 4
+                      }
+                    },
+                    required: ['products']
+                  }
+                },
+                {
+                  type: 'function',
+                  name: 'add_to_cart',
+                  description: 'Ajoute un produit au panier du client. Utilise cette fonction quand le client demande explicitement d\'ajouter un produit à son panier (par exemple "ajoute ce produit", "mets ça dans mon panier", etc.).',
+                  parameters: {
+                    type: 'object',
+                    properties: {
+                      productId: { type: 'string', description: 'ID du produit' },
+                      name: { type: 'string', description: 'Nom du produit' },
+                      brand: { type: 'string', description: 'Marque du produit' },
+                      price: { type: 'number', description: 'Prix du produit' },
+                      imageUrl: { type: 'string', description: 'URL de l\'image du produit' }
+                    },
+                    required: ['productId', 'name', 'brand', 'price']
+                  }
+                },
+                {
+                  type: 'function',
+                  name: 'search_all_pharmacies',
+                  description: 'Recherche un produit dans TOUTES les pharmacies disponibles. Utilise cette fonction quand le client cherche un produit qui n\'est pas disponible dans sa pharmacie sélectionnée ou quand il demande explicitement où trouver un produit.',
+                  parameters: {
+                    type: 'object',
+                    properties: {
+                      productName: { 
+                        type: 'string', 
+                        description: 'Nom du produit recherché' 
+                      }
+                    },
+                    required: ['productName']
+                  }
+                }
+              ],
+              tool_choice: 'auto'
+            }
+          }));
+          console.log('Session configuration sent');
+        }
 
         // Handle function calls
         if (data.type === 'response.function_call_arguments.done') {

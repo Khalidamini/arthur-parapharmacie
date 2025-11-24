@@ -210,20 +210,23 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
     console.log('Disconnecting...');
     stopRecording();
     
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-    
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-    
-    clearAudioQueue();
-    setIsConnected(false);
-    setIsListening(false);
-    setIsSpeaking(false);
+    // Wait a bit before closing everything to allow audio queue to finish
+    setTimeout(() => {
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+      
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+      
+      clearAudioQueue();
+      setIsConnected(false);
+      setIsListening(false);
+      setIsSpeaking(false);
+    }, 500);
   };
 
   return (
