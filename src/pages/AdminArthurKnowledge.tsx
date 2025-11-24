@@ -35,7 +35,7 @@ const knowledgeSchema = z.object({
   entryType: z.enum(["question_response", "information"]),
   question: z.string().trim().max(2000, "Maximum 2000 caractères").optional(),
   response: z.string().trim().min(10, "Le contenu doit faire au moins 10 caractères").max(50000, "Maximum 50000 caractères"),
-  contextType: z.enum(["pharmacy"]),
+  contextType: z.enum(["pharmacy", "patient", "general"]),
   responseType: z.enum(["message", "products", "question", "sales_advice"]),
 }).refine((data) => {
   if (data.entryType === "question_response") {
@@ -74,7 +74,7 @@ export default function AdminArthurKnowledge() {
     entryType: "question_response" as "question_response" | "information",
     question: "",
     response: "",
-    contextType: "pharmacy" as "pharmacy",
+    contextType: "general" as "pharmacy" | "patient" | "general",
     responseType: "message" as "message" | "products" | "question" | "sales_advice",
   });
 
@@ -255,7 +255,7 @@ export default function AdminArthurKnowledge() {
         entryType: "question_response",
         question: "",
         response: "",
-        contextType: "pharmacy",
+        contextType: "general",
         responseType: "message",
       });
       setShowAddDialog(false);
@@ -319,7 +319,7 @@ export default function AdminArthurKnowledge() {
       entryType: "question_response",
       question: "",
       response: "",
-      contextType: "pharmacy",
+      contextType: "general",
       responseType: "message",
     });
     setEditingId(null);
@@ -540,15 +540,20 @@ export default function AdminArthurKnowledge() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="contextType">Contexte</Label>
-                <Input 
-                  value="Pharmacien" 
-                  disabled 
-                  className="bg-muted"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Les connaissances sont exclusivement pour les pharmaciens
-                </p>
+                <Label htmlFor="contextType">Contexte *</Label>
+                <Select
+                  value={formData.contextType}
+                  onValueChange={(value: any) => setFormData({ ...formData, contextType: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="general">Général (tous les utilisateurs)</SelectItem>
+                    <SelectItem value="patient">Patient (clients)</SelectItem>
+                    <SelectItem value="pharmacy">Pharmacien (staff pharmacie)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
