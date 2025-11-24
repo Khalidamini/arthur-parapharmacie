@@ -220,16 +220,19 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
                 : 'bg-card border border-border shadow-sm'
             }`}
           >
-            {(!isUser ? textContent.split(/\n\s*\n/).filter(Boolean) : [textContent]).map((para, idx) => (
-              <p
-                key={idx}
-                className={`text-sm leading-relaxed whitespace-pre-wrap ${
-                  !isUser && idx < textContent.split(/\n\s*\n/).filter(Boolean).length - 1 ? 'mb-3' : ''
-                }`}
-              >
-                {para}
-              </p>
-            ))}
+            {(() => {
+              const paragraphs = (!isUser ? textContent : textContent.trim()).split(/\n+/).filter(Boolean);
+              return paragraphs.map((para, idx) => (
+                <p
+                  key={idx}
+                  className={`text-sm leading-relaxed whitespace-pre-wrap ${
+                    !isUser && idx < paragraphs.length - 1 ? 'mb-3' : ''
+                  }`}
+                >
+                  {para.trim()}
+                </p>
+              ));
+            })()}
           </div>
         )}
 
