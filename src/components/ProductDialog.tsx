@@ -97,13 +97,6 @@ export const ProductDialog = ({ product, open, onOpenChange }: ProductDialogProp
                 </div>
               </div>
             )}
-
-            {product.description && (
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">Description</p>
-                <p className="text-sm leading-relaxed">{product.description}</p>
-              </div>
-            )}
           </div>
 
           <Button
