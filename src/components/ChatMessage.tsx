@@ -216,7 +216,8 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
         </Avatar>
       )}
       <div className={`max-w-[80%] space-y-3 ${isUser ? 'flex flex-col items-end' : ''}`}>
-        {textContent && (
+        {/* Bulle de texte principale uniquement pour les messages simples */}
+        {textContent && (!parsedContent || parsedContent.type === 'message') && (
           <div
             className={`rounded-2xl px-4 py-3 ${
               isUser
@@ -376,8 +377,9 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
         {parsedContent?.type === 'products' && !isUser && (
           <div className="space-y-2">
             {parsedContent.message && (
-              <p className="text-sm text-muted-foreground px-2">{parsedContent.message}</p>
+              <p className="text-sm text-muted-foreground px-2 whitespace-pre-wrap">{parsedContent.message}</p>
             )}
+
             {loadingProducts ? (
               <div className="flex justify-center py-4">
                 <div className="h-6 w-6 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
