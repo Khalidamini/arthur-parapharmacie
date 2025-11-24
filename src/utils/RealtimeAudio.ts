@@ -127,10 +127,11 @@ export const createWavFromPCM = (pcmData: Uint8Array): Uint8Array => {
 class AudioQueue {
   private queue: Uint8Array[] = [];
   private isPlaying = false;
-  private audioContext: AudioContext;
+  private audioEl: HTMLAudioElement;
 
-  constructor(audioContext: AudioContext) {
-    this.audioContext = audioContext;
+  constructor() {
+    this.audioEl = document.createElement('audio');
+    this.audioEl.autoplay = true;
   }
 
   async addToQueue(audioData: Uint8Array) {
@@ -152,30 +153,33 @@ class AudioQueue {
     const audioData = this.queue.shift()!;
 
     try {
-      // Convertir le PCM16 brut en Float32 et jouer directement sans passer par decodeAudioData
-      const int16Data = new Int16Array(audioData.buffer, audioData.byteOffset, audioData.byteLength / 2);
-      const float32Data = new Float32Array(int16Data.length);
+      // Convert PCM16 to WAV and play via HTMLAudioElement for maximum compatibility
+      const wavData = createWavFromPCM(audioData);
+      const blob = new Blob([wavData.buffer as ArrayBuffer], { type: 'audio/wav' });
+      const url = URL.createObjectURL(blob);
 
-      for (let i = 0; i < int16Data.length; i++) {
-        float32Data[i] = int16Data[i] / 0x8000;
-      }
-
-      const audioBuffer = this.audioContext.createBuffer(1, float32Data.length, 24000);
-      audioBuffer.copyToChannel(float32Data, 0);
-
-      const source = this.audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(this.audioContext.destination);
-
-      source.onended = () => {
+      this.audioEl.onended = () => {
         console.log('Audio chunk finished playing');
+        URL.revokeObjectURL(url);
         this.playNext();
       };
 
-      source.start(0);
-      console.log('Playing audio chunk');
+      this.audioEl.onerror = (e) => {
+        console.error('Error playing audio element:', e);
+        URL.revokeObjectURL(url);
+        this.playNext();
+      };
+
+      this.audioEl.src = url;
+      await this.audioEl.play().catch(err => {
+        console.error('Error starting audio playback:', err);
+        URL.revokeObjectURL(url);
+        this.playNext();
+      });
+
+      console.log('Playing audio chunk via <audio> element');
     } catch (error) {
-      console.error('Error playing audio:', error);
+      console.error('Error preparing audio for playback:', error);
       this.playNext();
     }
   }
@@ -184,14 +188,16 @@ class AudioQueue {
     console.log('Clearing audio queue');
     this.queue = [];
     this.isPlaying = false;
+    this.audioEl.pause();
+    this.audioEl.removeAttribute('src');
   }
 }
 
 let audioQueueInstance: AudioQueue | null = null;
 
-export const playAudioData = async (audioContext: AudioContext, audioData: Uint8Array) => {
+export const playAudioData = async (_audioContext: AudioContext, audioData: Uint8Array) => {
   if (!audioQueueInstance) {
-    audioQueueInstance = new AudioQueue(audioContext);
+    audioQueueInstance = new AudioQueue();
   }
   await audioQueueInstance.addToQueue(audioData);
 };
