@@ -95,22 +95,46 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
         textContent = (parsedContent as any).message;
       }
     } else if (typeof content === 'string' && content) {
-      // Le backend renvoie du JSON pur : on essaie de parser directement
-      const parsed = JSON.parse(content);
-      if (parsed && typeof parsed === 'object' && 'type' in parsed) {
-        parsedContent = parsed as any;
-        if (parsed.type === 'message' && parsed.message) {
-          textContent = parsed.message.replace(/\\n/g, '\n');
-        } else if (parsed.type === 'products' && parsed.message) {
-          textContent = parsed.message.replace(/\\n/g, '\n');
-        } else if (parsed.type === 'sales_advice' && parsed.message) {
-          textContent = parsed.message.replace(/\\n/g, '\n');
+      // Essayer d'abord de parser directement comme JSON
+      try {
+        const parsed = JSON.parse(content);
+        if (parsed && typeof parsed === 'object' && 'type' in parsed) {
+          parsedContent = parsed as any;
+          if (parsed.type === 'message' && parsed.message) {
+            textContent = parsed.message.replace(/\\n/g, '\n');
+          } else if (parsed.type === 'products' && parsed.message) {
+            textContent = parsed.message.replace(/\\n/g, '\n');
+          } else if (parsed.type === 'sales_advice' && parsed.message) {
+            textContent = parsed.message.replace(/\\n/g, '\n');
+          }
+        }
+      } catch {
+        // Si le parse direct échoue, chercher un bloc JSON markdown ou entre accolades
+        const markdownJsonMatch = content.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+        const jsonBlockMatch = markdownJsonMatch || content.match(/(\{[\s\S]*\})/);
+        
+        if (jsonBlockMatch) {
+          try {
+            const jsonStr = jsonBlockMatch[1].trim();
+            const parsed = JSON.parse(jsonStr);
+            if (parsed && typeof parsed === 'object' && 'type' in parsed) {
+              parsedContent = parsed as any;
+              if (parsed.type === 'message' && parsed.message) {
+                textContent = parsed.message.replace(/\\n/g, '\n');
+              } else if (parsed.type === 'products' && parsed.message) {
+                textContent = parsed.message.replace(/\\n/g, '\n');
+              } else if (parsed.type === 'sales_advice' && parsed.message) {
+                textContent = parsed.message.replace(/\\n/g, '\n');
+              }
+            }
+          } catch (e2) {
+            console.error('Failed to parse extracted JSON:', e2);
+            textContent = content;
+          }
         } else {
+          // Pas de JSON trouvé, c'est du texte simple
           textContent = content;
         }
-      } else {
-        // Pas de JSON structuré, on garde le texte brut
-        textContent = content;
       }
     }
   } catch (e) {
