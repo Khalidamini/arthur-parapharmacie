@@ -373,6 +373,7 @@ const Chat = () => {
   };
   const handleDisplayProducts = async (products: any[]) => {
     console.log("✅ Displaying products in chat:", products);
+    setDisplayedProducts(products);
     
     if (!products || products.length === 0) {
       console.warn('⚠️ No products to display');
