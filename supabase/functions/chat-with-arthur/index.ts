@@ -13,12 +13,16 @@ const corsHeaders = {
 
 /**
  * Normalise une question pour la recherche dans la base de connaissances
- * Retire la ponctuation, met en minuscules, retire les mots vides
+ * Retire la ponctuation, met en minuscules, corrige les erreurs courantes
  */
 function normalizeQuery(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[^\w\s]/g, ' ') // Retire la ponctuation
+    .replace(/c[4']est/g, 'cest') // Corrige "c'est" et "c4est"
+    .replace(/qu[4']est/g, 'quest') // Corrige "qu'est" et "qu4est"
+    .replace(/l[4']application/g, 'lapplication') // Corrige "l'application"
+    .replace(/int[eé]r[eê]t/g, 'interet') // Corrige "intérêt"
+    .replace(/[^\w\s]/g, ' ') // Retire la ponctuation restante
     .replace(/\s+/g, ' ') // Normalise les espaces
     .trim();
 }
@@ -37,9 +41,11 @@ async function searchKnowledgeBase(
   const normalized = normalizeQuery(userQuery);
   
   console.log('🔍 RAG: Recherche dans la base de connaissances...', {
-    query: normalized.substring(0, 100),
+    original: userQuery.substring(0, 100),
+    normalized: normalized.substring(0, 100),
     contextType,
-    pharmacyId: pharmacyId?.substring(0, 8)
+    pharmacyId: pharmacyId?.substring(0, 8),
+    threshold: similarityThreshold
   });
 
   try {
@@ -57,7 +63,10 @@ async function searchKnowledgeBase(
     }
 
     if (!results || results.length === 0) {
-      console.log('🔍 RAG: Aucune réponse trouvée dans la base de connaissances');
+      console.log('🔍 RAG: Aucune réponse trouvée dans la base de connaissances', {
+        threshold: similarityThreshold,
+        contextType
+      });
       return null;
     }
 
@@ -260,13 +269,13 @@ Adapte tes recommandations en fonction de ces informations.`;
     if (lastUserMessage && typeof lastUserMessage === 'string') {
       const contextType = isPharmacyStaff ? 'pharmacy' : 'patient';
       
-      // Chercher dans la base de connaissances (seuil à 0.70 = réponses très similaires)
+      // Chercher dans la base de connaissances (seuil abaissé à 0.50 pour meilleure détection)
       const cachedResponse = await searchKnowledgeBase(
         supabase,
         lastUserMessage,
         contextType,
         selectedPharmacyId,
-        0.70 // Seuil de similarité élevé pour éviter les faux positifs
+        0.50 // Seuil de similarité modéré pour mieux détecter les réponses pertinentes
       );
       
       if (cachedResponse) {
