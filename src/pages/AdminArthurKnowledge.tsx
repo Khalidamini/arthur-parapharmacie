@@ -32,10 +32,19 @@ import {
 
 // Schéma de validation
 const knowledgeSchema = z.object({
-  question: z.string().trim().min(5, "La question doit faire au moins 5 caractères").max(500, "Maximum 500 caractères"),
-  response: z.string().trim().min(10, "La réponse doit faire au moins 10 caractères").max(5000, "Maximum 5000 caractères"),
+  entryType: z.enum(["question_response", "information"]),
+  question: z.string().trim().max(500, "Maximum 500 caractères").optional(),
+  response: z.string().trim().min(10, "Le contenu doit faire au moins 10 caractères").max(5000, "Maximum 5000 caractères"),
   contextType: z.enum(["pharmacy", "patient", "general"]),
   responseType: z.enum(["message", "products", "question", "sales_advice"]),
+}).refine((data) => {
+  if (data.entryType === "question_response") {
+    return data.question && data.question.length >= 5;
+  }
+  return true;
+}, {
+  message: "La question est requise et doit faire au moins 5 caractères pour le type Question-Réponse",
+  path: ["question"],
 });
 
 interface KnowledgeEntry {
@@ -62,6 +71,7 @@ export default function AdminArthurKnowledge() {
 
   // Formulaire
   const [formData, setFormData] = useState({
+    entryType: "question_response" as "question_response" | "information",
     question: "",
     response: "",
     contextType: "general" as "pharmacy" | "patient" | "general",
@@ -136,6 +146,7 @@ export default function AdminArthurKnowledge() {
   const validateForm = () => {
     try {
       knowledgeSchema.parse({
+        entryType: formData.entryType,
         question: formData.question,
         response: formData.response,
         contextType: formData.contextType,
@@ -169,8 +180,12 @@ export default function AdminArthurKnowledge() {
 
     setSubmitting(true);
     try {
-      // Normaliser la question
-      const normalized = formData.question
+      // Normaliser la question (ou utiliser la réponse si c'est une information brute)
+      const textToNormalize = formData.entryType === "information" 
+        ? formData.response 
+        : formData.question;
+      
+      const normalized = textToNormalize
         .toLowerCase()
         .replace(/[^\w\s]/g, ' ')
         .replace(/\s+/g, ' ')
@@ -199,7 +214,7 @@ export default function AdminArthurKnowledge() {
         const { error } = await supabase
           .from("arthur_knowledge_base")
           .update({
-            question_original: formData.question,
+            question_original: formData.entryType === "information" ? "[Information]" : formData.question,
             question_normalized: normalized,
             response_text: responseText,
             response_type: formData.responseType,
@@ -218,7 +233,7 @@ export default function AdminArthurKnowledge() {
         const { error } = await supabase
           .from("arthur_knowledge_base")
           .insert({
-            question_original: formData.question,
+            question_original: formData.entryType === "information" ? "[Information]" : formData.question,
             question_normalized: normalized,
             response_text: responseText,
             response_type: formData.responseType,
@@ -237,6 +252,7 @@ export default function AdminArthurKnowledge() {
 
       // Reset form
       setFormData({
+        entryType: "question_response",
         question: "",
         response: "",
         contextType: "general",
@@ -258,8 +274,10 @@ export default function AdminArthurKnowledge() {
   };
 
   const handleEdit = (entry: KnowledgeEntry) => {
+    const isInformation = entry.question_original === "[Information]";
     setFormData({
-      question: entry.question_original,
+      entryType: isInformation ? "information" : "question_response",
+      question: isInformation ? "" : entry.question_original,
       response: entry.response_text,
       contextType: entry.context_type as any,
       responseType: entry.response_type as any,
@@ -298,6 +316,7 @@ export default function AdminArthurKnowledge() {
 
   const resetForm = () => {
     setFormData({
+      entryType: "question_response",
       question: "",
       response: "",
       contextType: "general",
@@ -425,13 +444,26 @@ export default function AdminArthurKnowledge() {
                             <Badge variant="outline">
                               Confiance: {Number(entry.confidence_score).toFixed(2)}
                             </Badge>
-                          </div>
-                          <div>
-                            <p className="font-semibold text-foreground">❓ {entry.question_original}</p>
-                            <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                              💬 {entry.response_text.substring(0, 150)}...
-                            </p>
-                          </div>
+                           </div>
+                           <div>
+                             {entry.question_original !== "[Information]" ? (
+                               <>
+                                 <p className="font-semibold text-foreground">❓ {entry.question_original}</p>
+                                 <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                                   💬 {entry.response_text.substring(0, 150)}...
+                                 </p>
+                               </>
+                             ) : (
+                               <>
+                                 <p className="font-semibold text-foreground flex items-center gap-2">
+                                   📚 <span className="text-primary">Information brute</span>
+                                 </p>
+                                 <p className="text-sm text-muted-foreground mt-2 line-clamp-3">
+                                   {entry.response_text.substring(0, 200)}...
+                                 </p>
+                               </>
+                             )}
+                           </div>
                           <p className="text-xs text-muted-foreground">
                             Créé le {new Date(entry.created_at).toLocaleDateString("fr-FR")}
                             {entry.usage_count > 0 && ` • Dernière utilisation: ${new Date(entry.last_used_at).toLocaleDateString("fr-FR")}`}
@@ -463,25 +495,48 @@ export default function AdminArthurKnowledge() {
               {editingId ? "Modifier la connaissance" : "Ajouter une connaissance"}
             </DialogTitle>
             <DialogDescription>
-              Arthur utilisera cette connaissance pour répondre aux questions similaires
+              Arthur utilisera cette connaissance pour répondre aux questions similaires ou enrichir ses connaissances
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="question">Question / Requête utilisateur *</Label>
-              <Textarea
-                id="question"
-                placeholder="Ex: J'ai des problèmes de sommeil"
-                value={formData.question}
-                onChange={(e) => setFormData({ ...formData, question: e.target.value })}
-                className={errors.question ? "border-destructive" : ""}
-                rows={2}
-              />
-              {errors.question && (
-                <p className="text-sm text-destructive">{errors.question}</p>
-              )}
+              <Label htmlFor="entryType">Type d'entrée *</Label>
+              <Select
+                value={formData.entryType}
+                onValueChange={(value: any) => setFormData({ ...formData, entryType: value, question: "" })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="question_response">❓ Question-Réponse</SelectItem>
+                  <SelectItem value="information">📚 Information brute</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {formData.entryType === "information" 
+                  ? "Arthur intégrera cette information dans sa base de connaissances"
+                  : "Arthur répondra directement quand il détecte cette question"}
+              </p>
             </div>
+
+            {formData.entryType === "question_response" && (
+              <div className="space-y-2">
+                <Label htmlFor="question">Question / Requête utilisateur *</Label>
+                <Textarea
+                  id="question"
+                  placeholder="Ex: J'ai des problèmes de sommeil"
+                  value={formData.question}
+                  onChange={(e) => setFormData({ ...formData, question: e.target.value })}
+                  className={errors.question ? "border-destructive" : ""}
+                  rows={2}
+                />
+                {errors.question && (
+                  <p className="text-sm text-destructive">{errors.question}</p>
+                )}
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -522,7 +577,7 @@ export default function AdminArthurKnowledge() {
 
             <div className="space-y-2">
               <Label htmlFor="response">
-                Réponse d'Arthur *
+                {formData.entryType === "information" ? "Information / Connaissance *" : "Réponse d'Arthur *"}
                 {formData.responseType !== "message" && (
                   <span className="text-muted-foreground text-xs ml-2">
                     (Format JSON requis)
@@ -532,7 +587,9 @@ export default function AdminArthurKnowledge() {
               <Textarea
                 id="response"
                 placeholder={
-                  formData.responseType === "message"
+                  formData.entryType === "information"
+                    ? "Ex: Notre pharmacie propose des services de vaccination contre la grippe tous les mardis et jeudis de 14h à 18h. Le prix est de 25€..."
+                    : formData.responseType === "message"
                     ? "Ex: Je vous recommande des solutions naturelles pour améliorer votre sommeil..."
                     : '{"type": "products", "message": "...", "products": [...]}'
                 }
@@ -544,6 +601,11 @@ export default function AdminArthurKnowledge() {
               />
               {errors.response && (
                 <p className="text-sm text-destructive">{errors.response}</p>
+              )}
+              {formData.entryType === "information" && (
+                <p className="text-xs text-muted-foreground">
+                  💡 Arthur utilisera cette information comme contexte pour enrichir ses réponses
+                </p>
               )}
             </div>
           </div>
