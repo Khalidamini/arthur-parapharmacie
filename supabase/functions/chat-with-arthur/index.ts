@@ -18,12 +18,19 @@ const corsHeaders = {
 function normalizeQuery(text: string): string {
   return text
     .toLowerCase()
-    .replace(/c[4']est/g, 'cest') // Corrige "c'est" et "c4est"
-    .replace(/qu[4']est/g, 'quest') // Corrige "qu'est" et "qu4est"
-    .replace(/l[4']application/g, 'lapplication') // Corrige "l'application"
-    .replace(/int[eé]r[eê]t/g, 'interet') // Corrige "intérêt"
-    .replace(/[^\w\s]/g, ' ') // Retire la ponctuation restante
-    .replace(/\s+/g, ' ') // Normalise les espaces
+    // Normaliser les apostrophes et guillemets
+    .replace(/['']/g, ' ')
+    .replace(/c[4']est/g, 'cest')
+    .replace(/qu[4']est/g, 'quest')
+    .replace(/l[4']application/g, 'lapplication')
+    .replace(/d[4']arthur/g, 'darthur')
+    // Remplacer les caractères accentués par leurs équivalents non accentués
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    // Retirer toute la ponctuation restante
+    .replace(/[^\w\s]/g, ' ')
+    // Normaliser les espaces multiples
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
