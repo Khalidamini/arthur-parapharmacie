@@ -38,6 +38,75 @@ export type Database = {
         }
         Relationships: []
       }
+      arthur_knowledge_base: {
+        Row: {
+          confidence_score: number | null
+          context_type: string | null
+          conversation_id: string | null
+          created_at: string | null
+          id: string
+          last_used_at: string | null
+          pharmacy_id: string | null
+          question_normalized: string
+          question_original: string
+          response_metadata: Json | null
+          response_text: string
+          response_type: string | null
+          updated_at: string | null
+          usage_count: number | null
+          user_feedback: number | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          context_type?: string | null
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_used_at?: string | null
+          pharmacy_id?: string | null
+          question_normalized: string
+          question_original: string
+          response_metadata?: Json | null
+          response_text: string
+          response_type?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+          user_feedback?: number | null
+        }
+        Update: {
+          confidence_score?: number | null
+          context_type?: string | null
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_used_at?: string | null
+          pharmacy_id?: string | null
+          question_normalized?: string
+          question_original?: string
+          response_metadata?: Json | null
+          response_text?: string
+          response_type?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+          user_feedback?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arthur_knowledge_base_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arthur_knowledge_base_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "pharmacies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       arthur_response_cache: {
         Row: {
           context_type: string | null
@@ -797,6 +866,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_text_similarity: {
+        Args: { text1: string; text2: string }
+        Returns: number
+      }
       has_any_pharmacy_role: {
         Args: { _pharmacy_id: string; _user_id: string }
         Returns: boolean
@@ -809,6 +882,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_knowledge_usage: {
+        Args: { knowledge_id: string }
+        Returns: undefined
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       log_pharmacy_activity: {
         Args: {
@@ -820,6 +897,25 @@ export type Database = {
           _user_id: string
         }
         Returns: string
+      }
+      search_arthur_knowledge: {
+        Args: {
+          context_type_filter?: string
+          limit_results?: number
+          pharmacy_id_filter?: string
+          query_text: string
+          similarity_threshold?: number
+        }
+        Returns: {
+          confidence_score: number
+          id: string
+          question_original: string
+          response_metadata: Json
+          response_text: string
+          response_type: string
+          similarity_score: number
+          usage_count: number
+        }[]
       }
     }
     Enums: {

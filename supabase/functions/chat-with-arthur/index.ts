@@ -7,6 +7,157 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// ═══════════════════════════════════════════════════════
+// 🧠 SYSTÈME RAG - Arthur apprend de chaque conversation
+// ═══════════════════════════════════════════════════════
+
+/**
+ * Normalise une question pour la recherche dans la base de connaissances
+ * Retire la ponctuation, met en minuscules, retire les mots vides
+ */
+function normalizeQuery(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s]/g, ' ') // Retire la ponctuation
+    .replace(/\s+/g, ' ') // Normalise les espaces
+    .trim();
+}
+
+/**
+ * Recherche dans la base de connaissances d'Arthur
+ * Retourne la meilleure réponse trouvée ou null
+ */
+async function searchKnowledgeBase(
+  supabase: any,
+  userQuery: string,
+  contextType: string,
+  pharmacyId: string | null,
+  similarityThreshold = 0.65
+): Promise<{ response: any; knowledgeId: string; score: number } | null> {
+  const normalized = normalizeQuery(userQuery);
+  
+  console.log('🔍 RAG: Recherche dans la base de connaissances...', {
+    query: normalized.substring(0, 100),
+    contextType,
+    pharmacyId: pharmacyId?.substring(0, 8)
+  });
+
+  try {
+    const { data: results, error } = await supabase.rpc('search_arthur_knowledge', {
+      query_text: normalized,
+      context_type_filter: contextType,
+      pharmacy_id_filter: pharmacyId,
+      similarity_threshold: similarityThreshold,
+      limit_results: 1
+    });
+
+    if (error) {
+      console.error('❌ RAG: Erreur de recherche:', error);
+      return null;
+    }
+
+    if (!results || results.length === 0) {
+      console.log('🔍 RAG: Aucune réponse trouvée dans la base de connaissances');
+      return null;
+    }
+
+    const bestMatch = results[0];
+    console.log('✅ RAG: Réponse trouvée!', {
+      score: bestMatch.similarity_score,
+      usageCount: bestMatch.usage_count,
+      confidence: bestMatch.confidence_score,
+      question: bestMatch.question_original.substring(0, 100)
+    });
+
+    // Construire la réponse depuis la base de connaissances
+    let response: any;
+    try {
+      response = JSON.parse(bestMatch.response_text);
+      
+      // Si la réponse a des métadonnées (produits), les ajouter
+      if (bestMatch.response_metadata) {
+        response = { ...response, ...bestMatch.response_metadata };
+      }
+    } catch {
+      // Si ce n'est pas du JSON, c'est un message simple
+      response = {
+        type: 'message',
+        message: bestMatch.response_text
+      };
+    }
+
+    return {
+      response,
+      knowledgeId: bestMatch.id,
+      score: bestMatch.similarity_score
+    };
+  } catch (error) {
+    console.error('❌ RAG: Erreur lors de la recherche:', error);
+    return null;
+  }
+}
+
+/**
+ * Stocke une nouvelle paire question-réponse dans la base de connaissances
+ */
+async function storeInKnowledgeBase(
+  supabase: any,
+  userQuery: string,
+  responseText: string,
+  responseType: string,
+  contextType: string,
+  pharmacyId: string | null,
+  conversationId: string | null,
+  metadata: any = null
+): Promise<void> {
+  const normalized = normalizeQuery(userQuery);
+  
+  console.log('💾 RAG: Stockage dans la base de connaissances...', {
+    type: responseType,
+    contextType,
+    hasMetadata: !!metadata
+  });
+
+  try {
+    const { error } = await supabase
+      .from('arthur_knowledge_base')
+      .insert({
+        question_normalized: normalized,
+        question_original: userQuery,
+        response_text: responseText,
+        response_type: responseType,
+        response_metadata: metadata,
+        context_type: contextType,
+        pharmacy_id: pharmacyId,
+        conversation_id: conversationId,
+        confidence_score: 1.0, // Nouvelle réponse = confiance max
+        usage_count: 1
+      });
+
+    if (error) {
+      console.error('❌ RAG: Erreur lors du stockage:', error);
+    } else {
+      console.log('✅ RAG: Réponse stockée avec succès');
+    }
+  } catch (error) {
+    console.error('❌ RAG: Erreur lors du stockage:', error);
+  }
+}
+
+/**
+ * Incrémente le compteur d'utilisation d'une réponse
+ */
+async function incrementKnowledgeUsage(supabase: any, knowledgeId: string): Promise<void> {
+  try {
+    await supabase.rpc('increment_knowledge_usage', {
+      knowledge_id: knowledgeId
+    });
+    console.log('📈 RAG: Compteur d\'utilisation incrémenté');
+  } catch (error) {
+    console.error('❌ RAG: Erreur lors de l\'incrémentation:', error);
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -94,6 +245,52 @@ Adapte tes recommandations en fonction de ces informations.`;
         } catch {
           // Ignore parsing errors
         }
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // 🧠 SYSTÈME RAG - Chercher d'abord dans la base de connaissances
+    // ═══════════════════════════════════════════════════════
+    
+    // Extraire la dernière question de l'utilisateur
+    const lastUserMessage = messages.length > 0 && messages[messages.length - 1]?.role === 'user' 
+      ? messages[messages.length - 1].content 
+      : null;
+    
+    if (lastUserMessage && typeof lastUserMessage === 'string') {
+      const contextType = isPharmacyStaff ? 'pharmacy' : 'patient';
+      
+      // Chercher dans la base de connaissances (seuil à 0.70 = réponses très similaires)
+      const cachedResponse = await searchKnowledgeBase(
+        supabase,
+        lastUserMessage,
+        contextType,
+        selectedPharmacyId,
+        0.70 // Seuil de similarité élevé pour éviter les faux positifs
+      );
+      
+      if (cachedResponse) {
+        console.log('🎯 RAG: Réponse trouvée dans la base de connaissances!', {
+          score: cachedResponse.score,
+          fromCache: true
+        });
+        
+        // Incrémenter le compteur d'utilisation
+        await incrementKnowledgeUsage(supabase, cachedResponse.knowledgeId);
+        
+        // Retourner immédiatement la réponse cachée
+        return new Response(
+          JSON.stringify({
+            message: JSON.stringify(cachedResponse.response),
+            fromCache: true,
+            similarityScore: cachedResponse.score
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      } else {
+        console.log('🔄 RAG: Pas de réponse dans la base, appel à OpenAI...');
       }
     }
 
@@ -796,6 +993,49 @@ Donne ton évaluation avec justification claire et concise (maximum 200 mots).`
     }
 
     console.log('Successfully generated response');
+
+    // ═══════════════════════════════════════════════════════
+    // 💾 RAG: Stocker la nouvelle réponse dans la base de connaissances
+    // ═══════════════════════════════════════════════════════
+    
+    if (lastUserMessage && typeof lastUserMessage === 'string') {
+      try {
+        const parsedResponse = JSON.parse(assistantMessage);
+        const contextType = isPharmacyStaff ? 'pharmacy' : 'patient';
+        
+        // Extraire les métadonnées selon le type de réponse
+        let metadata = null;
+        if (parsedResponse.type === 'products' && parsedResponse.products) {
+          metadata = {
+            products: parsedResponse.products,
+            product_count: parsedResponse.products.length
+          };
+        } else if (parsedResponse.type === 'sales_advice') {
+          metadata = {
+            main_products: parsedResponse.main_products || [],
+            additional_sales: parsedResponse.additional_sales || [],
+            total_basket: parsedResponse.total_basket
+          };
+        }
+        
+        // Stocker dans la base de connaissances
+        await storeInKnowledgeBase(
+          supabase,
+          lastUserMessage,
+          assistantMessage,
+          parsedResponse.type || 'message',
+          contextType,
+          selectedPharmacyId,
+          conversationId,
+          metadata
+        );
+        
+        console.log('✅ RAG: Nouvelle réponse stockée pour apprentissage futur');
+      } catch (e) {
+        console.error('⚠️ RAG: Impossible de stocker la réponse (non-bloquant):', e);
+        // Non-bloquant : on continue même si le stockage échoue
+      }
+    }
 
     return new Response(
       JSON.stringify({ message: assistantMessage }),
