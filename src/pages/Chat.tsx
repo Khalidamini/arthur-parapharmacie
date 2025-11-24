@@ -371,9 +371,43 @@ const Chat = () => {
       description: "La promotion a été ajoutée à vos recommandations"
     });
   };
-  const handleDisplayProducts = (products: any[]) => {
-    console.log("Displaying products in chat:", products);
-    setDisplayedProducts(products);
+  const handleDisplayProducts = async (products: any[]) => {
+    console.log("✅ Displaying products in chat:", products);
+    
+    if (!products || products.length === 0) {
+      console.warn('⚠️ No products to display');
+      return;
+    }
+    
+    // Créer un message Arthur avec le format JSON structuré type "products"
+    const productsMessage = {
+      type: "products",
+      message: "Solutions pour votre besoin\n\nVoici les produits que je vous recommande.",
+      products: products.map(p => ({
+        id: p.id,
+        name: p.name,
+        brand: p.brand,
+        price: p.price,
+        reason: p.description || "Produit recommandé par Arthur pour votre besoin",
+        image_url: p.image_url,
+        category: p.category,
+        available_in_pharmacy: true
+      }))
+    };
+    
+    const assistantMessage: Message = {
+      id: `voice-products-${Date.now()}`,
+      role: "assistant",
+      content: JSON.stringify(productsMessage)
+    };
+    
+    console.log('📦 Adding products message to chat:', assistantMessage);
+    setMessages(prev => [...prev, assistantMessage]);
+    
+    // Sauvegarder dans la base
+    if (conversationId) {
+      await saveMessage("assistant", JSON.stringify(productsMessage), conversationId);
+    }
   };
   const handleAddToCart = async (product: any) => {
     try {
