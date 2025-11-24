@@ -88,29 +88,36 @@ const ChatMessage = ({ role, content, onOptionSelect }: ChatMessageProps) => {
   let textContent = content;
 
   try {
-    // Chercher des blocs JSON dans le contenu
-    const jsonMatch = content.match(/\{[\s\S]*"type"[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
-      // Vérifier que c'est bien un format valide
-      if (parsed && typeof parsed === 'object' && parsed.type) {
-        parsedContent = parsed;
-        
-        // Pour type "message", extraire le message et l'afficher comme texte
-        if (parsed.type === 'message' && parsed.message) {
-          textContent = parsed.message;
-        } else {
-          textContent = content.replace(jsonMatch[0], '').trim();
+    // Vérifier si content est déjà un objet
+    if (typeof content === 'object' && content !== null && 'type' in (content as any)) {
+      parsedContent = content as any;
+      if (parsedContent.type === 'message' && 'message' in (parsedContent as any)) {
+        textContent = (parsedContent as any).message;
+      }
+    } else if (typeof content === 'string' && content) {
+      // Chercher des blocs JSON dans le contenu string
+      const jsonMatch = content.match(/\{[\s\S]*?"type"[\s\S]*?\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (parsed && typeof parsed === 'object' && parsed.type) {
+          parsedContent = parsed;
+          
+          // Pour type "message", extraire uniquement le message
+          if (parsed.type === 'message' && parsed.message) {
+            textContent = parsed.message;
+          } else {
+            textContent = content.replace(jsonMatch[0], '').trim();
+          }
         }
       } else {
-        // Si le format n'est pas valide, on garde tout en texte
+        // Pas de JSON trouvé, c'est un message texte simple
         textContent = content;
       }
     }
   } catch (e) {
     // En cas d'erreur de parsing, on affiche le texte normalement
     console.error('Error parsing message content:', e);
-    textContent = content;
+    textContent = typeof content === 'string' ? content : JSON.stringify(content);
   }
 
   // Générer une URL d'image gratuite via Unsplash Source
