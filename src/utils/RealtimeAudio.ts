@@ -126,19 +126,22 @@ export const createWavFromPCM = (pcmData: Uint8Array): Uint8Array => {
 
 class AudioQueue {
   private queue: Uint8Array[] = [];
+  private audioContext: AudioContext;
+  private nextStartTime: number = 0;
   private isPlaying = false;
-  private audioEl: HTMLAudioElement;
 
-  constructor() {
-    this.audioEl = document.createElement('audio');
-    this.audioEl.autoplay = true;
+  constructor(audioContext: AudioContext) {
+    this.audioContext = audioContext;
   }
 
   async addToQueue(audioData: Uint8Array) {
     console.log('Adding audio chunk to queue, size:', audioData.length);
     this.queue.push(audioData);
+    
     if (!this.isPlaying) {
-      await this.playNext();
+      this.isPlaying = true;
+      this.nextStartTime = this.audioContext.currentTime;
+      this.playNext();
     }
   }
 
@@ -149,37 +152,42 @@ class AudioQueue {
       return;
     }
 
-    this.isPlaying = true;
     const audioData = this.queue.shift()!;
 
     try {
-      // Convert PCM16 to WAV and play via HTMLAudioElement for maximum compatibility
-      const wavData = createWavFromPCM(audioData);
-      const blob = new Blob([wavData.buffer as ArrayBuffer], { type: 'audio/wav' });
-      const url = URL.createObjectURL(blob);
+      // Convert PCM16 to Float32 for Web Audio API
+      const int16Data = new Int16Array(audioData.buffer, audioData.byteOffset, audioData.byteLength / 2);
+      const float32Data = new Float32Array(int16Data.length);
 
-      this.audioEl.onended = () => {
-        console.log('Audio chunk finished playing');
-        URL.revokeObjectURL(url);
+      for (let i = 0; i < int16Data.length; i++) {
+        float32Data[i] = int16Data[i] / 32768.0;
+      }
+
+      // Create audio buffer
+      const audioBuffer = this.audioContext.createBuffer(1, float32Data.length, 24000);
+      audioBuffer.copyToChannel(float32Data, 0);
+
+      // Create source and schedule playback
+      const source = this.audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(this.audioContext.destination);
+
+      // Calculate when this chunk should start
+      const now = this.audioContext.currentTime;
+      const startTime = Math.max(now, this.nextStartTime);
+      
+      // Update next start time for seamless playback
+      this.nextStartTime = startTime + audioBuffer.duration;
+
+      source.onended = () => {
+        console.log('Audio chunk finished');
         this.playNext();
       };
 
-      this.audioEl.onerror = (e) => {
-        console.error('Error playing audio element:', e);
-        URL.revokeObjectURL(url);
-        this.playNext();
-      };
-
-      this.audioEl.src = url;
-      await this.audioEl.play().catch(err => {
-        console.error('Error starting audio playback:', err);
-        URL.revokeObjectURL(url);
-        this.playNext();
-      });
-
-      console.log('Playing audio chunk via <audio> element');
+      source.start(startTime);
+      console.log(`Playing audio chunk at ${startTime}, duration: ${audioBuffer.duration}s`);
     } catch (error) {
-      console.error('Error preparing audio for playback:', error);
+      console.error('Error playing audio:', error);
       this.playNext();
     }
   }
@@ -188,16 +196,15 @@ class AudioQueue {
     console.log('Clearing audio queue');
     this.queue = [];
     this.isPlaying = false;
-    this.audioEl.pause();
-    this.audioEl.removeAttribute('src');
+    this.nextStartTime = 0;
   }
 }
 
 let audioQueueInstance: AudioQueue | null = null;
 
-export const playAudioData = async (_audioContext: AudioContext, audioData: Uint8Array) => {
+export const playAudioData = async (audioContext: AudioContext, audioData: Uint8Array) => {
   if (!audioQueueInstance) {
-    audioQueueInstance = new AudioQueue();
+    audioQueueInstance = new AudioQueue(audioContext);
   }
   await audioQueueInstance.addToQueue(audioData);
 };
