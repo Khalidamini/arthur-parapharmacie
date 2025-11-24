@@ -168,7 +168,7 @@ const AdminPermissions = () => {
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Shield className="h-8 w-8 text-primary" />
               Gestion des Permissions
@@ -177,6 +177,12 @@ const AdminPermissions = () => {
               Configurez les autorisations par rôle
             </p>
           </div>
+          <Button
+            variant="outline"
+            onClick={() => navigate('/admin/arthur-knowledge')}
+          >
+            🧠 Base de connaissances Arthur
+          </Button>
         </div>
 
         {loading ? (

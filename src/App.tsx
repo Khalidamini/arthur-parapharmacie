@@ -20,6 +20,7 @@ import PharmacyDashboard from "./pages/PharmacyDashboard";
 import PharmacyRegistrationPending from "./pages/PharmacyRegistrationPending";
 import AdminPharmacies from "./pages/AdminPharmacies";
 import AdminPermissions from "./pages/AdminPermissions";
+import AdminArthurKnowledge from "./pages/AdminArthurKnowledge";
 import PharmacyLogin from "./pages/PharmacyLogin";
 import PharmacyOrders from "./pages/PharmacyOrders";
 import PharmacyPickupOrders from "./pages/PharmacyPickupOrders";
@@ -69,6 +70,7 @@ const App = () => (
             <Route path="/pharmacy-connector-download" element={<PharmacyConnectorDownload />} />
             <Route path="/admin/pharmacies" element={<AdminPharmacies />} />
             <Route path="/admin/permissions" element={<AdminPermissions />} />
+            <Route path="/admin/arthur-knowledge" element={<AdminArthurKnowledge />} />
             <Route path="/checkout/:cartId" element={<Checkout />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="/my-orders" element={<MyOrders />} />
