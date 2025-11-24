@@ -739,10 +739,15 @@ Donne ton évaluation avec justification claire et concise (maximum 200 mots).`
     } catch (e) {
       console.error('❌ Erreur de parsing JSON:', e);
       console.error('❌ Contenu reçu:', assistantMessage);
-      // Fallback intelligent en cas d'erreur de parsing
+      // En cas d'erreur de parsing, on renvoie quand même la réponse du modèle
+      // sous forme de message texte structuré en JSON minimal
+      const safeMessage = typeof assistantMessage === 'string'
+        ? assistantMessage
+        : JSON.stringify(assistantMessage, null, 2);
+
       assistantMessage = JSON.stringify({
         type: 'message',
-        message: "Je rencontre une difficulté technique pour traiter votre demande.\n\nPouvez-vous la reformuler un peu différemment ?"
+        message: safeMessage
       });
     }
 
