@@ -764,6 +764,9 @@ Donne ton évaluation avec justification claire et concise (maximum 200 mots).`
         } else if (parsed.type === 'question' && Array.isArray(parsed.options) && parsed.options.length > 0) {
           // Accepter toutes les questions, laisser GPT-4 décider
           assistantMessage = JSON.stringify(parsed);
+        } else if (parsed.type === 'sales_advice') {
+          // Réponse de conseil de vente pour les pharmaciens
+          assistantMessage = JSON.stringify(parsed);
         } else {
           // Format invalide
           console.warn('⚠️ Format invalide de GPT-4:', parsed);
