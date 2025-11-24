@@ -299,10 +299,19 @@ const Chat = () => {
         }
         throw error;
       }
+      let assistantContent: any = data.message;
+      try {
+        const parsed = JSON.parse(data.message);
+        if (parsed && typeof parsed === "object") {
+          assistantContent = parsed;
+        }
+      } catch {
+        // on garde data.message tel quel si ce n'est pas du JSON
+      }
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.message
+        content: assistantContent
       };
       setMessages(prev => [...prev, assistantMessage]);
       await saveMessage("assistant", assistantMessage.content, convIdToUse || undefined);
@@ -553,10 +562,19 @@ const Chat = () => {
                       }
                     });
                     if (error) throw error;
+                    let assistantContent: any = data.message;
+                    try {
+                      const parsed = JSON.parse(data.message);
+                      if (parsed && typeof parsed === "object") {
+                        assistantContent = parsed;
+                      }
+                    } catch {
+                      // on garde data.message tel quel si ce n'est pas du JSON
+                    }
                     const assistantMessage: Message = {
                       id: (Date.now() + 1).toString(),
                       role: "assistant",
-                      content: data.message
+                      content: assistantContent
                     };
                     setMessages(prev => [...prev, assistantMessage]);
                     await saveMessage("assistant", assistantMessage.content);
