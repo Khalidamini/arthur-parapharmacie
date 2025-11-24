@@ -273,40 +273,53 @@ Adapte tes recommandations en fonction de ces informations.`;
       ? messages[messages.length - 1].content 
       : null;
     
+    // Chercher dans la base de connaissances RAG
+    let ragContext = '';
     if (lastUserMessage && typeof lastUserMessage === 'string') {
       const contextType = isPharmacyStaff ? 'pharmacy' : 'patient';
       
-      // Chercher dans la base de connaissances (seuil abaissé à 0.50 pour meilleure détection)
       const cachedResponse = await searchKnowledgeBase(
         supabase,
         lastUserMessage,
         contextType,
         selectedPharmacyId,
-        0.50 // Seuil de similarité modéré pour mieux détecter les réponses pertinentes
+        0.50
       );
       
       if (cachedResponse) {
-        console.log('🎯 RAG: Réponse trouvée dans la base de connaissances!', {
+        console.log('🎯 RAG: Informations trouvées dans la base de connaissances!', {
           score: cachedResponse.score,
-          fromCache: true
+          willUseAsContext: true
         });
         
-        // Incrémenter le compteur d'utilisation
         await incrementKnowledgeUsage(supabase, cachedResponse.knowledgeId);
         
-        // Retourner immédiatement la réponse cachée
-        return new Response(
-          JSON.stringify({
-            message: cachedResponse.response,
-            fromCache: true,
-            similarityScore: cachedResponse.score
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
+        // Extraire le contenu pour l'utiliser comme contexte
+        let contextContent = '';
+        if (typeof cachedResponse.response === 'object' && cachedResponse.response.message) {
+          contextContent = cachedResponse.response.message;
+        } else if (typeof cachedResponse.response === 'string') {
+          contextContent = cachedResponse.response;
+        }
+        
+        ragContext = `\n\n═══════════════════════════════════════════════════════
+📚 INFORMATIONS DE RÉFÉRENCE (BASE DE CONNAISSANCES)
+═══════════════════════════════════════════════════════
+
+⚠️ IMPORTANT : Les informations ci-dessous sont issues de la base de connaissances officielle.
+Tu DOIS les utiliser pour répondre de manière précise et adaptée à la question posée.
+
+- NE PAS copier/coller mot à mot
+- Reformuler clairement en fonction de la question
+- Rester fidèle aux faits fournis
+- Adapter ton ton et ta structure
+
+INFORMATIONS DE RÉFÉRENCE :
+${contextContent}
+
+═══════════════════════════════════════════════════════\n`;
       } else {
-        console.log('🔄 RAG: Pas de réponse dans la base, appel à OpenAI...');
+        console.log('🔄 RAG: Aucune information dans la base, réponse classique...');
       }
     }
 
@@ -471,20 +484,26 @@ Adapte tes recommandations en fonction de ces informations.`;
 
     const systemPrompt = isPharmacyStaff 
       ? `Tu es Arthur, assistant intelligent pour pharmaciens.
-
+${ragContext}
 ═══════════════════════════════════════════════════════
-🎯 RÈGLE ABSOLUE #1 : PRIORISER LE RAG
+🎯 RÈGLE ABSOLUE #1 : UTILISER LE RAG
 ═══════════════════════════════════════════════════════
 
-⚠️ CRITIQUE : Avant TOUT conseil de vente, vérifie si la question concerne :
+⚠️ CRITIQUE : Si des INFORMATIONS DE RÉFÉRENCE sont fournies ci-dessus :
+- Tu DOIS les utiliser comme base factuelle pour ta réponse
+- Reformule de manière claire et concise
+- Adapte le ton à la question du pharmacien
+- NE répète PAS les infos mot à mot, synthétise
+
+Si la question concerne :
 - L'application Arthur elle-même
 - Les fonctionnalités d'Arthur
 - L'intérêt d'utiliser Arthur
 - Comment utiliser Arthur
 - Les avantages d'Arthur pour la pharmacie
 
-Si OUI → Réponds DIRECTEMENT et PRÉCISÉMENT à la question posée
-Si NON → Suis le processus de vente habituel ci-dessous
+→ Réponds DIRECTEMENT et PRÉCISÉMENT en utilisant les infos du RAG si disponibles
+→ Sinon, suis le processus de vente habituel ci-dessous
 
 ❌ INTERDIT : Transformer une question sur Arthur en conseil de vente de produits
 ✅ OBLIGATOIRE : Répondre EXACTEMENT à ce qui est demandé
