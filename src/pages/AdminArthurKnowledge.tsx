@@ -33,8 +33,8 @@ import {
 // Schéma de validation
 const knowledgeSchema = z.object({
   entryType: z.enum(["question_response", "information"]),
-  question: z.string().trim().max(500, "Maximum 500 caractères").optional(),
-  response: z.string().trim().min(10, "Le contenu doit faire au moins 10 caractères").max(5000, "Maximum 5000 caractères"),
+  question: z.string().trim().max(2000, "Maximum 2000 caractères").optional(),
+  response: z.string().trim().min(10, "Le contenu doit faire au moins 10 caractères").max(50000, "Maximum 50000 caractères"),
   contextType: z.enum(["pharmacy", "patient", "general"]),
   responseType: z.enum(["message", "products", "question", "sales_advice"]),
 }).refine((data) => {
