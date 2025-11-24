@@ -403,7 +403,9 @@ IMPORTANT :
 - Utilise verify_product_safety pour CHAQUE produit avant de le recommander
 - Ne JAMAIS mentionner un produit dans type "message"
 - TOUJOURS utiliser type "products" pour recommander
-- Réponds TOUJOURS en JSON valide, sans texte hors JSON`;
+- Réponds TOUJOURS en JSON valide pur, sans texte avant ou après le JSON
+- Le JSON doit commencer par { et finir par }
+- Pas de markdown, pas de ```json, juste le JSON pur`;
 
     // Fonction de recherche web pour vérifier la sécurité des produits
     const webSearchTool = {
@@ -669,22 +671,33 @@ Donne ton évaluation avec justification claire et concise (maximum 200 mots).`
             }
             assistantMessage = JSON.stringify(parsed);
           } else {
-            // Type products mais pas de produits - fallback
-            console.warn('⚠️ Type products sans produits, fallback question');
-            assistantMessage = JSON.stringify(defaultFallbackQuestion);
+            // Type products mais pas de produits - fallback intelligent
+            console.warn('⚠️ Type products sans produits');
+            assistantMessage = JSON.stringify({
+              type: 'message',
+              message: "Je n'ai pas trouvé de produit adapté dans notre stock actuel.\n\nJe vous recommande de consulter directement un pharmacien pour obtenir un conseil personnalisé."
+            });
           }
         } else if (parsed.type === 'question' && Array.isArray(parsed.options) && parsed.options.length > 0) {
           // Accepter toutes les questions, laisser GPT-4 décider
           assistantMessage = JSON.stringify(parsed);
         } else {
           // Format invalide
-          console.warn('⚠️ Format invalide, fallback question');
-          assistantMessage = JSON.stringify(defaultFallbackQuestion);
+          console.warn('⚠️ Format invalide de GPT-4:', parsed);
+          assistantMessage = JSON.stringify({
+            type: 'message',
+            message: "Je rencontre une petite difficulté technique.\n\nPouvez-vous reformuler votre demande de manière un peu différente ?"
+          });
         }
       }
-    } catch (_e) {
-      console.error('❌ Erreur de parsing de la réponse OpenAI');
-      assistantMessage = JSON.stringify(defaultFallbackQuestion);
+    } catch (e) {
+      console.error('❌ Erreur de parsing JSON:', e);
+      console.error('❌ Contenu reçu:', assistantMessage);
+      // Fallback intelligent en cas d'erreur de parsing
+      assistantMessage = JSON.stringify({
+        type: 'message',
+        message: "Je rencontre une difficulté technique pour traiter votre demande.\n\nPouvez-vous la reformuler un peu différemment ?"
+      });
     }
 
     console.log('Successfully generated response');
