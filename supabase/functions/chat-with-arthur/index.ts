@@ -318,6 +318,35 @@ INFORMATIONS DE RÉFÉRENCE :
 ${contextContent}
 
 ═══════════════════════════════════════════════════════\n`;
+
+        // Cas ultra-précis : question sur Arthur -> on renvoie DIRECTEMENT le texte RAG
+        const normalizedQuestion = lastUserMessage
+          .toString()
+          .toLowerCase();
+        const isArthurQuestion =
+          normalizedQuestion.includes('pharmacie référente') ||
+          normalizedQuestion.includes('pharmacie referente') ||
+          normalizedQuestion.includes('qr code arthur') ||
+          normalizedQuestion.includes("qr code de l'application") ||
+          normalizedQuestion.includes('qr code de l’application') ||
+          (normalizedQuestion.includes('qr code') && normalizedQuestion.includes('arthur'));
+
+        if (isPharmacyStaff && isArthurQuestion && contextContent) {
+          console.log('✅ RAG: Réponse directe depuis la base de connaissances (Arthur)', {
+            question: lastUserMessage,
+            knowledgeId: cachedResponse.knowledgeId,
+          });
+
+          const directAnswer = JSON.stringify({
+            type: 'message',
+            message: contextContent,
+          });
+
+          return new Response(
+            JSON.stringify({ message: directAnswer }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
       } else {
         console.log('🔄 RAG: Aucune information dans la base, réponse classique...');
       }
