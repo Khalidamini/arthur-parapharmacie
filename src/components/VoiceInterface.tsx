@@ -38,9 +38,13 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
       console.log('Initializing audio context...');
       audioContextRef.current = new AudioContext({ sampleRate: 24000 });
       
-      // Resume audio context if suspended
+      // CRITICAL: Force resume audio context immediately on user interaction
       if (audioContextRef.current.state === 'suspended') {
+        console.log('Audio context suspended, resuming...');
         await audioContextRef.current.resume();
+        console.log('Audio context resumed, state:', audioContextRef.current.state);
+      } else {
+        console.log('Audio context state:', audioContextRef.current.state);
       }
       
       console.log('Connecting to voice chat...');
@@ -98,18 +102,21 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
           setIsSpeaking(true);
           onSpeakingChange?.(true);
           
-          // Resume audio context if suspended
-          if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
-            await audioContextRef.current.resume();
-          }
-          
-          const binaryString = atob(data.delta);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-          }
-          
+          // Force resume audio context if needed
           if (audioContextRef.current) {
+            if (audioContextRef.current.state === 'suspended') {
+              console.log('⚠️ Audio context suspended during playback, forcing resume...');
+              await audioContextRef.current.resume();
+              console.log('✅ Audio context resumed, state:', audioContextRef.current.state);
+            }
+            
+            const binaryString = atob(data.delta);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i);
+            }
+            
+            console.log('🔊 Playing audio chunk, size:', bytes.length);
             await playAudioData(audioContextRef.current, bytes);
           }
         } else if (data.type === 'response.audio.done') {
