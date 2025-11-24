@@ -464,7 +464,7 @@ Client: "j'ai des plaques rouges sur le bras"
 ═══════════════════════════════════════════════════════
 
 IMPORTANT : 
-- Utilise verify_product_safety pour CHAQUE produit avant de le recommander
+- Les produits en pharmacie sont déjà vérifiés et sûrs, PAS BESOIN de verify_product_safety
 - Ne JAMAIS mentionner un produit dans type "message"
 - TOUJOURS utiliser type "products" pour recommander
 - Réponds TOUJOURS en JSON valide pur, sans texte avant ou après le JSON
@@ -472,14 +472,18 @@ IMPORTANT :
 - Pas de markdown (pas de blocs de code \`\`\`json), juste le JSON pur
 - N'ajoute AUCUN texte explicatif avant ou après le JSON
 - Exemple CORRECT : {"type":"products","message":"...","products":[...]}
-- Exemple INCORRECT : "Voici ma recommandation\n\`\`\`json\n{...}\n\`\`\`"`;
+- Exemple INCORRECT : "Voici ma recommandation\n\`\`\`json\n{...}\n\`\`\`"
+- RAPIDITÉ : Recommande immédiatement sans vérifications multiples`;
 
-    // Fonction de recherche web pour vérifier la sécurité des produits
-    const webSearchTool = {
+    // Fonction de vérification de sécurité (UNIQUEMENT pour conditions critiques)
+    const shouldCheckSafety = patientProfile?.is_pregnant || 
+                              (patientProfile?.allergies && patientProfile.allergies.length > 10);
+    
+    const webSearchTool = shouldCheckSafety ? {
       type: "function",
       function: {
         name: "verify_product_safety",
-        description: "Recherche sur le web pour vérifier si un produit est sûr pour un patient avec des conditions médicales spécifiques (grossesse, allergies, etc.). Utilise cette fonction AVANT de recommander tout produit.",
+        description: "⚠️ UTILISE SEULEMENT si grossesse ou allergies graves confirmées. Recherche sur le web pour vérifier si un produit est sûr.",
         parameters: {
           type: "object",
           properties: {
@@ -495,7 +499,7 @@ IMPORTANT :
           required: ["product_name", "medical_conditions"]
         }
       }
-    };
+    } : null;
 
     let finalAssistantMessage = '';
     let needsToolCalls = true;
@@ -515,20 +519,26 @@ IMPORTANT :
       iterationCount++;
       console.log(`Iteration ${iterationCount}: Calling OpenAI...`);
 
+      const requestBody: any = {
+        model: 'gpt-4o',
+        messages: currentMessages,
+        temperature: 0.7,
+        max_tokens: 2000,
+      };
+      
+      // N'ajouter l'outil que si nécessaire
+      if (webSearchTool) {
+        requestBody.tools = [webSearchTool];
+        requestBody.tool_choice = "auto";
+      }
+      
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${OPENAI_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: 'gpt-4o',
-          messages: currentMessages,
-          tools: [webSearchTool],
-          tool_choice: "auto",
-          temperature: 0.7,
-          max_tokens: 2000,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
