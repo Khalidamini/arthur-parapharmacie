@@ -155,7 +155,7 @@ const Index = () => {
     );
   }
   return (
-    <UserLayout user={user}>
+    <UserLayout user={user} pharmacyId={pharmacistPharmacyId || undefined}>
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-primary opacity-5"></div>
