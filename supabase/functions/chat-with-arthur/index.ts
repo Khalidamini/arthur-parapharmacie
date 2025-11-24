@@ -588,71 +588,61 @@ Donne ton évaluation avec justification claire et concise (maximum 200 mots).`
         ? JSON.parse(assistantMessage)
         : assistantMessage;
 
+      console.log('📤 Réponse GPT-4:', JSON.stringify(parsed, null, 2));
+
       if (parsed && typeof parsed === 'object') {
         if (parsed.type === 'message') {
           // Réponse conversationnelle simple
           assistantMessage = JSON.stringify(parsed);
-        } else if (parsed.type === 'products' && Array.isArray(parsed.products) && parsed.products.length > 0) {
-          // Compléter les images manquantes avec les photos officielles de la boutique
-          const productIds = parsed.products
-            .map((p: any) => p.id)
-            .filter((id: any) => typeof id === 'string');
+        } else if (parsed.type === 'products') {
+          if (Array.isArray(parsed.products) && parsed.products.length > 0) {
+            // Compléter les images manquantes avec les photos officielles de la boutique
+            const productIds = parsed.products
+              .map((p: any) => p.id)
+              .filter((id: any) => typeof id === 'string');
 
-          if (productIds.length > 0) {
-            const { data: dbProducts, error: dbError } = await supabase
-              .from('products')
-              .select('id, image_url')
-              .in('id', productIds);
+            if (productIds.length > 0) {
+              const { data: dbProducts, error: dbError } = await supabase
+                .from('products')
+                .select('id, image_url')
+                .in('id', productIds);
 
-            if (dbError) {
-              console.error('Error fetching product images for recommendations:', dbError);
-            } else if (dbProducts) {
-              const imageById = new Map<string, string | null>();
-              for (const p of dbProducts as Array<{ id: string; image_url: string | null }>) {
-                imageById.set(p.id, p.image_url);
+              if (dbError) {
+                console.error('Error fetching product images for recommendations:', dbError);
+              } else if (dbProducts) {
+                const imageById = new Map<string, string | null>();
+                for (const p of dbProducts as Array<{ id: string; image_url: string | null }>) {
+                  imageById.set(p.id, p.image_url);
+                }
+
+                parsed.products = parsed.products.map((p: any) => {
+                  const existing = p.image_url;
+                  const fromDb = imageById.get(p.id);
+                  return {
+                    ...p,
+                    image_url: existing || fromDb || null,
+                  };
+                });
               }
-
-              parsed.products = parsed.products.map((p: any) => {
-                const existing = p.image_url;
-                const fromDb = imageById.get(p.id);
-                return {
-                  ...p,
-                  image_url: existing || fromDb || null,
-                };
-              });
             }
-          }
-
-          assistantMessage = JSON.stringify(parsed);
-        } else if (parsed.type === 'question' && Array.isArray(parsed.options) && parsed.options.length > 0) {
-          // Accepter les questions seulement si Arthur n'en a pas déjà posé
-          if (questionCount >= 1) {
-            // Arthur a déjà posé des questions, il doit maintenant recommander des produits
-            assistantMessage = JSON.stringify({
-              type: 'products',
-              message: "Merci pour ces précisions. Voici mes recommandations de produits adaptés à votre besoin :",
-              products: []
-            });
-          } else {
             assistantMessage = JSON.stringify(parsed);
+          } else {
+            // Type products mais pas de produits - fallback
+            console.warn('⚠️ Type products sans produits, fallback question');
+            assistantMessage = JSON.stringify(defaultFallbackQuestion);
           }
+        } else if (parsed.type === 'question' && Array.isArray(parsed.options) && parsed.options.length > 0) {
+          // Accepter toutes les questions, laisser GPT-4 décider
+          assistantMessage = JSON.stringify(parsed);
         } else {
-          // Format invalide - redemander à Arthur de suivre le bon format
+          // Format invalide
+          console.warn('⚠️ Format invalide, fallback question');
           assistantMessage = JSON.stringify(defaultFallbackQuestion);
         }
       }
     } catch (_e) {
-      console.error('Erreur de parsing de la réponse OpenAI');
-      if (questionCount >= 1) {
-        const fallbackAfterQuestions = {
-          type: 'products',
-          message: "Merci pour vos réponses. Je vais maintenant vous proposer des produits adaptés disponibles dans votre pharmacie.",
-          products: []
-        };
-        assistantMessage = JSON.stringify(fallbackAfterQuestions);
-      } else {
-        assistantMessage = JSON.stringify(defaultFallbackQuestion);
-      }
+      console.error('❌ Erreur de parsing de la réponse OpenAI');
+      assistantMessage = JSON.stringify(defaultFallbackQuestion);
     }
 
     console.log('Successfully generated response');
