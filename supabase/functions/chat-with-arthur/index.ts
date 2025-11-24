@@ -405,7 +405,7 @@ IMPORTANT :
 - TOUJOURS utiliser type "products" pour recommander
 - Réponds TOUJOURS en JSON valide pur, sans texte avant ou après le JSON
 - Le JSON doit commencer par { et finir par }
-- Pas de markdown, pas de ```json, juste le JSON pur`;
+- Pas de markdown (pas de blocs de code), juste le JSON pur`;
 
     // Fonction de recherche web pour vérifier la sécurité des produits
     const webSearchTool = {
