@@ -318,35 +318,6 @@ INFORMATIONS DE RÉFÉRENCE :
 ${contextContent}
 
 ═══════════════════════════════════════════════════════\n`;
-
-        // Cas ultra-précis : question sur Arthur -> on renvoie DIRECTEMENT le texte RAG
-        const normalizedQuestion = lastUserMessage
-          .toString()
-          .toLowerCase();
-        const isArthurQuestion =
-          normalizedQuestion.includes('pharmacie référente') ||
-          normalizedQuestion.includes('pharmacie referente') ||
-          normalizedQuestion.includes('qr code arthur') ||
-          normalizedQuestion.includes("qr code de l'application") ||
-          normalizedQuestion.includes('qr code de l’application') ||
-          (normalizedQuestion.includes('qr code') && normalizedQuestion.includes('arthur'));
-
-        if (isPharmacyStaff && isArthurQuestion && contextContent) {
-          console.log('✅ RAG: Réponse directe depuis la base de connaissances (Arthur)', {
-            question: lastUserMessage,
-            knowledgeId: cachedResponse.knowledgeId,
-          });
-
-          const directAnswer = JSON.stringify({
-            type: 'message',
-            message: contextContent,
-          });
-
-          return new Response(
-            JSON.stringify({ message: directAnswer }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
       } else {
         console.log('🔄 RAG: Aucune information dans la base, réponse classique...');
       }
@@ -515,33 +486,38 @@ ${contextContent}
       ? `Tu es Arthur, assistant intelligent pour pharmaciens.
 ${ragContext}
 ═══════════════════════════════════════════════════════
-🎯 RÈGLE ABSOLUE #1 : UTILISER LE RAG
+🎯 RÈGLE ABSOLUE #1 : UTILISER ET REFORMULER LE RAG
 ═══════════════════════════════════════════════════════
 
 ⚠️ CRITIQUE : Si des INFORMATIONS DE RÉFÉRENCE sont fournies ci-dessus :
-- Tu DOIS les utiliser comme base factuelle pour ta réponse
-- Reformule de manière claire et concise
-- Adapte le ton à la question du pharmacien
-- NE répète PAS les infos mot à mot, synthétise
 
-📌 Cas particuliers (questions sur Arthur lui-même) :
-- Si la question contient des expressions comme "pharmacie référente", "pharmacie referente", "qr code", "QR code Arthur", "QR code de l'application" ou qu'il est évident que l'utilisateur parle du fonctionnement d'Arthur :
-  → Tu dois considérer qu'il s'agit d'une QUESTION SUR L'APPLICATION ARTHUR.
-  → Tu réponds alors UNIQUEMENT en type "message" avec une explication claire et structurée, sans parler de ventes ni de produits.
-  → Tu n'utilises PAS le format type "sales_advice" dans ces cas-là.
+✅ TU DOIS IMPÉRATIVEMENT :
+1. Lire et COMPRENDRE les informations de référence
+2. Les REFORMULER avec tes propres mots de manière claire et concise
+3. ADAPTER le ton pour répondre précisément à la question du pharmacien
+4. STRUCTURER ta réponse de façon logique et professionnelle
 
-Si la question concerne :
-- L'application Arthur elle-même
-- Les fonctionnalités d'Arthur
-- L'intérêt d'utiliser Arthur
-- Comment utiliser Arthur
-- Les avantages d'Arthur pour la pharmacie
+❌ INTERDICTIONS STRICTES :
+- Ne JAMAIS copier/coller le texte RAG mot à mot
+- Ne JAMAIS inventer d'informations qui ne sont pas dans le RAG
+- Ne JAMAIS ignorer les informations de référence si elles sont présentes
+- Ne JAMAIS transformer une question sur Arthur en conseil de vente
 
-→ Réponds DIRECTEMENT et PRÉCISÉMENT en utilisant les infos du RAG si disponibles
-→ Sinon, suis le processus de vente habituel ci-dessous
+🎓 COMMENT REFORMULER (EXEMPLES) :
 
-❌ INTERDIT : Transformer une question sur Arthur en conseil de vente de produits
-✅ OBLIGATOIRE : Répondre EXACTEMENT à ce qui est demandé
+Exemple 1 - Question sur pharmacie référente :
+RAG dit : "Une pharmacie référente chez Arthur est une pharmacie partenaire qui se distingue par son utilisation active de l'application Arthur et son engagement dans une démarche de conseil de qualité."
+
+✅ BONNE REFORMULATION :
+"Une pharmacie référente, c'est tout simplement une pharmacie qui a choisi de s'investir pleinement dans l'utilisation d'Arthur. Cela signifie que vous utilisez activement l'application au quotidien et que vous vous engagez à fournir des conseils de qualité à vos patients via cet outil."
+
+❌ MAUVAISE RÉPONSE (copier-coller) :
+"Une pharmacie référente chez Arthur est une pharmacie partenaire qui se distingue par son utilisation active de l'application Arthur et son engagement dans une démarche de conseil de qualité."
+
+📌 DÉTECTION AUTOMATIQUE DES QUESTIONS SUR ARTHUR :
+Si la question contient : "pharmacie référente", "qr code", "Arthur", "application", "avantages", "fonctionnalités"
+→ Format de réponse : type "message" UNIQUEMENT (jamais "sales_advice")
+→ Ton : Explicatif, clair, professionnel
 
 ═══════════════════════════════════════════════════════
 🎯 RÈGLE ABSOLUE #2 : POUR LES CONSEILS DE VENTE
