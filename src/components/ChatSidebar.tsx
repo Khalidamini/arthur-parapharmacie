@@ -48,7 +48,7 @@ export function ChatSidebar() {
         messages(count)
       `)
       .eq('user_id', user.id)
-      .order('updated_at', { ascending: false });
+      .order('updated_at', { ascending: true });
 
     if (error) {
       console.error('Error loading conversations:', error);
