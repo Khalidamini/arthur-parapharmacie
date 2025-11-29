@@ -44,6 +44,7 @@ export type Database = {
           context_type: string | null
           conversation_id: string | null
           created_at: string | null
+          embedding: string | null
           id: string
           last_used_at: string | null
           pharmacy_id: string | null
@@ -61,6 +62,7 @@ export type Database = {
           context_type?: string | null
           conversation_id?: string | null
           created_at?: string | null
+          embedding?: string | null
           id?: string
           last_used_at?: string | null
           pharmacy_id?: string | null
@@ -78,6 +80,7 @@ export type Database = {
           context_type?: string | null
           conversation_id?: string | null
           created_at?: string | null
+          embedding?: string | null
           id?: string
           last_used_at?: string | null
           pharmacy_id?: string | null
@@ -898,12 +901,12 @@ export type Database = {
         }
         Returns: string
       }
-      search_arthur_knowledge: {
+      search_arthur_knowledge_vector: {
         Args: {
           context_type_filter?: string
           limit_results?: number
           pharmacy_id_filter?: string
-          query_text: string
+          query_embedding: string
           similarity_threshold?: number
         }
         Returns: {

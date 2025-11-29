@@ -35,7 +35,43 @@ function normalizeQuery(text: string): string {
 }
 
 /**
- * Recherche dans la base de connaissances d'Arthur
+ * Génère un embedding vectoriel pour un texte via OpenAI
+ * Utilise le modèle text-embedding-3-small (1536 dimensions)
+ */
+async function generateEmbedding(text: string, apiKey: string): Promise<number[]> {
+  console.log('🔢 Génération de l\'embedding pour:', text.substring(0, 100));
+  
+  try {
+    const response = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'text-embedding-3-small',
+        input: text,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('❌ Erreur OpenAI Embeddings:', error);
+      throw new Error(`OpenAI Embeddings API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const embedding = data.data[0].embedding;
+    console.log('✅ Embedding généré:', embedding.length, 'dimensions');
+    return embedding;
+  } catch (error) {
+    console.error('❌ Erreur lors de la génération de l\'embedding:', error);
+    throw error;
+  }
+}
+
+/**
+ * Recherche dans la base de connaissances d'Arthur (VERSION VECTORIELLE)
  * Retourne la meilleure réponse trouvée ou null
  */
 async function searchKnowledgeBase(
@@ -43,21 +79,23 @@ async function searchKnowledgeBase(
   userQuery: string,
   contextType: string,
   pharmacyId: string | null,
-  similarityThreshold = 0.65
+  apiKey: string,
+  similarityThreshold = 0.7
 ): Promise<{ response: any; knowledgeId: string; score: number } | null> {
-  const normalized = normalizeQuery(userQuery);
-  
-  console.log('🔍 RAG: Recherche dans la base de connaissances...', {
-    original: userQuery.substring(0, 100),
-    normalized: normalized.substring(0, 100),
+  console.log('🔍 RAG Vectoriel: Recherche dans la base de connaissances...', {
+    query: userQuery.substring(0, 100),
     contextType,
     pharmacyId: pharmacyId?.substring(0, 8),
     threshold: similarityThreshold
   });
 
   try {
-    const { data: results, error } = await supabase.rpc('search_arthur_knowledge', {
-      query_text: normalized,
+    // Générer l'embedding de la question
+    const queryEmbedding = await generateEmbedding(userQuery, apiKey);
+    
+    // Recherche vectorielle via la fonction SQL
+    const { data: results, error } = await supabase.rpc('search_arthur_knowledge_vector', {
+      query_embedding: JSON.stringify(queryEmbedding),
       context_type_filter: contextType,
       pharmacy_id_filter: pharmacyId,
       similarity_threshold: similarityThreshold,
@@ -65,7 +103,7 @@ async function searchKnowledgeBase(
     });
 
     if (error) {
-      console.error('❌ RAG: Erreur de recherche:', error);
+      console.error('❌ RAG: Erreur de recherche vectorielle:', error);
       return null;
     }
 
@@ -108,13 +146,13 @@ async function searchKnowledgeBase(
       score: bestMatch.similarity_score
     };
   } catch (error) {
-    console.error('❌ RAG: Erreur lors de la recherche:', error);
+    console.error('❌ RAG: Erreur lors de la recherche vectorielle:', error);
     return null;
   }
 }
 
 /**
- * Stocke une nouvelle paire question-réponse dans la base de connaissances
+ * Stocke une nouvelle paire question-réponse dans la base de connaissances (VERSION VECTORIELLE)
  */
 async function storeInKnowledgeBase(
   supabase: any,
@@ -124,17 +162,21 @@ async function storeInKnowledgeBase(
   contextType: string,
   pharmacyId: string | null,
   conversationId: string | null,
+  apiKey: string,
   metadata: any = null
 ): Promise<void> {
   const normalized = normalizeQuery(userQuery);
   
-  console.log('💾 RAG: Stockage dans la base de connaissances...', {
+  console.log('💾 RAG Vectoriel: Stockage dans la base de connaissances...', {
     type: responseType,
     contextType,
     hasMetadata: !!metadata
   });
 
   try {
+    // Générer l'embedding de la question
+    const embedding = await generateEmbedding(userQuery, apiKey);
+    
     const { error } = await supabase
       .from('arthur_knowledge_base')
       .insert({
@@ -146,6 +188,7 @@ async function storeInKnowledgeBase(
         context_type: contextType,
         pharmacy_id: pharmacyId,
         conversation_id: conversationId,
+        embedding: JSON.stringify(embedding),
         confidence_score: 1.0, // Nouvelle réponse = confiance max
         usage_count: 1
       });
@@ -153,7 +196,7 @@ async function storeInKnowledgeBase(
     if (error) {
       console.error('❌ RAG: Erreur lors du stockage:', error);
     } else {
-      console.log('✅ RAG: Réponse stockée avec succès');
+      console.log('✅ RAG: Réponse stockée avec succès (avec embedding)');
     }
   } catch (error) {
     console.error('❌ RAG: Erreur lors du stockage:', error);
@@ -273,7 +316,7 @@ Adapte tes recommandations en fonction de ces informations.`;
       ? messages[messages.length - 1].content 
       : null;
     
-    // Chercher dans la base de connaissances RAG
+    // Chercher dans la base de connaissances RAG (VECTORIEL)
     let ragContext = '';
     if (lastUserMessage && typeof lastUserMessage === 'string') {
       const contextType = isPharmacyStaff ? 'pharmacy' : 'patient';
@@ -283,7 +326,8 @@ Adapte tes recommandations en fonction de ces informations.`;
         lastUserMessage,
         contextType,
         selectedPharmacyId,
-        0.50
+        OPENAI_API_KEY,
+        0.70  // Threshold plus élevé avec la recherche vectorielle
       );
       
       if (cachedResponse) {
@@ -1103,7 +1147,7 @@ Donne ton évaluation avec justification claire et concise (maximum 200 mots).`
           };
         }
         
-        // Stocker dans la base de connaissances
+        // Stocker dans la base de connaissances (VECTORIEL)
         await storeInKnowledgeBase(
           supabase,
           lastUserMessage,
@@ -1112,6 +1156,7 @@ Donne ton évaluation avec justification claire et concise (maximum 200 mots).`
           contextType,
           selectedPharmacyId,
           conversationId,
+          OPENAI_API_KEY,
           metadata
         );
         
