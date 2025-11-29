@@ -68,6 +68,7 @@ export default function AdminArthurKnowledge() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
 
   // Formulaire
   const [formData, setFormData] = useState({
@@ -314,6 +315,42 @@ export default function AdminArthurKnowledge() {
     }
   };
 
+  const handleRegenerateEmbeddings = async () => {
+    if (!confirm("Voulez-vous régénérer tous les embeddings manquants ? Cette opération peut prendre plusieurs minutes.")) {
+      return;
+    }
+
+    setRegenerating(true);
+    try {
+      toast({
+        title: "Régénération en cours...",
+        description: "Cette opération peut prendre quelques minutes",
+      });
+
+      const { data, error } = await supabase.functions.invoke("regenerate-embeddings", {
+        body: {},
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "✅ Embeddings régénérés",
+        description: `${data.processed} embeddings créés${data.errors > 0 ? ` (${data.errors} erreurs)` : ""}`,
+      });
+
+      fetchKnowledge();
+    } catch (error) {
+      console.error("Error regenerating embeddings:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de régénérer les embeddings",
+        variant: "destructive",
+      });
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       entryType: "question_response",
@@ -367,10 +404,29 @@ export default function AdminArthurKnowledge() {
               </p>
             </div>
           </div>
-          <Button onClick={() => { resetForm(); setShowAddDialog(true); }}>
-            <Plus className="h-4 w-4 mr-2" />
-            Ajouter une connaissance
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleRegenerateEmbeddings}
+              disabled={regenerating}
+            >
+              {regenerating ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Régénération...
+                </>
+              ) : (
+                <>
+                  <Database className="h-4 w-4 mr-2" />
+                  Régénérer embeddings
+                </>
+              )}
+            </Button>
+            <Button onClick={() => { resetForm(); setShowAddDialog(true); }}>
+              <Plus className="h-4 w-4 mr-2" />
+              Ajouter une connaissance
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}
