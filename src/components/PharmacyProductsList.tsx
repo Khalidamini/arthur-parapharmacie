@@ -188,19 +188,27 @@ export default function PharmacyProductsList({ pharmacyId }: PharmacyProductsLis
   const createPromotion = async () => {
     if (!selectedProduct) return;
 
+    // Validation: date d'expiration obligatoire
+    if (!promotionForm.valid_until) {
+      toast({
+        title: "Date requise",
+        description: "Veuillez sélectionner une date d'expiration pour la promotion",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setCreatingPromotion(true);
 
       const originalPrice = selectedProduct.price;
-      const validUntil = promotionForm.valid_until 
-        ? new Date(promotionForm.valid_until).toISOString() 
-        : null;
+      const validUntil = new Date(promotionForm.valid_until).toISOString();
 
       const { error } = await supabase
         .from('promotions')
         .insert({
           pharmacy_id: pharmacyId,
-          product_id: selectedProduct.id, // Lier la promotion au produit
+          product_id: selectedProduct.id,
           title: promotionForm.title,
           description: promotionForm.description,
           discount_percentage: promotionForm.discount_percentage,
@@ -360,10 +368,14 @@ export default function PharmacyProductsList({ pharmacyId }: PharmacyProductsLis
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="valid_until">Valide jusqu'au (optionnel)</Label>
+              <Label htmlFor="valid_until">
+                Valide jusqu'au <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="valid_until"
                 type="date"
+                required
+                min={new Date().toISOString().split('T')[0]}
                 value={promotionForm.valid_until}
                 onChange={(e) =>
                   setPromotionForm({ ...promotionForm, valid_until: e.target.value })
