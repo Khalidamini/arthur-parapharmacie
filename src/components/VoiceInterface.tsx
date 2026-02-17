@@ -36,7 +36,7 @@ const VoiceInterface = ({ userId, selectedPharmacyId, onDisplayProducts, onAddTo
       stream.getTracks().forEach(track => track.stop()); // Stop immediately, just checking permission
       
       console.log('Initializing audio context...');
-      audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+      audioContextRef.current = new AudioContext();
       
       // CRITICAL: Force resume audio context immediately on user interaction
       if (audioContextRef.current.state === 'suspended') {
