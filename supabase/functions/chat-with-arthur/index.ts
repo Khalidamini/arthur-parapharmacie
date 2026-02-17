@@ -223,8 +223,19 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, conversationId, userId, selectedPharmacyId } = await req.json();
+    const body = await req.json();
+    const messages = body.messages || [];
+    const conversationId = body.conversationId;
+    const userId = body.userId;
+    const selectedPharmacyId = body.selectedPharmacyId;
     console.log('Received request:', { messagesCount: messages.length, conversationId, userId, selectedPharmacyId });
+
+    if (!messages || messages.length === 0) {
+      return new Response(JSON.stringify({ error: 'No messages provided' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     if (!OPENAI_API_KEY) {
