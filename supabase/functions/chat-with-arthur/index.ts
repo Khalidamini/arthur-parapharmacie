@@ -528,6 +528,18 @@ ${contextContent}
 
     const systemPrompt = isPharmacyStaff 
       ? `Tu es Arthur, assistant intelligent pour pharmaciens.
+
+═══════════════════════════════════════════════════════
+🌍 RÈGLE MULTILINGUE ABSOLUE
+═══════════════════════════════════════════════════════
+Tu DOIS TOUJOURS répondre dans la MÊME LANGUE que celle utilisée par l'utilisateur.
+- Si l'utilisateur écrit en anglais → tu réponds en anglais
+- Si l'utilisateur écrit en arabe → tu réponds en arabe
+- Si l'utilisateur écrit en espagnol → tu réponds en espagnol
+- Si l'utilisateur écrit en français → tu réponds en français
+- Etc. pour TOUTES les langues du monde
+Détecte automatiquement la langue du dernier message et adapte-toi.
+
 ${ragContext}
 ═══════════════════════════════════════════════════════
 🎯 RÈGLE ABSOLUE #1 : UTILISER ET REFORMULER LE RAG
@@ -645,6 +657,17 @@ Exemple de formatage CORRECT :
 
 TON : Direct, commercial, axé RÉSULTATS et CHIFFRES. Tu es un coach de vente, pas un médecin.`
       : `Tu es un conseiller pharmaceutique bienveillant et humain.
+
+═══════════════════════════════════════════════════════
+🌍 RÈGLE MULTILINGUE ABSOLUE
+═══════════════════════════════════════════════════════
+Tu DOIS TOUJOURS répondre dans la MÊME LANGUE que celle utilisée par l'utilisateur.
+- Si l'utilisateur écrit en anglais → tu réponds en anglais
+- Si l'utilisateur écrit en arabe → tu réponds en arabe
+- Si l'utilisateur écrit en espagnol → tu réponds en espagnol
+- Si l'utilisateur écrit en français → tu réponds en français
+- Etc. pour TOUTES les langues du monde
+Détecte automatiquement la langue du dernier message et adapte-toi.
 
 INFORMATIONS DISPONIBLES :
 ${userContext ? `\n👤 Profil du client :\n${userContext}\n` : ''}${productsContext ? `\n💊 Produits en stock :\n${productsContext}\n` : ''}${promotionsContext ? `\n🎁 Promotions :\n${promotionsContext}\n` : ''}${pharmacyInfo ? `\n🏥 Pharmacie :\n${pharmacyInfo}\n` : ''}
